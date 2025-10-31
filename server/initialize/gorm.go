@@ -4,8 +4,7 @@ import (
 	"os"
 
 	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/model/example"
-	"github.com/msean/botmanager/server/model/system"
+	"github.com/msean/botmanager/server/model/bot"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -40,45 +39,54 @@ func RegisterTables() {
 		return
 	}
 
-	db := global.GVA_DB
-	err := db.AutoMigrate(
+	// db := global.GVA_DB
+	// err := db.AutoMigrate(
 
-		system.SysApi{},
-		system.SysIgnoreApi{},
-		system.SysUser{},
-		system.SysBaseMenu{},
-		system.JwtBlacklist{},
-		system.SysAuthority{},
-		system.SysDictionary{},
-		system.SysOperationRecord{},
-		system.SysAutoCodeHistory{},
-		system.SysDictionaryDetail{},
-		system.SysBaseMenuParameter{},
-		system.SysBaseMenuBtn{},
-		system.SysAuthorityBtn{},
-		system.SysAutoCodePackage{},
-		system.SysExportTemplate{},
-		system.Condition{},
-		system.JoinTemplate{},
-		system.SysParams{},
-		system.SysVersion{},
+	// 	system.SysApi{},
+	// 	system.SysIgnoreApi{},
+	// 	system.SysUser{},
+	// 	system.SysBaseMenu{},
+	// 	system.JwtBlacklist{},
+	// 	system.SysAuthority{},
+	// 	system.SysDictionary{},
+	// 	system.SysOperationRecord{},
+	// 	system.SysAutoCodeHistory{},
+	// 	system.SysDictionaryDetail{},
+	// 	system.SysBaseMenuParameter{},
+	// 	system.SysBaseMenuBtn{},
+	// 	system.SysAuthorityBtn{},
+	// 	system.SysAutoCodePackage{},
+	// 	system.SysExportTemplate{},
+	// 	system.Condition{},
+	// 	system.JoinTemplate{},
+	// 	system.SysParams{},
+	// 	system.SysVersion{},
 
-		example.ExaFile{},
-		example.ExaCustomer{},
-		example.ExaFileChunk{},
-		example.ExaFileUploadAndDownload{},
-		example.ExaAttachmentCategory{},
-	)
-	if err != nil {
-		global.GVA_LOG.Error("register table failed", zap.Error(err))
-		os.Exit(0)
-	}
+	// 	example.ExaFile{},
+	// 	example.ExaCustomer{},
+	// 	example.ExaFileChunk{},
+	// 	example.ExaFileUploadAndDownload{},
+	// 	example.ExaAttachmentCategory{},
+	// )
+	// if err != nil {
+	// 	global.GVA_LOG.Error("register table failed", zap.Error(err))
+	// 	os.Exit(0)
+	// }
 
-	err = bizModel()
+	err := bizModel()
 
 	if err != nil {
 		global.GVA_LOG.Error("register biz_table failed", zap.Error(err))
 		os.Exit(0)
 	}
 	global.GVA_LOG.Info("register table success")
+}
+
+func bizModel() error {
+	db := global.GVA_DB
+	err := db.AutoMigrate(bot.BotMsgMgr{}, bot.Bot{})
+	if err != nil {
+		return err
+	}
+	return nil
 }

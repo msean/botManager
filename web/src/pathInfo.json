@@ -1,4 +1,8 @@
 {
+  "/src/view/bot/bot/bot.vue": "Bot",
+  "/src/view/bot/bot/botForm.vue": "BotForm",
+  "/src/view/bot/bot_msg_mgr/bot_msg_mgr.vue": "BotMsgMgr",
+  "/src/view/bot/bot_msg_mgr/bot_msg_mgrForm.vue": "BotMsgMgrForm",
   "/src/view/dashboard/components/banner.vue": "Banner",
   "/src/view/dashboard/components/card.vue": "Card",
   "/src/view/dashboard/components/charts-content-numbers.vue": "ChartsContentNumbers",

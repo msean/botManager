@@ -15,41 +15,18 @@ type Database interface {
 
 func (autoCodeService *AutoCodeService) Database(businessDB string) Database {
 
-	if businessDB == "" {
-		switch global.GVA_CONFIG.System.DbType {
-		case "mysql":
-			return AutoCodeMysql
-		case "pgsql":
-			return AutoCodePgsql
-		case "mssql":
-			return AutoCodeMssql
-		case "oracle":
-			return AutoCodeOracle
-		case "sqlite":
-			return AutoCodeSqlite
-		default:
-			return AutoCodeMysql
-		}
-	} else {
-		for _, info := range global.GVA_CONFIG.DBList {
-			if info.AliasName == businessDB {
-				switch info.Type {
-				case "mysql":
-					return AutoCodeMysql
-				case "mssql":
-					return AutoCodeMssql
-				case "pgsql":
-					return AutoCodePgsql
-				case "oracle":
-					return AutoCodeOracle
-				case "sqlite":
-					return AutoCodeSqlite
-				default:
-					return AutoCodeMysql
-				}
-			}
-		}
+	switch global.GVA_CONFIG.System.DbType {
+	case "mysql":
+		return AutoCodeMysql
+	case "pgsql":
+		return AutoCodePgsql
+	case "mssql":
+		return AutoCodeMssql
+	case "oracle":
+		return AutoCodeOracle
+	case "sqlite":
+		return AutoCodeSqlite
+	default:
 		return AutoCodeMysql
 	}
-
 }

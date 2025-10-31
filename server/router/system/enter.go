@@ -1,6 +1,6 @@
 package system
 
-import api "github.com/msean/botmanager/server/api/v1"
+import api "github.com/msean/botmanager/server/api"
 
 type RouterGroup struct {
 	ApiRouter

@@ -17,10 +17,7 @@
             </div>
             <div class="mb-9">
               <p class="text-center text-4xl font-bold">
-                {{ $GIN_VUE_ADMIN.appName }}
-              </p>
-              <p class="text-center text-sm font-normal text-gray-500 mt-2.5">
-                A management platform using Golang and Vue
+                机器人群管理
               </p>
             </div>
             <el-form
@@ -77,15 +74,6 @@
                   size="large"
                   @click="submitForm"
                   >登 录</el-button
-                >
-              </el-form-item>
-              <el-form-item class="mb-6">
-                <el-button
-                  class="shadow shadow-active h-11 w-full"
-                  type="primary"
-                  size="large"
-                  @click="checkInit"
-                  >前往初始化</el-button
                 >
               </el-form-item>
             </el-form>

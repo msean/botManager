@@ -8,7 +8,6 @@ require (
 	github.com/casbin/casbin/v2 v2.128.0
 	github.com/casbin/gorm-adapter/v3 v3.37.0
 	github.com/dzwvip/gorm-oracle v0.1.2
-	github.com/flipped-aurora/gin-vue-admin/server v0.0.0-20251028094729-ffe1844ba6b9
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/glebarez/sqlite v1.11.0
