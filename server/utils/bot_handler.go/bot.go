@@ -1,8 +1,6 @@
 package bot_handler
 
 import (
-	"time"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -16,13 +14,14 @@ func NewBot(token string) *Bot {
 	}
 }
 
-func (b *Bot) BanUser(chatID, userID int64, duration time.Duration) error {
+func (b *Bot) BanUser(chatID, userID int64, until int64) error {
 	botAPI, err := tgbotapi.NewBotAPI(b.token)
 	if err != nil {
 		return err
 	}
 
-	until := time.Now().Add(duration).Unix()
+	// until := time.Now().Add(duration).Unix()
+	// global.GVA_LOG.Info("util", zap.Int("util", int(until)))
 
 	cfg := tgbotapi.BanChatMemberConfig{
 		ChatMemberConfig: tgbotapi.ChatMemberConfig{

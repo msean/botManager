@@ -20,6 +20,7 @@ type BotMsgHandler struct{}
 
 func (api *BotMsgHandler) Handle(c *gin.Context) {
 	botIDStr := c.Param("botUUID")
+	global.GVA_LOG.Info("receive telegram webhook", zap.Any("uuid", botIDStr))
 	botID, err := strconv.Atoi(botIDStr)
 	if err != nil {
 		response.BotBadRequest(c, "invalid botID")
@@ -43,13 +44,13 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 	// 查找机器人信息
 	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, botID)
 	if err != nil || !has {
-		global.GVA_LOG.Error("bot not found", zap.Error(err))
+		global.GVA_LOG.Error("bot not found", zap.Int("botID", botModel.BotID), zap.Error(err))
 		return
 	}
 
 	banWords, err := dao.BotDao.ListBotBannerContentByID(global.GVA_DB, botModel.BotID)
 	if err != nil {
-		global.GVA_LOG.Error("fetch ban content failed", zap.Error(err))
+		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
 		return
 	}
 
@@ -73,8 +74,15 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 			go func() {
 				// 发送api 封禁用户
 				botHandler := bot_handler.NewBot(botModel.Token)
-				if err := botHandler.BanUser(tgMsg.Message.Chat.ID, tgMsg.Message.From.ID, time.Duration(durationMinutes)*time.Minute); err != nil {
+				until := time.Now().Add(time.Duration(durationMinutes) * time.Minute).Unix()
+				if err := botHandler.BanUser(tgMsg.Message.Chat.ID, tgMsg.Message.From.ID, until); err != nil {
 					global.GVA_LOG.Error("ban user failed", zap.Error(err))
+				} else {
+					global.GVA_LOG.Info("ban user success",
+						zap.Int64("chatID", tgMsg.Message.Chat.ID),
+						zap.Int64("user_id", tgMsg.Message.Chat.ID),
+						zap.Int64("util", until),
+					)
 				}
 			}()
 
@@ -87,7 +95,7 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 				BanDuration: int64(durationMinutes),
 			}
 			if err := global.GVA_DB.Create(&record).Error; err != nil {
-				global.GVA_LOG.Error("failed to insert BanRecord", zap.Error(err))
+				global.GVA_LOG.Error("failed to insert BanRecord", zap.Any("record", record), zap.Error(err))
 			}
 
 			break
