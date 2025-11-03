@@ -23,10 +23,20 @@ func (b *Bot) BanUser(chatID, userID int64, until int64) error {
 	// until := time.Now().Add(duration).Unix()
 	// global.GVA_LOG.Info("util", zap.Int("util", int(until)))
 
-	cfg := tgbotapi.BanChatMemberConfig{
+	cfg := tgbotapi.RestrictChatMemberConfig{
 		ChatMemberConfig: tgbotapi.ChatMemberConfig{
 			ChatID: chatID,
 			UserID: userID,
+		},
+		Permissions: &tgbotapi.ChatPermissions{
+			CanSendMessages:       false,
+			CanSendMediaMessages:  false,
+			CanSendPolls:          false,
+			CanSendOtherMessages:  false,
+			CanAddWebPagePreviews: false,
+			CanChangeInfo:         false,
+			CanInviteUsers:        false,
+			CanPinMessages:        false,
 		},
 		UntilDate: until,
 	}
