@@ -43,7 +43,8 @@ func (svc *BotService) CreateBot(ctx context.Context, botModel *bot.Bot) (err er
 		return err
 	}
 
-	webhookURL := fmt.Sprintf("%s/bot/webhook/%s", global.GVA_CONFIG.System.RouterPrefix, botModel.Token)
+	webhookURL := fmt.Sprintf("%s/bot/webhook/%s", global.GVA_CONFIG.System.BotWeebhookPrefix, botModel.Token)
+	global.GVA_LOG.Info("webhookURL", zap.String("url", webhookURL))
 
 	go func() {
 		if err := bot_handler.RegisterWebhook(botModel.Token, webhookURL); err != nil {
