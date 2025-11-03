@@ -15,7 +15,8 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	holder(publicGroup, privateGroup)
 	{
 		botRouter := router.RouterGroupApp.Bot
-		botRouter.InitBotMsgMgrRouter(privateGroup, publicGroup)
+		botRouter.InitBotBanContentRouter(privateGroup, publicGroup)
 		botRouter.InitBotRouter(privateGroup, publicGroup)
+		botRouter.InitBanRecordRouter(privateGroup, publicGroup)
 	}
 }

@@ -1,6 +1,7 @@
 package bot
 
 type ServiceGroup struct {
-	BotMsgMgrService
+	BotBanContentService
 	BotService
+	BanRecordService
 }

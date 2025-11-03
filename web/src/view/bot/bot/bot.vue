@@ -60,13 +60,11 @@
         >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column sortable align="left" label="日期" prop="CreatedAt" width="180">
-            <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
+        <el-table-column align="left" label="机器人名称" prop="name" width="120" />
+        <el-table-column align="left" label="机器人token" prop="token" width="480" />
+        <el-table-column sortable align="left" label="创建时间" prop="createdAt" width="180">
+            <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
-        
-            <el-table-column align="left" label="机器人名称" prop="name" width="120" />
-
-            <el-table-column align="left" label="机器人token" prop="token" width="120" />
 
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
@@ -259,7 +257,7 @@ const onDelete = async() => {
       }
       multipleSelection.value &&
         multipleSelection.value.map(item => {
-          IDs.push(item.ID)
+          IDs.push(item.bot_id)
         })
       const res = await deleteBotByIds({ IDs })
       if (res.code === 0) {
@@ -280,7 +278,7 @@ const type = ref('')
 
 // 更新行
 const updateBotFunc = async(row) => {
-    const res = await findBot({ ID: row.ID })
+    const res = await findBot({ ID: row.botID })
     type.value = 'update'
     if (res.code === 0) {
         formData.value = res.data
@@ -291,7 +289,7 @@ const updateBotFunc = async(row) => {
 
 // 删除行
 const deleteBotFunc = async (row) => {
-    const res = await deleteBot({ ID: row.ID })
+    const res = await deleteBot({ ID: row.botID })
     if (res.code === 0) {
         ElMessage({
                 type: 'success',
@@ -365,7 +363,7 @@ const openDetailShow = () => {
 // 打开详情
 const getDetails = async (row) => {
   // 打开弹窗
-  const res = await findBot({ ID: row.ID })
+  const res = await findBot({ ID: row.botID })
   if (res.code === 0) {
     detailForm.value = res.data
     openDetailShow()

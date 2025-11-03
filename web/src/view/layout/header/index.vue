@@ -23,7 +23,7 @@
             'min-w-fit'
           "
         >
-          {{ $GIN_VUE_ADMIN.appName }}
+         机器人群管理 
         </div>
       </div>
 

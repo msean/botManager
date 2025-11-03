@@ -1,6 +1,6 @@
 <template>
   <div>
-    <warning-bar title="获取参数且缓存方法已在前端utils/params 已经封装完成 不必自己书写 使用方法查看文件内注释" />
+    <!-- <warning-bar title="获取参数且缓存方法已在前端utils/params 已经封装完成 不必自己书写 使用方法查看文件内注释" /> -->
     <div class="gva-search-box">
       <el-form
         ref="elSearchFormRef"
@@ -10,7 +10,7 @@
         :rules="searchRule"
         @keyup.enter="onSubmit"
       >
-        <el-form-item label="创建日期" prop="createdAt">
+        <!-- <el-form-item label="创建日期" prop="createdAt">
           <template #label>
             <span>
               创建日期
@@ -44,7 +44,7 @@
                   : false
             "
           ></el-date-picker>
-        </el-form-item>
+        </el-form-item> -->
 
         <el-form-item label="参数名称" prop="name">
           <el-input v-model="searchInfo.name" placeholder="搜索条件" />
@@ -62,7 +62,7 @@
             >查询</el-button
           >
           <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button
+          <!-- <el-button
             link
             type="primary"
             icon="arrow-down"
@@ -77,7 +77,7 @@
             @click="showAllQuery = false"
             v-else
             >收起</el-button
-          >
+          > -->
         </el-form-item>
       </el-form>
     </div>
@@ -104,25 +104,25 @@
       >
         <el-table-column type="selection" width="55" />
 
-        <el-table-column align="left" label="日期" prop="createdAt" width="180">
+        <!-- <el-table-column align="left" label="日期" prop="createdAt" width="180">
           <template #default="scope">{{
-            formatDate(scope.row.CreatedAt)
+            formatDate(scope.row.createdAt)
           }}</template>
-        </el-table-column>
+        </el-table-column> -->
 
         <el-table-column
           align="left"
           label="参数名称"
           prop="name"
-          width="120"
+          width="160"
         />
-        <el-table-column align="left" label="参数键" prop="key" width="120" />
-        <el-table-column align="left" label="参数值" prop="value" width="120" />
+        <el-table-column align="left" label="参数键" prop="key" width="160" />
+        <el-table-column align="left" label="参数值" prop="value" width="160" />
         <el-table-column
           align="left"
           label="参数说明"
           prop="desc"
-          width="120"
+          width="280"
         />
         <el-table-column
           align="left"
@@ -210,7 +210,7 @@
         <el-form-item label="参数值:" prop="value">
           <el-input
             type="textarea"
-            :rows="5"
+            :rows="3"
             v-model="formData.value"
             :clearable="true"
             placeholder="请输入参数值"
@@ -225,7 +225,7 @@
         </el-form-item>
       </el-form>
 
-      <div
+      <!-- <div
         class="usage-instructions bg-gray-100 border border-gray-300 rounded-lg p-4 mt-5"
       >
         <h3 class="mb-3 text-lg text-gray-800">使用说明</h3>
@@ -256,7 +256,7 @@
           >
           来获取对应的 value 值。
         </p>
-      </div>
+      </div> -->
     </el-drawer>
 
     <el-drawer

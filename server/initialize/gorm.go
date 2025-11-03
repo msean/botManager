@@ -84,7 +84,7 @@ func RegisterTables() {
 
 func bizModel() error {
 	db := global.GVA_DB
-	err := db.AutoMigrate(bot.BotMsgMgr{}, bot.Bot{})
+	err := db.AutoMigrate(bot.BotBanContent{}, bot.Bot{}, bot.BanRecord{})
 	if err != nil {
 		return err
 	}

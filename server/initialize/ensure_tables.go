@@ -4,7 +4,7 @@ import (
 	"context"
 
 	adapter "github.com/casbin/gorm-adapter/v3"
-	"github.com/msean/botmanager/server/model/example"
+
 	sysModel "github.com/msean/botmanager/server/model/system"
 	"github.com/msean/botmanager/server/plugin/announcement/model"
 	"github.com/msean/botmanager/server/service/system"
@@ -56,13 +56,6 @@ func (e *ensureTables) MigrateTable(ctx context.Context) (context.Context, error
 		sysModel.SysParams{},
 		sysModel.SysVersion{},
 		adapter.CasbinRule{},
-
-		example.ExaFile{},
-		example.ExaCustomer{},
-		example.ExaFileChunk{},
-		example.ExaFileUploadAndDownload{},
-		example.ExaAttachmentCategory{},
-
 		model.Info{},
 	}
 	for _, t := range tables {
@@ -97,12 +90,6 @@ func (e *ensureTables) TableCreated(ctx context.Context) bool {
 		sysModel.JoinTemplate{},
 
 		adapter.CasbinRule{},
-
-		example.ExaFile{},
-		example.ExaCustomer{},
-		example.ExaFileChunk{},
-		example.ExaFileUploadAndDownload{},
-		example.ExaAttachmentCategory{},
 
 		model.Info{},
 	}

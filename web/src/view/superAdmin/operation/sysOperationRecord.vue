@@ -46,7 +46,7 @@
         </el-table-column>
         <el-table-column align="left" label="日期" width="180">
           <template #default="scope">{{
-            formatDate(scope.row.CreatedAt)
+            formatDate(scope.row.createdAt)
           }}</template>
         </el-table-column>
         <el-table-column align="left" label="状态码" prop="status" width="120">

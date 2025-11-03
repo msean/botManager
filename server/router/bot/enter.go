@@ -1,13 +1,18 @@
 package bot
 
-import api "github.com/msean/botmanager/server/api"
+import (
+	api "github.com/msean/botmanager/server/api"
+)
 
 type RouterGroup struct {
-	BotMsgMgrRouter
+	BotBanContentRouter
 	BotRouter
+	BanRecordRouter
 }
 
 var (
-	bot_msg_mgrApi = api.ApiGroupApp.BotApiGroup.BotMsgMgrApi
-	bot_mgrApi     = api.ApiGroupApp.BotApiGroup.BotApi
+	botBanContentApi = api.ApiGroupApp.BotApiGroup.BotBanContentApi
+	botMsgApi        = api.ApiGroupApp.BotApiGroup.BotApi
+	botMsgHandler    = api.ApiGroupApp.BotApiGroup.BotMsgHandler
+	banRecordApi     = api.ApiGroupApp.BotApiGroup.BanRecordApi
 )
