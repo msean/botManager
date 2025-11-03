@@ -35,3 +35,21 @@ func (b *Bot) BanUser(chatID, userID int64, duration time.Duration) error {
 	_, err = botAPI.Request(cfg)
 	return err
 }
+
+func RegisterWebhook(botToken, webhookURL string) error {
+	bot, err := tgbotapi.NewBotAPI(botToken)
+	if err != nil {
+		return err
+	}
+
+	wh, err := tgbotapi.NewWebhook(webhookURL)
+	if err != nil {
+		return err
+	}
+
+	_, err = bot.Request(wh)
+	if err != nil {
+		return err
+	}
+	return nil
+}

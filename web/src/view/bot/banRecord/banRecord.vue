@@ -64,8 +64,8 @@
 
             <el-table-column align="left" label="封禁时长" prop="banDuration" width="120" />
 
-            <el-table-column sortable align="left" label="创建时间" prop="CreatedAt" width="300">
-              <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
+            <el-table-column sortable align="left" label="创建时间" prop="createdAt" width="300">
+              <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
             </el-table-column>
 
         <!-- <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">

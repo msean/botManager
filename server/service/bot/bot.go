@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/utils/bot_handler.go"
+	"go.uber.org/zap"
 )
 
 type BotService struct{}
@@ -19,29 +22,38 @@ type BotService struct{}
 func (svc *BotService) CreateBot(ctx context.Context, botModel *bot.Bot) (err error) {
 	parts := strings.Split(botModel.Token, ":")
 	if len(parts) < 2 {
-		err = errors.New("输入的token不合法")
-		return
+		return errors.New("输入的token不合法")
 	}
 
-	var botID int64
-	botID, err = strconv.ParseInt(parts[0], 10, 64)
-
+	botID, err := strconv.ParseInt(parts[0], 10, 64)
 	if err != nil {
-		err = errors.New("输入的token不合法")
-		return
+		return errors.New("输入的token不合法")
 	}
 	botModel.BotID = int(botID)
 
-	var exist bool
-	if _, exist, err = dao.BotDao.FromBotID(global.GVA_DB, int(botID)); err != nil {
-		return
+	// 检查是否存在
+	if _, exist, err := dao.BotDao.FromBotID(global.GVA_DB, int(botID)); err != nil {
+		return err
+	} else if exist {
+		return errors.New("已经存在相同的botID")
 	}
-	if exist {
-		err = errors.New("已经存在相同的botID")
-		return
+
+	// 创建记录
+	if err := global.GVA_DB.Create(botModel).Error; err != nil {
+		return err
 	}
-	err = global.GVA_DB.Create(botModel).Error
-	return err
+
+	webhookURL := fmt.Sprintf("%s/bot/webhook/%s", global.GVA_CONFIG.System.RouterPrefix, botModel.Token)
+
+	go func() {
+		if err := bot_handler.RegisterWebhook(botModel.Token, webhookURL); err != nil {
+			global.GVA_LOG.Error("register webhook failed", zap.String("url", webhookURL), zap.Error(err))
+		} else {
+			global.GVA_LOG.Info("register webhook success", zap.String("url", webhookURL))
+		}
+	}()
+
+	return nil
 }
 
 // DeleteBot 删除机器人记录

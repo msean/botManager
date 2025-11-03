@@ -27,7 +27,7 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 	}
 
 	body, _ := io.ReadAll(c.Request.Body)
-	c.Status(200) // Telegram 要求 webhook 必须快速响应，否则会重试
+	c.Status(200)
 	global.GVA_LOG.Info("receive telegram webhook", zap.String("body", string(body)))
 
 	// 解析 Telegram 消息
