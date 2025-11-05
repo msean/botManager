@@ -67,10 +67,12 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupInfoList(ctx cont
 	if limit != 0 {
 		db = db.Limit(limit).Offset(offset)
 	}
+	db = db.Order("created_at desc")
 
 	if err = db.Find(&botChatGroups).Error; err != nil {
 		return
 	}
+
 	var botList []int
 	for _, object := range botChatGroups {
 		botList = append(botList, int(object.BotID))

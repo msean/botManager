@@ -52,25 +52,25 @@
         >
         <el-table-column type="selection" width="55" />
         
-            <el-table-column align="left" label="机器人名称" prop="botName" width="120" />
-
-            <el-table-column align="left" label="用户ID" prop="userID" width="120" />
+            <el-table-column align="left" label="机器人名称" prop="botName" width="150" />
 
             <el-table-column align="left" label="用户名称" prop="userName" width="150" />
 
-            <el-table-column align="left" label="昵称" prop="fullName" width="150" />
-
-            <el-table-column align="left" label="群ID" prop="chatID" width="120" />
+            <el-table-column align="left" label="昵称" prop="fullName" width="180" />
 
             <el-table-column align="left" label="群名" prop="chatName" width="150" />
 
-            <el-table-column align="left" label="封禁时长" prop="banDuration" width="120" />
+            <el-table-column align="left" label="封禁时长" prop="banDuration" width="90">
+              <template #default="scope">
+                {{ scope.row.banDuration }} 分钟
+              </template>
+            </el-table-column>
 
-            <el-table-column align="left" label="备注" prop="reMark" width="120" />
+            <el-table-column align="left" label="备注" prop="reMark" width="300" />
 
             <el-table-column
               align="left"
-              label="触发禁用类型"
+              label="禁用类型"
               prop="banType"
               width="120"
             >
@@ -80,7 +80,7 @@
               </template>
             </el-table-column>
 
-            <el-table-column sortable align="left" label="创建时间" prop="createdAt" width="300">
+            <el-table-column sortable align="left" label="创建时间" prop="createdAt" width="180">
               <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
             </el-table-column>
 

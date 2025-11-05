@@ -58,6 +58,11 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
+        
+        
+        <el-table-column align="left" label="机器人名称" prop="botName" width="180" />
+        <el-table-column align="left" label="群聊名称" prop="chatGroupName" width="180" />
+        <el-table-column align="left" label="封禁成员" prop="banMemContent" width="180" />
         <el-table-column
           sortable
           align="left"
@@ -65,11 +70,8 @@
           prop="createdAt"
           width="180"
         >
-          <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
+        <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column align="left" label="机器人名称" prop="botName" width="120" />
-        <el-table-column align="left" label="群聊名称" prop="chatGroupName" width="120" />
-        <el-table-column align="left" label="封禁成员" prop="banMemContent" width="120" />
         <el-table-column
           align="left"
           label="操作"

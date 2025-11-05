@@ -60,7 +60,7 @@
         >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column align="left" label="机器人名称" prop="name" width="120" />
+        <el-table-column align="left" label="机器人名称" prop="name" width="180" />
         <el-table-column align="left" label="机器人token" prop="token" width="480" />
         <el-table-column sortable align="left" label="创建时间" prop="createdAt" width="180">
             <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>

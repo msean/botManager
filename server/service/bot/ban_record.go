@@ -68,6 +68,8 @@ func (banRecordService *BanRecordService) GetBanRecordInfoList(ctx context.Conte
 		db = db.Limit(limit).Offset(offset)
 	}
 
+	db = db.Order("created_at desc")
+
 	if err = db.Find(&banRecords).Error; err != nil {
 		return
 	}

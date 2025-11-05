@@ -115,6 +115,7 @@ func (svc *BotBanContentService) GetBotBanContentInfoList(ctx context.Context, i
 	if info.BanContent != "" {
 		db = db.Where("ban_content LIKE ?", "%"+info.BanContent+"%")
 	}
+	db = db.Order("created_at desc")
 	err = db.Count(&total).Error
 	if err != nil {
 		return

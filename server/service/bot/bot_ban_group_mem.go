@@ -115,6 +115,7 @@ func (botBanGroupMemService *BotBanGroupMemService) GetBotBanGroupMemInfoList(ct
 	if limit != 0 {
 		db = db.Limit(limit).Offset(offset)
 	}
+	db = db.Order("created_at desc")
 
 	if err = db.Find(&botBanGroupMems).Error; err != nil {
 		return
