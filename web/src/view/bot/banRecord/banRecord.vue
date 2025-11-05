@@ -74,9 +74,8 @@
               prop="banType"
               width="120"
             >
-            <template #default="{ row }">
-                <span v-if="row.banType === 1">消息</span>
-                <span v-else>成员</span>
+              <template #default="{ row }">
+                {{ banTypeMap[row.banType] || '未知' }}
               </template>
             </el-table-column>
 
@@ -181,7 +180,6 @@ import { useAppStore } from "@/pinia"
 
 
 
-
 defineOptions({
     name: 'BanRecord'
 })
@@ -203,6 +201,11 @@ const formData = ref({
             banDuration: undefined,
         })
 
+const banTypeMap = {
+  1: '消息',
+  2: '成员',
+  3: '转发' // 如果以后有第三种类型
+}
 
 
 // 验证规则

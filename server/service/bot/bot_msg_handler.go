@@ -39,6 +39,12 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return nil
 	}
 
+	// 只要消息是转发的都需要禁止
+	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
+		svc.BanUser(botModel, tgMsg, global.BanTypeForword)
+		return nil
+	}
+
 	go svc.SyncChatGroup(botModel, tgMsg)
 	// 普通消息
 	if tgMsg.Message == nil {
@@ -60,8 +66,20 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 	return nil
 }
 
-func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, durationMinutes int, _type int) (err error) {
+func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
+	// 获取封禁时长
+	var param system.SysParams
+	param, err = dao.SysParamsDao.FromKey(global.GVA_DB, global.UserBanDuritonKey, global.DefaultUserBanDuriton)
+	if err != nil {
+		global.GVA_LOG.Error("get ban duration failed", zap.Error(err))
+		return
+	}
+	durationMinutes, _ := strconv.Atoi(param.Value)
+
 	// 发送api 封禁用户
+	chatID := tgMsg.Message.Chat.ID
+	messageID := tgMsg.Message.MessageID
+
 	botHandler := bot_handler.NewBot(botModel.Token)
 	var banErr error
 	until := time.Now().Add(time.Duration(durationMinutes) * time.Minute).Unix()
@@ -74,6 +92,19 @@ func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, du
 			zap.Int64("util", until),
 		)
 	}
+
+	if chatID != 0 && messageID != 0 {
+		// 尝试删除消息
+		if deleteErr := botHandler.DeleteMsg(chatID, messageID); deleteErr != nil {
+			global.GVA_LOG.Error("delete msg error",
+				zap.Int64("chatID", tgMsg.Message.Chat.ID),
+				zap.Int64("user_id", tgMsg.Message.Chat.ID),
+				zap.Int64("util", until),
+				zap.Error(err),
+			)
+		}
+	}
+
 	remark := ""
 	if banErr != nil {
 		remark = banErr.Error()
@@ -124,16 +155,7 @@ func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Up
 				zap.String("user", tgMsg.Message.From.UserName),
 			)
 
-			// 获取封禁时长
-			var param system.SysParams
-			param, err = dao.SysParamsDao.FromKey(global.GVA_DB, global.UserBanDuritonKey, global.DefaultUserBanDuriton)
-			if err != nil {
-				global.GVA_LOG.Error("get ban duration failed", zap.Error(err))
-				return
-			}
-			durationMinutes, _ := strconv.Atoi(param.Value)
-
-			svc.BanUser(botModel, tgMsg, durationMinutes, global.BanTypeWord)
+			svc.BanUser(botModel, tgMsg, global.BanTypeWord)
 
 			find = true
 			return
@@ -167,15 +189,7 @@ func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg tgbotapi.Upda
 				zap.Int64("chatID", chatID),
 			)
 
-			var param system.SysParams
-			param, err = dao.SysParamsDao.FromKey(global.GVA_DB, global.UserBanDuritonKey, global.DefaultUserBanDuriton)
-			if err != nil {
-				global.GVA_LOG.Error("get ban duration failed", zap.Error(err))
-				continue
-			}
-			durationMinutes, _ := strconv.Atoi(param.Value)
-
-			svc.BanUser(botModel, tgMsg, durationMinutes, global.BanTypeMem)
+			svc.BanUser(botModel, tgMsg, global.BanTypeMem)
 
 			found = true
 			return

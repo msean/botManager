@@ -62,3 +62,17 @@ func RegisterWebhook(botToken, webhookURL string) error {
 	}
 	return nil
 }
+
+func (b *Bot) DeleteMsg(chatID int64, msgID int) (err error) {
+	botAPI, err := tgbotapi.NewBotAPI(b.token)
+	if err != nil {
+		return err
+	}
+
+	cfg := tgbotapi.DeleteMessageConfig{
+		ChatID:    chatID,
+		MessageID: msgID,
+	}
+	_, err = botAPI.Request(cfg)
+	return
+}

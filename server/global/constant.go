@@ -9,6 +9,7 @@ const (
 )
 
 const (
-	BanTypeWord = 1
-	BanTypeMem  = 2
+	BanTypeWord    = 1
+	BanTypeMem     = 2
+	BanTypeForword = 3
 )
