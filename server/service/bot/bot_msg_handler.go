@@ -46,6 +46,7 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 	}
 
 	var find bool
+	global.GVA_LOG.Info("invalid telegram tgMsg", zap.Any("msg", tgMsg.Message.Text))
 	if tgMsg.Message.Text != "" {
 		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
 			return
@@ -100,7 +101,7 @@ func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, du
 }
 
 func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, err error) {
-	var banContents []bot.BotBanContent
+	// var banContents []bot.BotBanContent
 	// banContents, err = dao.BotDao.ListBotBannerContentByID(global.GVA_DB, botModel.BotID)
 	// if err != nil {
 	// 	global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
@@ -112,9 +113,11 @@ func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Up
 		return
 	}
 
+	global.GVA_LOG.Info("invalid telegram tgMsg", zap.Any("db", botBanContentCache))
 	messageText := strings.ToLower(tgMsg.Message.Text)
 
-	for _, rule := range banContents {
+	for _, rule := range botBanContentCache {
+		global.GVA_LOG.Info("invalid telegram tgMsg", zap.Any("messageText", messageText), zap.Any("db", strings.ToLower(rule.BanContent)))
 		if strings.Contains(messageText, strings.ToLower(rule.BanContent)) {
 			global.GVA_LOG.Info("found banned word",
 				zap.String("word", rule.BanContent),
