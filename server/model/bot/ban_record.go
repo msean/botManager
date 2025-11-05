@@ -11,9 +11,12 @@ type BanRecord struct {
 	BotID       int    `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;"`                  //机器人ID
 	UserID      int64  `json:"userID" form:"userID" gorm:"comment:用户ID;column:user_id;"`                //用户ID
 	UserName    string `json:"userName" form:"userName" gorm:"comment:用户名;column:user_name;size:128;"`  //userName
+	FullName    string `json:"fullName" form:"fullName" gorm:"comment:用户名;column:full_name;size:128;"`  //userName
 	ChatID      int64  `json:"chatID" form:"chatID" gorm:"comment:所在群聊;column:chat_id;"`                //chatID
 	ChatName    string `json:"chatName" form:"chatName" gorm:"comment:所在群聊名称;column:chat_name;"`        //chatName
 	BanDuration int64  `json:"banDuration" form:"banDuration" gorm:"comment:封禁时长;column:ban_duration;"` //封禁时长
+	BanType     int    `json:"banType" form:"banType" gorm:"comment:封禁时长;column:ban_type;"`             //封禁类型 1 消息 2 成员
+	Remark      string `json:"reMark" form:"reMark" gorm:"comment:封禁时长;column:remark;"`                 //封禁备注
 }
 
 // TableName 封禁记录 BanRecord自定义表名 ban_record

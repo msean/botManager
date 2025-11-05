@@ -46,3 +46,8 @@ func (dao *botDao) All(db *gorm.DB) (bots []bot.Bot, err error) {
 	err = db.Find(&bots).Error
 	return
 }
+
+func (dao *botDao) AllWithChatGroup(db *gorm.DB) (bots []bot.Bot, err error) {
+	err = db.Model(&bot.Bot{}).Preload("Chats").Find(&bots).Error
+	return
+}

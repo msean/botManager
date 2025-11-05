@@ -67,3 +67,11 @@ export const getBotChoice = (params) => {
     params
   })
 }
+
+export const getBotChoiceWithChatGroup = (params) => {
+  return service({
+    url: '/bot_mgr/choice_with_chat_group',
+    method: 'get',
+    params
+  })
+}

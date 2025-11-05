@@ -1,7 +1,8 @@
 package dao
 
 var (
-	BotDao           = newBotDao()
-	BotBanContentDao = newBotBanContentDao()
-	SysParamsDao     = newsysParamsDao()
+	BotDao          = newBotDao()
+	BotChatGroupDao = newbotChatGroupDao()
+	SysParamsDao    = newsysParamsDao()
+	BotGroupMemDao  = newbotGroupMemDao()
 )

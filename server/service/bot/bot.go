@@ -11,7 +11,7 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
-	"github.com/msean/botmanager/server/utils/bot_handler.go"
+	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 )
 

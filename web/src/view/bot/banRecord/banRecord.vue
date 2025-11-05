@@ -58,11 +58,27 @@
 
             <el-table-column align="left" label="用户名称" prop="userName" width="150" />
 
+            <el-table-column align="left" label="昵称" prop="fullName" width="150" />
+
             <el-table-column align="left" label="群ID" prop="chatID" width="120" />
 
             <el-table-column align="left" label="群名" prop="chatName" width="150" />
 
             <el-table-column align="left" label="封禁时长" prop="banDuration" width="120" />
+
+            <el-table-column align="left" label="备注" prop="reMark" width="120" />
+
+            <el-table-column
+              align="left"
+              label="触发禁用类型"
+              prop="banType"
+              width="120"
+            >
+            <template #default="{ row }">
+                <span v-if="row.banType === 1">消息</span>
+                <span v-else>成员</span>
+              </template>
+            </el-table-column>
 
             <el-table-column sortable align="left" label="创建时间" prop="createdAt" width="300">
               <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>

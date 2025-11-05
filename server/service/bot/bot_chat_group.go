@@ -1,0 +1,92 @@
+package bot
+
+import (
+	"context"
+
+	"github.com/msean/botmanager/server/dao"
+	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/model/bot"
+	botReq "github.com/msean/botmanager/server/model/bot/request"
+)
+
+type BotChatGroupService struct{}
+
+// CreateBotChatGroup 创建机器人群组列表记录
+// Author [yourname](https://github.com/yourname)
+func (botChatGroupService *BotChatGroupService) CreateBotChatGroup(ctx context.Context, botChatGroup *bot.BotChatGroup) (err error) {
+	err = global.GVA_DB.Create(botChatGroup).Error
+	return err
+}
+
+// DeleteBotChatGroup 删除机器人群组列表记录
+// Author [yourname](https://github.com/yourname)
+func (botChatGroupService *BotChatGroupService) DeleteBotChatGroup(ctx context.Context, ID string) (err error) {
+	err = global.GVA_DB.Delete(&bot.BotChatGroup{}, "id = ?", ID).Error
+	return err
+}
+
+// DeleteBotChatGroupByIds 批量删除机器人群组列表记录
+// Author [yourname](https://github.com/yourname)
+func (botChatGroupService *BotChatGroupService) DeleteBotChatGroupByIds(ctx context.Context, IDs []string) (err error) {
+	err = global.GVA_DB.Delete(&[]bot.BotChatGroup{}, "id in ?", IDs).Error
+	return err
+}
+
+// UpdateBotChatGroup 更新机器人群组列表记录
+// Author [yourname](https://github.com/yourname)
+func (botChatGroupService *BotChatGroupService) UpdateBotChatGroup(ctx context.Context, botChatGroup bot.BotChatGroup) (err error) {
+	err = global.GVA_DB.Model(&bot.BotChatGroup{}).Where("id = ?", botChatGroup.ID).Updates(&botChatGroup).Error
+	return err
+}
+
+// GetBotChatGroup 根据ID获取机器人群组列表记录
+// Author [yourname](https://github.com/yourname)
+func (botChatGroupService *BotChatGroupService) GetBotChatGroup(ctx context.Context, ID string) (botChatGroup bot.BotChatGroup, err error) {
+	err = global.GVA_DB.Where("id = ?", ID).First(&botChatGroup).Error
+	return
+}
+
+// GetBotChatGroupInfoList 分页获取机器人群组列表记录
+// Author [yourname](https://github.com/yourname)
+func (botChatGroupService *BotChatGroupService) GetBotChatGroupInfoList(ctx context.Context, info botReq.BotChatGroupSearch) (list []*bot.BotChatGroup, total int64, err error) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+	// 创建db
+	db := global.GVA_DB.Model(&bot.BotChatGroup{})
+	var botChatGroups []*bot.BotChatGroup
+	// 如果有条件搜索 下方会自动创建搜索语句
+	if len(info.CreatedAtRange) == 2 {
+		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
+	}
+
+	err = db.Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	if limit != 0 {
+		db = db.Limit(limit).Offset(offset)
+	}
+
+	if err = db.Find(&botChatGroups).Error; err != nil {
+		return
+	}
+	var botList []int
+	for _, object := range botChatGroups {
+		botList = append(botList, int(object.BotID))
+	}
+
+	var botMapper map[int]bot.Bot
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+		return
+	}
+	for _, object := range botChatGroups {
+		object.BotName = botMapper[int(object.BotID)].Name
+	}
+
+	return botChatGroups, total, err
+}
+func (botChatGroupService *BotChatGroupService) GetBotChatGroupPublic(ctx context.Context) {
+	// 此方法为获取数据源定义的数据
+	// 请自行实现
+}

@@ -197,3 +197,13 @@ func (bot_mgrApi *BotApi) All(c *gin.Context) {
 	}
 	response.OkWithDetailed(bots, "获取成功", c)
 }
+
+func (bot_mgrApi *BotApi) AllWithChatGroup(c *gin.Context) {
+	bots, err := dao.BotDao.AllWithChatGroup(global.GVA_DB)
+	if err != nil {
+		global.GVA_LOG.Error("获取失败!", zap.Error(err))
+		response.FailWithMessage("获取失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithDetailed(bots, "获取成功", c)
+}

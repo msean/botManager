@@ -70,7 +70,9 @@
         >
         <el-table-column type="selection" width="55" />
             <el-table-column align="left" label="禁用内容" prop="banContent" width="250" />
+
             <el-table-column align="left" label="机器人" prop="botName" width="150" />
+
              <el-table-column sortable align="left" label="创建日期" prop="createdAt" width="180">
                 <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
             </el-table-column>
