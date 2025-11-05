@@ -18,6 +18,7 @@ type BanRecord struct {
 	BanDuration int64  `json:"banDuration" form:"banDuration" gorm:"comment:封禁时长;column:ban_duration;"` //封禁时长
 	BanType     int    `json:"banType" form:"banType" gorm:"comment:封禁时长;column:ban_type;"`             //封禁类型 1 消息 2 成员
 	Remark      string `json:"reMark" form:"reMark" gorm:"comment:封禁时长;column:remark;"`                 //封禁备注
+	Msg         string `json:"msg" form:"msg" gorm:"type:text;comment:禁用信息;column:msg;"`                //封禁备注
 }
 
 // TableName 封禁记录 BanRecord自定义表名 ban_record
