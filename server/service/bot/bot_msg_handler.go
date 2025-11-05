@@ -39,6 +39,7 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return nil
 	}
 
+	go svc.SyncChatGroup(botModel, tgMsg)
 	// 普通消息
 	if tgMsg.Message == nil {
 		return nil

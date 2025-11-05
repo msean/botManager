@@ -196,6 +196,7 @@ func (l LimitCond) Cond(db *gorm.DB) *gorm.DB {
 // ----------------------------- CRUD Helpers -----------------------------
 
 func Find(session *gorm.DB, dst any, conds ...Cond) error {
+	conds = append(conds, NewBaseCond("deleted_at is NULL"))
 	for _, cond := range conds {
 		session = cond.Cond(session)
 	}
@@ -203,6 +204,7 @@ func Find(session *gorm.DB, dst any, conds ...Cond) error {
 }
 
 func Get(session *gorm.DB, dst any, conds ...Cond) (has bool, err error) {
+	conds = append(conds, NewBaseCond("deleted_at is NULL"))
 	for _, cond := range conds {
 		session = cond.Cond(session)
 	}
@@ -219,6 +221,7 @@ func Create(session *gorm.DB, objs ...any) (count int64, err error) {
 }
 
 func TotalByConds(session *gorm.DB, model any, conds ...Cond) (total int64, err error) {
+	conds = append(conds, NewBaseCond("deleted_at is NULL"))
 	for _, cond := range conds {
 		session = cond.Cond(session)
 	}

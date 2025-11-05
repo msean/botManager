@@ -6,7 +6,7 @@ import (
 
 type (
 	BotChatGroupBanMemCache struct {
-		BanMemContent string `json:"banMemContent"`
+		BanMemContent string `json:"banMemContent" form:"banMemContent" gorm:"column:banMemContent"` //banMemContent
 	}
 	BotChatGroupCache struct {
 		ChatGroupID   int64  `json:"chatGroupID" form:"chatGroupID"`     //群组ID
