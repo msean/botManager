@@ -52,7 +52,7 @@
         >
         <el-table-column type="selection" width="55" />
         
-            <el-table-column align="left" label="机器人名称" prop="botID" width="120" />
+            <el-table-column align="left" label="机器人名称" prop="botName" width="120" />
 
             <el-table-column align="left" label="用户ID" prop="userID" width="120" />
 

@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/system"
+	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 )
@@ -19,39 +21,44 @@ import (
 type BotMsgHandlerSvc struct{}
 
 func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err error) {
-
-	global.GVA_LOG.Debug("receive telegram webhook", zap.String("body", string(body)))
-
-	// 解析 Telegram 消息
-	var tgMsg bot.TelegramMessage
+	var tgMsg tgbotapi.Update
 	if err = json.Unmarshal(body, &tgMsg); err != nil {
-		global.GVA_LOG.Error("invalid telegram message", zap.Error(err))
+		global.GVA_LOG.Error("invalid telegram tgMsg", zap.Error(err))
 		return
 	}
-	if tgMsg.Message.Text == "" {
-		return // 不是文本消息（可能是 sticker、照片 等）
-	}
 
-	// 查找机器人信息
 	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, botID)
 	if err != nil || !has {
-		global.GVA_LOG.Error("bot not found", zap.Int("botID", botModel.BotID), zap.Error(err))
+		global.GVA_LOG.Error("bot not found", zap.Int("botID", botID), zap.Error(err))
 		return
+	}
+
+	// 机器人被拉进群（my_chat_member）
+	if tgMsg.MyChatMember != nil {
+		svc.SyncChatGroup(botModel, tgMsg)
+		return nil
+	}
+
+	// 普通消息
+	if tgMsg.Message == nil {
+		return nil
 	}
 
 	var find bool
-	if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
-		return
+	if tgMsg.Message.Text != "" {
+		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
+			return
+		}
 	}
 
 	if find, err = svc.CheckGroupMem(botModel, tgMsg); err != nil || find {
 		return
 	}
 
-	return err
+	return nil
 }
 
-func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg bot.TelegramMessage, durationMinutes int, _type int) (err error) {
+func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, durationMinutes int, _type int) (err error) {
 	// 发送api 封禁用户
 	botHandler := bot_handler.NewBot(botModel.Token)
 	var banErr error
@@ -86,10 +93,15 @@ func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg bot.TelegramMessage
 	return
 }
 
-func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg bot.TelegramMessage) (find bool, err error) {
+func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, err error) {
 	var banContents []bot.BotBanContent
-	banContents, err = dao.BotDao.ListBotBannerContentByID(global.GVA_DB, botModel.BotID)
-	if err != nil {
+	// banContents, err = dao.BotDao.ListBotBannerContentByID(global.GVA_DB, botModel.BotID)
+	// if err != nil {
+	// 	global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
+	// 	return
+	// }
+	var botBanContentCache []cache.BotBanContentCache
+	if _, err = cache.CacheGet(cache.BotBanContentCache{}.TableName(), cache.BotBanContentPk(botModel.BotID), &botBanContentCache, cache.LoadFromDBList); err != nil {
 		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
 		return
 	}
@@ -112,7 +124,7 @@ func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg bot.Telegra
 			}
 			durationMinutes, _ := strconv.Atoi(param.Value)
 
-			go svc.BanUser(botModel, tgMsg, durationMinutes, global.BanTypeWord)
+			svc.BanUser(botModel, tgMsg, durationMinutes, global.BanTypeWord)
 
 			find = true
 			return
@@ -121,22 +133,19 @@ func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg bot.Telegra
 	return
 }
 
-func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg bot.TelegramMessage) (found bool, err error) {
+func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err error) {
 	chatID := tgMsg.Message.Chat.ID
 	user := tgMsg.Message.From
 
-	banList, err := dao.BotGroupMemDao.ListByBotIDAndChatGroupID(global.GVA_DB, botModel.BotID, int(chatID))
-	if err != nil {
-		global.GVA_LOG.Error("fetch ban members failed", zap.Int("botID", botModel.BotID), zap.Int64("chatID", chatID), zap.Error(err))
-		return
-	}
-	if len(banList) == 0 {
+	var botChatGroupBanMemList []cache.BotChatGroupBanMemCache
+	if _, err = cache.CacheGet(cache.BotChatGroupBanMemCache{}.TableName(), cache.BotChatGroupMemPk(botModel.BotID, int(chatID)), &botChatGroupBanMemList, cache.LoadFromDBList); err != nil {
+		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
 		return
 	}
 
 	fullName := fmt.Sprintf("%s%s", user.FirstName, user.LastName)
 
-	for _, ban := range banList {
+	for _, ban := range botChatGroupBanMemList {
 		banStr := strings.ToLower(strings.TrimSpace(ban.BanMemContent))
 		if banStr == "" {
 			continue
@@ -157,12 +166,79 @@ func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg bot.TelegramM
 			}
 			durationMinutes, _ := strconv.Atoi(param.Value)
 
-			go svc.BanUser(botModel, tgMsg, durationMinutes, global.BanTypeMem)
+			svc.BanUser(botModel, tgMsg, durationMinutes, global.BanTypeMem)
 
 			found = true
 			return
 		}
 	}
-
 	return
+}
+
+func (svc *BotMsgHandlerSvc) SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
+	chatID := tgMsg.Message.Chat.ID
+	chatName := tgMsg.Message.Chat.Title
+
+	if chatID == 0 || chatName == "" {
+		return
+	}
+
+	// 构造缓存主键
+	pkPairs := cache.BotChatGroupPk(botModel.BotID, int(chatID))
+
+	// 尝试从缓存或数据库读取
+	var chatGroupCache cache.BotChatGroupCache
+	has, err := cache.CacheGet(chatGroupCache.TableName(), pkPairs, &chatGroupCache, cache.LoadFromDBGet)
+	if err != nil {
+		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", chatID), zap.Error(err))
+		return
+	}
+
+	// 如果缓存或数据库不存在，创建新记录
+	if !has {
+		newGroup := bot.BotChatGroup{
+			BotID:         botModel.BotID,
+			ChatGroupID:   chatID,
+			ChatGroupName: chatName,
+		}
+		if createErr := global.GVA_DB.Create(&newGroup).Error; createErr != nil {
+			global.GVA_LOG.Error("failed to create new chat group",
+				zap.Int64("chatID", chatID),
+				zap.String("chatName", chatName),
+				zap.Error(createErr),
+			)
+			return
+		}
+		global.GVA_LOG.Info("new chat group added",
+			zap.Int64("chatID", chatID),
+			zap.String("chatName", chatName),
+		)
+		return
+	}
+
+	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
+	if chatGroupCache.ChatGroupName != chatName {
+		if err := global.GVA_DB.Model(&bot.BotChatGroup{}).
+			Where("bot_id = ? AND chat_group_id = ?", botModel.BotID, chatID).
+			Update("chat_group_name", chatName).Error; err != nil {
+			global.GVA_LOG.Error("failed to update chat group name",
+				zap.Int64("chatID", chatID),
+				zap.String("newName", chatName),
+				zap.Error(err),
+			)
+		} else {
+			global.GVA_LOG.Info("chat group name updated",
+				zap.Int64("chatID", chatID),
+				zap.String("newName", chatName),
+			)
+		}
+
+		if err = cache.CacheDelete(chatGroupCache.TableName(), pkPairs); err != nil {
+			global.GVA_LOG.Error("failed to update chat group name",
+				zap.Int64("chatID", chatID),
+				zap.String("newName", chatName),
+				zap.Error(err),
+			)
+		}
+	}
 }

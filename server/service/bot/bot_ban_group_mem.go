@@ -2,11 +2,15 @@ package bot
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils"
+	"go.uber.org/zap"
 )
 
 type BotBanGroupMemService struct{}
@@ -14,28 +18,72 @@ type BotBanGroupMemService struct{}
 // CreateBotBanGroupMem 创建封禁成员设置记录
 // Author [yourname](https://github.com/yourname)
 func (botBanGroupMemService *BotBanGroupMemService) CreateBotBanGroupMem(ctx context.Context, botBanGroupMem *bot.BotBanGroupMem) (err error) {
-	err = global.GVA_DB.Create(botBanGroupMem).Error
+	if err = global.GVA_DB.Create(botBanGroupMem).Error; err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("botBanGroupMem", botBanGroupMem), zap.Error(err))
+		return
+	}
+	if deleteErr := cache.ReleaseBotChatGroupMem(int(botBanGroupMem.BotID), int(botBanGroupMem.ChatGroupID)); deleteErr != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", botBanGroupMem.BotID), zap.Int64("ChatGroupID", botBanGroupMem.ChatGroupID))
+	}
 	return err
 }
 
 // DeleteBotBanGroupMem 删除封禁成员设置记录
 // Author [yourname](https://github.com/yourname)
 func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMem(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&bot.BotBanGroupMem{}, "id = ?", ID).Error
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	var object bot.BotBanGroupMem
+	var has bool
+	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(ID)); !has || err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id), zap.Error(err))
+		return
+	}
+	if err = global.GVA_DB.Delete(&bot.BotBanGroupMem{}, "id = ?", ID).Error; err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id))
+		return
+	}
+
+	if deleteErr := cache.ReleaseBotChatGroupMem(int(object.BotID), int(object.ChatGroupID)); deleteErr != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", object.BotID), zap.Int64("ChatGroupID", object.ChatGroupID))
+	}
 	return err
 }
 
 // DeleteBotBanGroupMemByIds 批量删除封禁成员设置记录
 // Author [yourname](https://github.com/yourname)
 func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMemByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]bot.BotBanGroupMem{}, "id in ?", IDs).Error
+	ids := utils.StringsToIntsIgnoreError(IDs)
+	var objects []bot.BotBanGroupMem
+	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("ids", IDs), zap.Error(err))
+		return
+	}
+
+	if err = global.GVA_DB.Delete(&[]bot.BotBanGroupMem{}, "id in ?", ids).Error; err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("ids", IDs))
+		return
+	}
+	for _, object := range objects {
+		if deleteErr := cache.ReleaseBotChatGroupMem(int(object.BotID), int(object.ChatGroupID)); deleteErr != nil {
+			global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", object.BotID))
+		}
+	}
 	return err
 }
 
 // UpdateBotBanGroupMem 更新封禁成员设置记录
 // Author [yourname](https://github.com/yourname)
 func (botBanGroupMemService *BotBanGroupMemService) UpdateBotBanGroupMem(ctx context.Context, botBanGroupMem bot.BotBanGroupMem) (err error) {
-	err = global.GVA_DB.Model(&bot.BotBanGroupMem{}).Where("id = ?", botBanGroupMem.ID).Updates(&botBanGroupMem).Error
+	if err = global.GVA_DB.Model(&bot.BotBanGroupMem{}).Where("id = ?", botBanGroupMem.ID).Updates(&botBanGroupMem).Error; err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", botBanGroupMem.ID))
+		return
+	}
+	if deleteErr := cache.ReleaseBotChatGroupMem(int(botBanGroupMem.BotID), int(botBanGroupMem.ChatGroupID)); deleteErr != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("botBanGroupMem", botBanGroupMem))
+	}
 	return err
 }
 

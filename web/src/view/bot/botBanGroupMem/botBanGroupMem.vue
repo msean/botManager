@@ -2,7 +2,13 @@
   <div>
     <!-- 搜索框 -->
     <div class="gva-search-box">
-      <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
+      <el-form
+        ref="elSearchFormRef"
+        :inline="true"
+        :model="searchInfo"
+        class="demo-form-inline"
+        @keyup.enter="onSubmit"
+      >
         <el-form-item label="创建日期" prop="createdAtRange">
           <template #label>
             <span>
@@ -33,7 +39,14 @@
     <div class="gva-table-box">
       <div class="gva-btn-list">
         <el-button type="primary" icon="plus" @click="openDialog()">新增</el-button>
-        <el-button icon="delete" style="margin-left: 10px;" :disabled="!multipleSelection.length" @click="onDelete">删除</el-button>
+        <el-button
+          icon="delete"
+          style="margin-left: 10px;"
+          :disabled="!multipleSelection.length"
+          @click="onDelete"
+        >
+          删除
+        </el-button>
       </div>
 
       <el-table
@@ -45,19 +58,42 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
+        <el-table-column
+          sortable
+          align="left"
+          label="日期"
+          prop="createdAt"
+          width="180"
+        >
           <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
         <el-table-column align="left" label="机器人名称" prop="botName" width="120" />
         <el-table-column align="left" label="群聊名称" prop="chatGroupName" width="120" />
         <el-table-column align="left" label="封禁成员" prop="banMemContent" width="120" />
-        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
+        <el-table-column
+          align="left"
+          label="操作"
+          fixed="right"
+          :min-width="appStore.operateMinWith"
+        >
           <template #default="scope">
-            <el-button type="primary" link class="table-button" @click="getDetails(scope.row)">
-              <el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看
+            <el-button
+              type="primary"
+              link
+              icon="edit"
+              class="table-button"
+              @click="updateBotBanGroupMemFunc(scope.row)"
+            >
+              编辑
             </el-button>
-            <el-button type="primary" link icon="edit" class="table-button" @click="updateBotBanGroupMemFunc(scope.row)">编辑</el-button>
-            <el-button type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
+            <el-button
+              type="primary"
+              link
+              icon="delete"
+              @click="deleteRow(scope.row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -77,7 +113,13 @@
     </div>
 
     <!-- 新增/编辑抽屉 -->
-    <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="dialogFormVisible" :show-close="false" :before-close="closeDialog">
+    <el-drawer
+      destroy-on-close
+      :size="appStore.drawerSize"
+      v-model="dialogFormVisible"
+      :show-close="false"
+      :before-close="closeDialog"
+    >
       <template #header>
         <div class="flex justify-between items-center">
           <span class="text-lg">{{ type === 'create' ? '新增' : '编辑' }}</span>
@@ -88,7 +130,13 @@
         </div>
       </template>
 
-      <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
+      <el-form
+        :model="formData"
+        label-position="top"
+        ref="elFormRef"
+        :rules="rule"
+        label-width="80px"
+      >
         <!-- 机器人选择 -->
         <el-form-item label="选择机器人" prop="botID">
           <el-select
@@ -96,6 +144,7 @@
             placeholder="请选择机器人"
             @change="handleBotChange"
             style="width: 100%"
+            :disabled="isEdit"
           >
             <el-option
               v-for="bot in botOptions"
@@ -111,7 +160,7 @@
           <el-select
             v-model="formData.chatGroupID"
             placeholder="请选择群聊"
-            :disabled="!formData.botID"
+            :disabled="isEdit || !formData.botID"
             style="width: 100%"
           >
             <el-option
@@ -123,19 +172,15 @@
           </el-select>
         </el-form-item>
 
+        <!-- 封禁成员 -->
         <el-form-item label="封禁成员内容" prop="banMemContent">
-          <el-input v-model="formData.banMemContent" :clearable="true" placeholder="请输入banMemContent" />
+          <el-input
+            v-model="formData.banMemContent"
+            :clearable="true"
+            placeholder="请输入banMemContent"
+          />
         </el-form-item>
       </el-form>
-    </el-drawer>
-
-    <!-- 查看详情 -->
-    <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="botID">{{ detailForm.botID }}</el-descriptions-item>
-        <el-descriptions-item label="chatGroupID">{{ detailForm.chatGroupID }}</el-descriptions-item>
-        <el-descriptions-item label="banMemContent">{{ detailForm.banMemContent }}</el-descriptions-item>
-      </el-descriptions>
     </el-drawer>
   </div>
 </template>
@@ -152,7 +197,7 @@ import {
 import { getBotChoiceWithChatGroup } from '@/api/bot/bot'
 import { formatDate } from '@/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useAppStore } from "@/pinia"
 
 defineOptions({ name: 'BotBanGroupMem' })
@@ -161,7 +206,6 @@ const btnLoading = ref(false)
 const appStore = useAppStore()
 
 // ========= 表格部分 =========
-const showAllQuery = ref(false)
 const formData = ref({ botID: undefined, chatGroupID: undefined, banMemContent: '' })
 const rule = reactive({})
 const elFormRef = ref()
@@ -197,8 +241,19 @@ getTableData()
 // ========== 新增/编辑 ==========
 const dialogFormVisible = ref(false)
 const type = ref('')
-const openDialog = () => { type.value = 'create'; dialogFormVisible.value = true }
-const closeDialog = () => { dialogFormVisible.value = false; formData.value = { botID: undefined, chatGroupID: undefined, banMemContent: '' } }
+const isEdit = computed(() => type.value === 'update') // ✅ 是否编辑状态
+
+const openDialog = () => {
+  type.value = 'create'
+  formData.value = { botID: undefined, chatGroupID: undefined, banMemContent: '' }
+  groupOptions.value = []
+  dialogFormVisible.value = true
+}
+
+const closeDialog = () => {
+  dialogFormVisible.value = false
+  formData.value = { botID: undefined, chatGroupID: undefined, banMemContent: '' }
+}
 
 const enterDialog = async () => {
   btnLoading.value = true
@@ -209,7 +264,7 @@ const enterDialog = async () => {
     else res = await updateBotBanGroupMem(formData.value)
     btnLoading.value = false
     if (res.code === 0) {
-      ElMessage.success('创建/修改成功')
+      ElMessage.success('保存成功')
       closeDialog()
       getTableData()
     }
@@ -235,17 +290,15 @@ const onDelete = async() => {
 // ========== 编辑 ==========
 const updateBotBanGroupMemFunc = async (row) => {
   const res = await findBotBanGroupMem({ ID: row.ID })
-  if (res.code === 0) { formData.value = res.data; type.value = 'update'; dialogFormVisible.value = true }
+  if (res.code === 0) {
+    formData.value = res.data
+    type.value = 'update'
+    // 设置群聊选项
+    const selected = botOptions.value.find(b => b.botID === res.data.botID)
+    groupOptions.value = selected ? selected.botChatGroups : []
+    dialogFormVisible.value = true
+  }
 }
-
-// ========== 详情 ==========
-const detailForm = ref({})
-const detailShow = ref(false)
-const getDetails = async (row) => {
-  const res = await findBotBanGroupMem({ ID: row.ID })
-  if (res.code === 0) { detailForm.value = res.data; detailShow.value = true }
-}
-const closeDetailShow = () => { detailShow.value = false; detailForm.value = {} }
 
 // ========== 联动下拉 ==========
 const botOptions = ref([])
@@ -259,7 +312,7 @@ const loadBots = async () => {
 const handleBotChange = (botID) => {
   const selected = botOptions.value.find(b => b.botID === botID)
   groupOptions.value = selected ? selected.botChatGroups : []
-  formData.value.chatGroupID = undefined // 切换机器人时清空群聊选择
+  formData.value.chatGroupID = undefined
 }
 
 onMounted(() => loadBots())

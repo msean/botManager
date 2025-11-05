@@ -9,7 +9,7 @@ import (
 type BotChatGroup struct {
 	global.GVA_MODEL
 	BotName       string `json:"botName" form:"botName" gorm:"-"`                                                //机器人ID
-	BotID         int64  `json:"botID" form:"botID" gorm:"column:bot_id;"`                                       //机器人ID
+	BotID         int    `json:"botID" form:"botID" gorm:"column:bot_id;"`                                       //机器人ID
 	ChatGroupID   int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群组ID;column:chat_group_id;"`       //群组ID
 	ChatGroupName string `json:"chatGroupName" form:"chatGroupName" gorm:"comment:群组ID;column:chat_group_name;"` //群组ID
 }

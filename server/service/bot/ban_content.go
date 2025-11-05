@@ -2,40 +2,89 @@ package bot
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils"
+	"go.uber.org/zap"
 )
 
 type BotBanContentService struct{}
 
 // CreateBotBanContent 创建机器人消息管理记录
 // Author [yourname](https://github.com/yourname)
-func (svc *BotBanContentService) CreateBotBanContent(ctx context.Context, bot_msg_mgr *bot.BotBanContent) (err error) {
-	err = global.GVA_DB.Create(bot_msg_mgr).Error
+func (svc *BotBanContentService) CreateBotBanContent(ctx context.Context, botBanContent *bot.BotBanContent) (err error) {
+	if err = global.GVA_DB.Create(botBanContent).Error; err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.ID))
+		return
+	}
+	if deleteErr := cache.ReleaseBotBanContent(int(botBanContent.BotID)); deleteErr != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.ID))
+	}
 	return err
 }
 
 // DeleteBotBanContent 删除机器人消息管理记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotBanContentService) DeleteBotBanContent(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&bot.BotBanContent{}, "id = ?", ID).Error
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	var botContent bot.BotBanContent
+	var has bool
+	if has, err = utils.Get(global.GVA_DB, &botContent, utils.IDCond(ID)); !has || err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", id), zap.Error(err))
+		return
+	}
+	if err = global.GVA_DB.Delete(&bot.BotBanContent{}, "id = ?", ID).Error; err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", id))
+		return
+	}
+
+	if deleteErr := cache.ReleaseBotBanContent(int(botContent.BotID)); deleteErr != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", botContent.BotID))
+	}
 	return err
 }
 
 // DeleteBotBanContentByIds 批量删除机器人消息管理记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotBanContentService) DeleteBotBanContentByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]bot.BotBanContent{}, "id in ?", IDs).Error
+	ids := utils.StringsToIntsIgnoreError(IDs)
+	var objects []bot.BotBanContent
+	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("ids", IDs), zap.Error(err))
+		return
+	}
+
+	if err = global.GVA_DB.Delete(&[]bot.BotBanContent{}, "id in ?", ids).Error; err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("ids", IDs))
+		return
+	}
+
+	for _, object := range objects {
+		if deleteErr := cache.ReleaseBotBanContent(int(object.BotID)); deleteErr != nil {
+			global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
+		}
+	}
 	return err
 }
 
 // UpdateBotBanContent 更新机器人消息管理记录
 // Author [yourname](https://github.com/yourname)
-func (svc *BotBanContentService) UpdateBotBanContent(ctx context.Context, bot_msg_mgr bot.BotBanContent) (err error) {
-	err = global.GVA_DB.Model(&bot.BotBanContent{}).Where("id = ?", bot_msg_mgr.ID).Updates(&bot_msg_mgr).Error
+func (svc *BotBanContentService) UpdateBotBanContent(ctx context.Context, botBanContent bot.BotBanContent) (err error) {
+	if err = global.GVA_DB.Model(&bot.BotBanContent{}).Where("id = ?", botBanContent.ID).Updates(&botBanContent).Error; err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.BotID))
+		return
+	}
+	if deleteErr := cache.ReleaseBotBanContent(int(botBanContent.BotID)); deleteErr != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", botBanContent.BotID))
+	}
 	return err
 }
 
