@@ -54,11 +54,11 @@
         
             <el-table-column align="left" label="机器人名称" prop="botName" width="150" />
 
-            <el-table-column align="left" label="用户名称" prop="userName" width="150" />
+            <el-table-column align="left" label="用户名称" prop="userName" width="180" />
 
-            <el-table-column align="left" label="昵称" prop="fullName" width="180" />
+            <el-table-column align="left" label="昵称" prop="fullName" width="200" />
 
-            <el-table-column align="left" label="群名" prop="chatName" width="150" />
+            <el-table-column align="left" label="群名" prop="chatName" width="360" />
 
             <el-table-column align="left" label="封禁时长" prop="banDuration" width="90">
               <template #default="scope">

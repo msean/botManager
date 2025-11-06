@@ -100,7 +100,7 @@ func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _t
 				zap.Int64("chatID", tgMsg.Message.Chat.ID),
 				zap.Int64("user_id", tgMsg.Message.Chat.ID),
 				zap.Int64("util", until),
-				zap.Error(err),
+				zap.Error(deleteErr),
 			)
 		}
 	}

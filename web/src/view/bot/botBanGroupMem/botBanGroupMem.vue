@@ -61,7 +61,7 @@
         
         
         <el-table-column align="left" label="机器人名称" prop="botName" width="180" />
-        <el-table-column align="left" label="群聊名称" prop="chatGroupName" width="180" />
+        <el-table-column align="left" label="群聊名称" prop="chatGroupName" width="360" />
         <el-table-column align="left" label="封禁成员" prop="banMemContent" width="180" />
         <el-table-column
           sortable

@@ -55,8 +55,8 @@
           <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
 
-        <el-table-column align="left" label="机器人名称" prop="botName" width="180" />
-        <el-table-column align="left" label="群组名称" prop="chatGroupName" width="180" />
+        <el-table-column align="left" label="机器人名称" prop="botName" width="220" />
+        <el-table-column align="left" label="群组名称" prop="chatGroupName" width="400" />
 
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
           <template #default="scope">
