@@ -51,6 +51,14 @@ func RegisterWebhook(botToken, webhookURL string) error {
 		return err
 	}
 
+	cfg := tgbotapi.DeleteWebhookConfig{
+		DropPendingUpdates: true, // true 表示丢弃所有未处理的消息
+	}
+
+	if _, err = bot.Request(cfg); err != nil {
+		return err
+	}
+
 	wh, err := tgbotapi.NewWebhook(webhookURL)
 	if err != nil {
 		return err
