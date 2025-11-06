@@ -63,6 +63,20 @@ func RegisterWebhook(botToken, webhookURL string) error {
 	return nil
 }
 
+func UnRegisterWebhook(botToken string, dropPending bool) error {
+	bot, err := tgbotapi.NewBotAPI(botToken)
+	if err != nil {
+		return err
+	}
+
+	cfg := tgbotapi.DeleteWebhookConfig{
+		DropPendingUpdates: dropPending, // true 表示丢弃所有未处理的消息
+	}
+
+	_, err = bot.Request(cfg)
+	return err
+}
+
 func (b *Bot) DeleteMsg(chatID int64, msgID int) (err error) {
 	botAPI, err := tgbotapi.NewBotAPI(b.token)
 	if err != nil {

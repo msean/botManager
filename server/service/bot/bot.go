@@ -11,6 +11,7 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/utils"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 )
@@ -60,14 +61,51 @@ func (svc *BotService) CreateBot(ctx context.Context, botModel *bot.Bot) (err er
 // DeleteBot 删除机器人记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotService) DeleteBot(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&bot.Bot{}, "bot_id = ?", ID).Error
+	var has bool
+	var botModel bot.Bot
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_DB, id); !has || err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Bool("has", has), zap.Any("id", id), zap.Error(err))
+		return
+	}
+	if err = global.GVA_DB.Delete(&bot.Bot{}, "bot_id = ?", ID).Error; err != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id), zap.Error(err))
+		return
+	}
+
+	if unRegisterBotErr := bot_handler.UnRegisterWebhook(botModel.Token, true); unRegisterBotErr != nil {
+		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id), zap.Error(unRegisterBotErr))
+	} else {
+		global.GVA_LOG.Info("unRegister bot success", zap.Any("id", botModel.BotID))
+	}
 	return err
 }
 
 // DeleteBotByIds 批量删除机器人记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotService) DeleteBotByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]bot.Bot{}, "bot_id in ?", IDs).Error
+	ids := utils.StringsToIntsIgnoreError(IDs)
+	var objects []bot.Bot
+	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+		global.GVA_LOG.Error("BotService", zap.Any("ids", IDs), zap.Error(err))
+		return
+	}
+
+	if err = global.GVA_DB.Delete(&[]bot.Bot{}, "bot_id in ?", IDs).Error; err != nil {
+		global.GVA_LOG.Error("BotService", zap.Any("ids", IDs), zap.Error(err))
+		return
+	}
+
+	for _, botModel := range objects {
+		if unRegisterBotErr := bot_handler.UnRegisterWebhook(botModel.Token, true); unRegisterBotErr != nil {
+			global.GVA_LOG.Error("BotService", zap.Any("id", botModel.BotID), zap.Error(unRegisterBotErr))
+		} else {
+			global.GVA_LOG.Info("unRegister bot success", zap.Any("id", botModel.BotID))
+		}
+	}
 	return err
 }
 
