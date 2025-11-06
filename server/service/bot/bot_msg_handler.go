@@ -39,13 +39,14 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return nil
 	}
 
+	svc.SyncChatGroup(botModel, tgMsg)
+
 	// 只要消息是转发的都需要禁止
 	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
 		svc.BanUser(botModel, tgMsg, global.BanTypeForword)
 		return nil
 	}
 
-	go svc.SyncChatGroup(botModel, tgMsg)
 	// 普通消息
 	if tgMsg.Message == nil {
 		return nil
