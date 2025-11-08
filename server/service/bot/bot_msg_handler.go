@@ -148,6 +148,7 @@ func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Up
 	}
 
 	messageText := strings.ToLower(tgMsg.Message.Text)
+	global.GVA_LOG.Info("msg", zap.String("botID", botModel.Name), zap.String("msg", tgMsg.Message.Text))
 
 	for _, rule := range botBanContentCache {
 		if strings.Contains(messageText, strings.ToLower(rule.BanContent)) {
