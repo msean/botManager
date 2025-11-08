@@ -18,9 +18,9 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 	var err error
 
 	botIDStr := c.Param("botUUID")
-	global.GVA_LOG.Info("receive telegram webhook", zap.Any("uuid", botIDStr))
 	botID, err = strconv.Atoi(botIDStr)
 	if err != nil {
+		global.GVA_LOG.Error("receive telegram webhook", zap.Any("botIDStr", botIDStr))
 		response.BotBadRequest(c, "invalid botID")
 		return
 	}
@@ -30,6 +30,14 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 		return
 	}
 	c.Status(200)
+	c.Writer.WriteHeaderNow()
 
-	botMsgHandlerSvc.Handle(c, botID, body)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				global.GVA_LOG.Error("telegram webhook panic", zap.Any("recover", r))
+			}
+		}()
+		botMsgHandlerSvc.Handle(c, botID, body)
+	}()
 }

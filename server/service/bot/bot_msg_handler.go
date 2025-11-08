@@ -33,7 +33,6 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return
 	}
 
-	// 机器人被拉进群（my_chat_member）
 	if tgMsg.MyChatMember != nil {
 		svc.SyncChatGroup(botModel, tgMsg)
 		return nil
@@ -94,8 +93,7 @@ func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _t
 		)
 	}
 
-	if chatID != 0 && messageID != 0 {
-		// 尝试删除消息
+	if chatID != 0 && messageID != 0 && banErr != nil {
 		if deleteErr := botHandler.DeleteMsg(chatID, messageID); deleteErr != nil {
 			global.GVA_LOG.Error("delete msg error",
 				zap.Int64("chatID", tgMsg.Message.Chat.ID),
@@ -200,6 +198,9 @@ func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg tgbotapi.Upda
 }
 
 func (svc *BotMsgHandlerSvc) SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
+	if tgMsg.Message == nil {
+		return
+	}
 	chatID := tgMsg.Message.Chat.ID
 	chatName := tgMsg.Message.Chat.Title
 

@@ -1,8 +1,10 @@
 package initialize
 
 import (
+	"log"
 	"net/http"
 	"os"
+	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/docs"
@@ -32,10 +34,29 @@ func (fs justFilesFilesystem) Open(name string) (http.File, error) {
 }
 
 // 初始化总路由
+func CustomRecovery(logger *log.Logger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		defer func() {
+			if r := recover(); r != nil {
+				stack := debug.Stack()
+				logger.Printf("[PANIC] %v\n%s\n", r, stack)
+				c.AbortWithStatus(http.StatusInternalServerError)
+			}
+		}()
+		c.Next()
+	}
+}
 
 func Routers() *gin.Engine {
 	Router := gin.New()
-	Router.Use(gin.Recovery())
+	f, err := os.OpenFile("runtime_panic.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	logger := log.New(f, "", log.LstdFlags|log.Lshortfile)
+	Router.Use(CustomRecovery(logger))
 	if gin.Mode() == gin.DebugMode {
 		Router.Use(gin.Logger())
 	}
