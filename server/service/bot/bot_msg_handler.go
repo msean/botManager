@@ -52,7 +52,6 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 	}
 
 	var find bool
-	global.GVA_LOG.Info("invalid telegram tgMsg", zap.Any("msg", tgMsg.Message.Text))
 	if tgMsg.Message.Text != "" {
 		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
 			return
