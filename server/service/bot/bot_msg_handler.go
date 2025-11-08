@@ -137,21 +137,24 @@ func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Up
 	// 	global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
 	// 	return
 	// }
+	if tgMsg.Message == nil {
+		return
+	}
+
 	var botBanContentCache []cache.BotBanContentCache
 	if _, err = cache.CacheGet(cache.BotBanContentCache{}.TableName(), cache.BotBanContentPk(botModel.BotID), &botBanContentCache, cache.LoadFromDBList); err != nil {
 		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
 		return
 	}
 
-	global.GVA_LOG.Info("invalid telegram tgMsg", zap.Any("db", botBanContentCache))
 	messageText := strings.ToLower(tgMsg.Message.Text)
 
 	for _, rule := range botBanContentCache {
-		global.GVA_LOG.Info("invalid telegram tgMsg", zap.Any("messageText", messageText), zap.Any("db", strings.ToLower(rule.BanContent)))
 		if strings.Contains(messageText, strings.ToLower(rule.BanContent)) {
 			global.GVA_LOG.Info("found banned word",
 				zap.String("word", rule.BanContent),
 				zap.String("user", tgMsg.Message.From.UserName),
+				zap.String("msg", messageText),
 			)
 
 			svc.BanUser(botModel, tgMsg, global.BanTypeWord)
@@ -164,6 +167,10 @@ func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Up
 }
 
 func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err error) {
+	if tgMsg.Message == nil {
+		return
+	}
+
 	chatID := tgMsg.Message.Chat.ID
 	user := tgMsg.Message.From
 
