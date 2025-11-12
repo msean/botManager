@@ -82,7 +82,7 @@ func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _t
 	botHandler := bot_handler.NewBot(botModel.Token)
 	var banErr error
 	until := time.Now().Add(time.Duration(durationMinutes) * time.Minute).Unix()
-	if banErr = botHandler.BanUser(tgMsg.Message.Chat.ID, tgMsg.Message.From.ID, until); err != nil {
+	if banErr = botHandler.BanUser(tgMsg.Message.Chat.ID, tgMsg.Message.From.ID, until); banErr != nil {
 		global.GVA_LOG.Error("ban user failed", zap.Error(err))
 	} else {
 		global.GVA_LOG.Info("ban user success",
@@ -92,7 +92,7 @@ func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _t
 		)
 	}
 
-	if chatID != 0 && messageID != 0 && banErr != nil {
+	if chatID != 0 && messageID != 0 && banErr == nil {
 		if deleteErr := botHandler.DeleteMsg(chatID, messageID); deleteErr != nil {
 			global.GVA_LOG.Error("delete msg error",
 				zap.Int64("chatID", tgMsg.Message.Chat.ID),
