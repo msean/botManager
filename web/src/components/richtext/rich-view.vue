@@ -1,58 +1,40 @@
 <template>
-  <div class="border border-solid border-gray-100 h-full">
-    <Editor
-      v-model="valueHtml"
-      class="overflow-y-hidden mt-0.5"
-      :default-config="editorConfig"
-      mode="default"
-      @onCreated="handleCreated"
-      @onChange="change"
-    />
-  </div>
+  <div class="rich-view border border-gray-200 p-2 rounded" v-html="sanitizedContent"></div>
 </template>
+
 <script setup>
-  import '@wangeditor/editor/dist/css/style.css' // 引入 css
+import { computed } from 'vue'
+import DOMPurify from 'dompurify'
 
-  import { onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-  import { Editor } from '@wangeditor/editor-for-vue'
-
-  const emits = defineEmits(['change', 'update:modelValue'])
-  const editorConfig = ref({
-    readOnly: true
-  })
-  const change = (editor) => {
-    emits('change', editor)
-    emits('update:modelValue', valueHtml.value)
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: ''
   }
+})
 
-  const props = defineProps({
-    modelValue: {
-      type: String,
-      default: ''
-    }
-  })
-
-  const editorRef = shallowRef()
-  const valueHtml = ref('')
-
-  // 组件销毁时，也及时销毁编辑器
-  onBeforeUnmount(() => {
-    const editor = editorRef.value
-    if (editor == null) return
-    editor.destroy()
-  })
-
-  const handleCreated = (editor) => {
-    editorRef.value = editor
-    valueHtml.value = props.modelValue
-  }
-
-  watch(
-    () => props.modelValue,
-    () => {
-      valueHtml.value = props.modelValue
-    }
-  )
+// 使用 DOMPurify 对 HTML 做安全处理，防止 XSS
+const sanitizedContent = computed(() => {
+  return DOMPurify.sanitize(props.modelValue || '')
+})
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.rich-view {
+  min-height: 200px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+.rich-view img {
+  max-width: 100%;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.rich-view video {
+  max-width: 100%;
+  display: block;
+  margin-bottom: 5px;
+}
+</style>

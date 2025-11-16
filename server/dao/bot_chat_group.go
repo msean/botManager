@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"errors"
+
 	"github.com/msean/botmanager/server/model/bot"
 	"gorm.io/gorm"
 )
@@ -20,5 +22,17 @@ func (dao *botChatGroupDao) MappByChatGroupIDList(db *gorm.DB, chatGroupIDList [
 	for _, model := range models {
 		mapper[int(model.ChatGroupID)] = model
 	}
+	return
+}
+
+func (dao *botChatGroupDao) FromBotID(db *gorm.DB, botChatGroupID int) (botChatGroupModel bot.BotChatGroup, has bool, err error) {
+	err = db.First(&botChatGroupModel, "chat_group_id = ?", botChatGroupID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = nil
+		}
+		return
+	}
+	has = true
 	return
 }

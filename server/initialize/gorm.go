@@ -90,6 +90,7 @@ func bizModel() error {
 		bot.BanRecord{},
 		bot.BotChatGroup{},
 		bot.BotBanGroupMem{},
+		bot.BotTask{},
 	)
 	if err != nil {
 		return err

@@ -1,0 +1,90 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+<title>- 在线银行付款</title>
+</head>
+<style>
+*{ font-family:"微软雅黑";font-size:12px}
+.STYLE2{font-weight: bold}
+</style>
+<body>
+<div style="text-align:center; line-height:22px; margin-top:50px"><strong>请选择网上银行</strong></div>
+<form name="form1" action="Req.php" method="post">
+  <table width="396" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF" style="border:#0099FF solid 5px">
+    <tr>
+      <td height="239" colspan="2" align="center" bordercolor="#00CCFF"><table width="90%" border="0" cellpadding="0" cellspacing="1" bgcolor="#FFFFFF" style="border:#666666 dashed 1px; padding:5px"> 
+        <tr>
+          <td height="25" colspan="2" align="left" bgcolor="#FFFFFF"><strong>手机充值卡</strong></td>
+          </tr>
+        <tr>
+          <td width="32%" height="25" align="left" bgcolor="#FFFFFF"><input name="cardtype" type="radio" value="11" checked="checked" />
+            神州行</td>
+          <td width="32%" align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="12"  />
+联通卡</td>
+          </tr>
+        <tr>
+          <td height="25" align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="10" />
+            电信卡</td>
+          <td align="left" bgcolor="#FFFFFF">&nbsp;</td>
+          </tr>
+        <tr>
+          <td height="25" colspan="2" align="left" bgcolor="#FFFFFF"><strong>游戏点卡</strong></td>
+          </tr>
+        <tr>
+          <td height="25" align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="3" />
+            骏网卡</td>
+          <td align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="2" />
+            盛大卡</td>
+        </tr>
+        <tr>
+          <td height="25" align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="6" />
+            搜狐卡</td>
+          <td align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="4">
+            完美卡</td>
+        </tr>
+        <tr>
+          <td height="25" align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="7" />
+            征途卡</td>
+          <td align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="8" />
+            久游卡</td>
+        </tr>
+        <tr>
+          <td height="25" align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="1" />
+QQ卡</td>
+          <td align="left" bgcolor="#FFFFFF"><input type="radio" name="cardtype" value="9" />网易卡</td>
+        </tr>
+
+      </table></td>
+    </tr>
+    <tr>
+      <td height="34" align="center"><strong>卡 号</strong>：</td>
+      <td><input type="text" name="cardno"></td>
+    </tr>
+    <tr>
+      <td height="34" align="center"><strong>卡 密</strong>：</td>
+      <td><input type="text" name="cardpwd"></td>
+    </tr>
+    <tr>
+      <td width="109" height="34" align="center"><strong>填写金额</strong></td>
+      <td width="277">
+      <input name="Price2" type="text" size="10" maxlength="10" />
+        元</td>
+    </tr>
+    <tr>
+      <td height="57" colspan="2" align="center"><input type="submit" name="submit2" value="确认付款" onClick="return checkMoney()" /> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="button" name="submit0" value="返回上一步" onClick="history.go(-1)" /> </td>
+    </tr>
+  </table>
+</form>
+
+</html>
+</body>
+<script language="javascript">
+function checkMoney(){
+	if(document.form1.Price2.value ==""){
+		alert('请输入充值的金额');
+		return false;
+	}
+	document.form1.submit2.disabled;
+}
+</script>

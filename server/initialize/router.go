@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/docs"
@@ -61,6 +62,8 @@ func Routers() *gin.Engine {
 		Router.Use(gin.Logger())
 	}
 
+	Router.Use(middleware.Cors())
+
 	if !global.GVA_CONFIG.MCP.Separate {
 
 		sseServer := McpRun()
@@ -80,11 +83,23 @@ func Routers() *gin.Engine {
 	// VUE_APP_BASE_API = /
 	// VUE_APP_BASE_PATH = http://localhost
 	// 然后执行打包命令 npm run build。在打开下面3行注释
-	// Router.StaticFile("/favicon.ico", "./dist/favicon.ico")
+	// Router.Static("/assets", "./uploads/file")
 	// Router.Static("/assets", "./dist/assets")   // dist里面的静态资源
 	// Router.StaticFile("/", "./dist/index.html") // 前端网页入口页面
 
-	Router.StaticFS(global.GVA_CONFIG.Local.StorePath, justFilesFilesystem{http.Dir(global.GVA_CONFIG.Local.StorePath)}) // Router.Use(middleware.LoadTls())  // 如果需要使用https 请打开此中间件 然后前往 core/server.go 将启动模式 更变为 Router.RunTLS("端口","你的cre/pem文件","你的key文件")
+	viewDir := strings.Trim(global.GVA_CONFIG.Local.Path, "/")
+	saveDir := global.GVA_CONFIG.Local.StorePath
+	if saveDir == "" {
+		saveDir = "./uploads/file"
+	}
+	if viewDir == "" {
+		viewDir = "uploads/file"
+	}
+
+	// 使用 http.FS 支持只显示文件，不显示目录列表
+	Router.StaticFS("/"+viewDir, justFilesFilesystem{http.Dir(saveDir)})
+	// Router.StaticFS(global.GVA_CONFIG.Local.Path, justFilesFilesystem{http.Dir(global.GVA_CONFIG.Local.StorePath)}) // Router.Use(middleware.LoadTls())  // 如果需要使用https 请打开此中间件 然后前往 core/server.go 将启动模式 更变为 Router.RunTLS("端口","你的cre/pem文件","你的key文件")
+	// Router.StaticFS(global.GVA_CONFIG.Local.StorePath, justFilesFilesystem{http.Dir(global.GVA_CONFIG.Local.StorePath)})
 	// 跨域，如需跨域可以打开下面的注释
 	// Router.Use(middleware.Cors()) // 直接放行全部跨域请求
 	// Router.Use(middleware.CorsByRules()) // 按照配置的规则放行跨域请求

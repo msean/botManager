@@ -1,0 +1,149 @@
+package bot
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+
+	"github.com/msean/botmanager/server/dao"
+	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/model/bot"
+	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/utils"
+	"go.uber.org/zap"
+)
+
+type BotTaskService struct{}
+
+// CreateBotTask 创建任务列表记录
+// Author [yourname](https://github.com/yourname)
+func (taskService *BotTaskService) CreateBotTask(ctx context.Context, task *bot.BotTask) (err error) {
+	task.ID = 0
+	task.PreSendTime = nil
+	if err = global.GVA_DB.Create(task).Error; err != nil {
+		return
+	}
+	BotTaskManager.StartTask(task, SendTelegramMessage)
+	return err
+}
+
+// DeleteBotTask 删除任务列表记录
+// Author [yourname](https://github.com/yourname)
+func (taskService *BotTaskService) DeleteBotTask(ctx context.Context, ID string) (err error) {
+	var idInt int
+	if idInt, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	if err = global.GVA_DB.Delete(&bot.BotTask{}, "id = ?", ID).Error; err != nil {
+		return
+	}
+	BotTaskManager.StopTask(uint(idInt))
+	return err
+}
+
+// DeleteBotTaskByIds 批量删除任务列表记录
+// Author [yourname](https://github.com/yourname)
+func (taskService *BotTaskService) DeleteBotTaskByIds(ctx context.Context, IDs []string) (err error) {
+	ids := utils.StringsToIntsIgnoreError(IDs)
+	if err = global.GVA_DB.Delete(&[]bot.BotTask{}, "id in ?", IDs).Error; err != nil {
+		return
+	}
+	for _, id := range ids {
+		BotTaskManager.StopTask(uint(id))
+	}
+	return err
+}
+
+// UpdateBotTask 更新任务列表记录
+// Author [yourname](https://github.com/yourname)
+func (taskService *BotTaskService) UpdateBotTask(ctx context.Context, task *bot.BotTask) (err error) {
+	if err = global.GVA_DB.Model(&bot.BotTask{}).Where("id = ?", task.ID).Updates(&task).Error; err != nil {
+		return
+	}
+	BotTaskManager.ReloadTask(task, SendTelegramMessage)
+	return err
+}
+
+// GetBotTask 根据ID获取任务列表记录
+// Author [yourname](https://github.com/yourname)
+func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (task *bot.BotTask, err error) {
+	if err = global.GVA_DB.Where("id = ?", ID).First(&task).Error; err != nil {
+		return
+	}
+	var botModel bot.Bot
+	var botChatGroupModel bot.BotChatGroup
+	var has bool
+	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID)); !has || err != nil {
+		if !has {
+			err = fmt.Errorf("没有找到改机器人")
+		}
+		global.GVA_LOG.Error("taskService GetBotTask", zap.Any("botID", task.BotID), zap.Bool("has", has), zap.Error(err))
+		return
+	}
+	task.BotName = botModel.Name
+	if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_DB, int(task.ChatGroupID)); !has || err != nil {
+		if !has {
+			err = fmt.Errorf("没有找到改机器人")
+		}
+		global.GVA_LOG.Error("taskService GetBotTask", zap.Any("chatGroupID", task.ChatGroupID), zap.Bool("has", has), zap.Error(err))
+		return
+	}
+	task.ChatGroupName = botChatGroupModel.ChatGroupName
+
+	return
+}
+
+// GetBotTaskInfoList 分页获取任务列表记录
+// Author [yourname](https://github.com/yourname)
+func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info botReq.BotTaskSearch) (list []*bot.BotTask, total int64, err error) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+	// 创建db
+	db := global.GVA_DB.Model(&bot.BotTask{})
+	var tasks []*bot.BotTask
+	// 如果有条件搜索 下方会自动创建搜索语句
+	if len(info.CreatedAtRange) == 2 {
+		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
+	}
+
+	err = db.Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	if limit != 0 {
+		db = db.Limit(limit).Offset(offset)
+	}
+
+	if err = db.Find(&tasks).Error; err != nil {
+		return
+	}
+	var botList []int
+	var chatGroupList []int
+	for _, object := range tasks {
+		botList = append(botList, int(object.BotID))
+		chatGroupList = append(chatGroupList, int(object.ChatGroupID))
+	}
+
+	var botMapper map[int]bot.Bot
+	var chatGroupMapper map[int]bot.BotChatGroup
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+		return
+	}
+
+	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_DB, chatGroupList); err != nil {
+		return
+	}
+
+	for _, object := range tasks {
+		object.BotName = botMapper[int(object.BotID)].Name
+		object.ChatGroupName = chatGroupMapper[int(object.ChatGroupID)].ChatGroupName
+	}
+
+	return tasks, total, err
+}
+
+func (taskService *BotTaskService) GetBotTaskPublic(ctx context.Context) {
+	// 此方法为获取数据源定义的数据
+	// 请自行实现
+}

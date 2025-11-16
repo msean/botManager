@@ -9,6 +9,7 @@ type ApiGroup struct {
 	BanRecordApi
 	BotBanGroupMemApi
 	BotChatGroupApi
+	BotTaskApi
 }
 
 var (
@@ -18,4 +19,5 @@ var (
 	botChatGroupService   = service.ServiceGroupApp.BotServiceGroup.BotChatGroupService
 	botBanGroupMemService = service.ServiceGroupApp.BotServiceGroup.BotBanGroupMemService
 	botMsgHandlerSvc      = service.ServiceGroupApp.BotServiceGroup.BotMsgHandlerSvc
+	taskService           = service.ServiceGroupApp.BotServiceGroup.BotTaskService
 )

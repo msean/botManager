@@ -7,4 +7,5 @@ type ServiceGroup struct {
 	BotChatGroupService
 	BotBanGroupMemService
 	BotMsgHandlerSvc
+	BotTaskService
 }

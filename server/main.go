@@ -4,6 +4,7 @@ import (
 	"github.com/msean/botmanager/server/core"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/initialize"
+	"github.com/msean/botmanager/server/service/bot"
 	_ "go.uber.org/automaxprocs"
 	"go.uber.org/zap"
 )
@@ -44,6 +45,7 @@ func initializeSystem() {
 	global.GVA_DB = initialize.Gorm() // gorm连接数据库
 	initialize.Timer()
 	initialize.DBList()
+	bot.InitBotTaskManager()
 	initialize.SetupHandlers() // 注册全局函数
 	if global.GVA_DB != nil {
 		initialize.RegisterTables() // 初始化表
