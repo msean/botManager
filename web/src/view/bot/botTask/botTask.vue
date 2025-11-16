@@ -200,7 +200,14 @@
         <!-- 下一次发送时间 -->
         <el-col :span="16">
           <el-form-item label="下一次发送时间" prop="nextSendTime">
-            <el-date-picker v-model="formData.nextSendTime" type="date" style="width: 100%" placeholder="选择日期" />
+            <el-date-picker
+              v-model="formData.nextSendTime"
+              type="datetime"
+              style="width: 100%"
+              placeholder="选择日期时间"
+              format="YYYY-MM-DD HH:mm"
+              value-format="YYYY-MM-DD HH:mm:ss"
+            />
           </el-form-item>
         </el-col>
 
