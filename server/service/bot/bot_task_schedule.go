@@ -73,6 +73,7 @@ func (tm *TaskManager) StopAll() {
 }
 
 func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
+	global.GVA_LOG.Info("TaskRunner", zap.Any("next_send_time", tr.Task.NextSendTime))
 	for {
 		select {
 		case <-tr.StopChan:
