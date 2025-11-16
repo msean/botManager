@@ -109,7 +109,7 @@ func Routers() *gin.Engine {
 
 	PublicGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
 	PrivateGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
-	PublicGroup.StaticFS("/"+viewDir, justFilesFilesystem{http.Dir(saveDir)})
+	// PublicGroup.StaticFS("/"+viewDir, justFilesFilesystem{http.Dir(saveDir)})
 
 	PrivateGroup.Use(middleware.JWTAuth()).Use(middleware.CasbinHandler())
 
