@@ -54,6 +54,11 @@ func (api *MedioApi) UploadMedia(c *gin.Context) {
 		return
 	}
 
+	if err := os.Chmod(saveDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "设置目录权限失败: " + err.Error()})
+		return
+	}
+
 	// 新文件名，避免重复
 	newName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 	savePath := filepath.Join(saveDir, newName)
@@ -61,6 +66,11 @@ func (api *MedioApi) UploadMedia(c *gin.Context) {
 	// 保存文件到本地
 	if err := c.SaveUploadedFile(file, savePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "上传失败: " + err.Error()})
+		return
+	}
+
+	if err := os.Chmod(savePath, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "设置文件权限失败: " + err.Error()})
 		return
 	}
 
