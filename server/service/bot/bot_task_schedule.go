@@ -3,6 +3,7 @@ package bot
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"sync"
 	"time"
 
@@ -85,7 +86,6 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 			err := sendFunc(tr.Task.ChatGroupID, tr.Task)
 			if err != nil {
 				global.GVA_LOG.Error("SendTelegramMessage", zap.Any("tr.Task", tr.Task), zap.Error(err))
-				continue
 			}
 
 			// 记录发送时间
@@ -154,7 +154,12 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 		global.GVA_LOG.Info("SendTelegramMessage", zap.Any("urls", urls))
 
 		for _, url := range urls {
-			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(url))
+			data, _ := ioutil.ReadFile(url)
+			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
+				Name:  "file.jpg",
+				Bytes: data,
+			})
+			photo = tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(url))
 			if markup != nil {
 				photo.ReplyMarkup = markup
 			}
