@@ -199,9 +199,9 @@
 
         <!-- 下一次发送时间 -->
         <el-col :span="16">
-          <el-form-item label="下一次发送时间" prop="nextSendTime">
+          <el-form-item label="下一次发送时间" prop="NextSendTimeStr">
             <el-date-picker
-              v-model="formData.nextSendTime"
+              v-model="formData.NextSendTimeStr"
               type="datetime"
               style="width: 100%"
               placeholder="选择日期时间"

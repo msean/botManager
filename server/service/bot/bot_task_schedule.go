@@ -10,6 +10,7 @@ import (
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"go.uber.org/zap"
 )
 
 type (
@@ -89,10 +90,10 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 			now := time.Now()
 			global.GVA_DB.Model(tr.Task).Updates(map[string]interface{}{
 				"pre_send_time":  now,
-				"next_send_time": now.Add(time.Duration(tr.Task.SendInterval) * time.Second),
+				"next_send_time": now.Add(time.Duration(tr.Task.SendInterval) * time.Minute),
 			})
 
-			tr.Task.NextSendTime = tr.Task.NextSendTime.Add(time.Duration(tr.Task.SendInterval) * time.Second)
+			tr.Task.NextSendTime = tr.Task.NextSendTime.Add(time.Duration(tr.Task.SendInterval) * time.Minute)
 		}
 	}
 }
@@ -148,6 +149,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 	case 3: // 图片（多图）
 		var urls []string
 		_ = json.Unmarshal([]byte(task.Content), &urls)
+		global.GVA_LOG.Info("SendTelegramMessage", zap.Any("urls", urls))
 
 		for _, url := range urls {
 			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(url))

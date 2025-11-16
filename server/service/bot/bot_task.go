@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -20,6 +21,15 @@ type BotTaskService struct{}
 func (taskService *BotTaskService) CreateBotTask(ctx context.Context, task *bot.BotTask) (err error) {
 	task.ID = 0
 	task.PreSendTime = nil
+	if task.NextSendTimeStr != "" {
+		layout := "2006-01-02 15:04:05"
+		var parsed time.Time
+		if parsed, err = time.ParseInLocation(layout, task.NextSendTimeStr, time.Local); err != nil {
+			return
+		}
+
+		task.NextSendTime = parsed
+	}
 	if err = global.GVA_DB.Create(task).Error; err != nil {
 		return
 	}
