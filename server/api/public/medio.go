@@ -3,7 +3,6 @@ package public
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -48,17 +47,6 @@ func (api *MedioApi) UploadMedia(c *gin.Context) {
 		viewDir = "uploads/file"
 	}
 
-	// 创建目录
-	if err := os.MkdirAll(saveDir, 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败: " + err.Error()})
-		return
-	}
-
-	if err := os.Chmod(saveDir, 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "设置目录权限失败: " + err.Error()})
-		return
-	}
-
 	// 新文件名，避免重复
 	newName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 	savePath := filepath.Join(saveDir, newName)
@@ -68,12 +56,6 @@ func (api *MedioApi) UploadMedia(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "上传失败: " + err.Error()})
 		return
 	}
-
-	if err := os.Chmod(savePath, 0644); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "设置文件权限失败: " + err.Error()})
-		return
-	}
-
 	// 访问 URL
 	domain := strings.TrimRight(global.GVA_CONFIG.System.Domain, "/")
 	fileURL := fmt.Sprintf("%s/%s/%s", domain, strings.Trim(viewDir, "/"), newName)
