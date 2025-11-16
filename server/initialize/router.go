@@ -96,8 +96,6 @@ func Routers() *gin.Engine {
 		viewDir = "uploads/file"
 	}
 
-	// 使用 http.FS 支持只显示文件，不显示目录列表
-	Router.StaticFS("/"+viewDir, justFilesFilesystem{http.Dir(saveDir)})
 	// Router.StaticFS(global.GVA_CONFIG.Local.Path, justFilesFilesystem{http.Dir(global.GVA_CONFIG.Local.StorePath)}) // Router.Use(middleware.LoadTls())  // 如果需要使用https 请打开此中间件 然后前往 core/server.go 将启动模式 更变为 Router.RunTLS("端口","你的cre/pem文件","你的key文件")
 	// Router.StaticFS(global.GVA_CONFIG.Local.StorePath, justFilesFilesystem{http.Dir(global.GVA_CONFIG.Local.StorePath)})
 	// 跨域，如需跨域可以打开下面的注释
@@ -111,6 +109,7 @@ func Routers() *gin.Engine {
 
 	PublicGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
 	PrivateGroup := Router.Group(global.GVA_CONFIG.System.RouterPrefix)
+	PublicGroup.StaticFS("/"+viewDir, justFilesFilesystem{http.Dir(saveDir)})
 
 	PrivateGroup.Use(middleware.JWTAuth()).Use(middleware.CasbinHandler())
 
