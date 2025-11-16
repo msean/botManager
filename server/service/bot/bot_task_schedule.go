@@ -84,7 +84,8 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 
 			err := sendFunc(tr.Task.ChatGroupID, tr.Task)
 			if err != nil {
-				fmt.Println("发送失败:", err)
+				global.GVA_LOG.Error("SendTelegramMessage", zap.Any("tr.Task", tr.Task), zap.Error(err))
+				continue
 			}
 
 			// 记录发送时间
