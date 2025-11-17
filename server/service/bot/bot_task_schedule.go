@@ -159,6 +159,36 @@ func buildMarkupFromExtrend(raw json.RawMessage) *tgbotapi.InlineKeyboardMarkup 
 	return &m
 }
 
+func CleanHTMLForTelegram(htmlStr string) string {
+	if htmlStr == "" {
+		return ""
+	}
+
+	// 1️⃣ 将 <p> 和 </p> 转换成换行
+	htmlStr = regexp.MustCompile(`(?i)<p[^>]*>`).ReplaceAllString(htmlStr, "")
+	htmlStr = regexp.MustCompile(`(?i)</p>`).ReplaceAllString(htmlStr, "\n")
+
+	// 2️⃣ 将 <div> 和 </div> 转换成换行
+	htmlStr = regexp.MustCompile(`(?i)<div[^>]*>`).ReplaceAllString(htmlStr, "")
+	htmlStr = regexp.MustCompile(`(?i)</div>`).ReplaceAllString(htmlStr, "\n")
+
+	// 3️⃣ 将 <br> 和 <br/> 转换成换行
+	htmlStr = regexp.MustCompile(`(?i)<br\s*/?>`).ReplaceAllString(htmlStr, "\n")
+
+	// 4️⃣ 删除 Telegram 不支持的标签
+	// 只保留 <b>, <i>, <strong>, <em>, <u>, <s>, <strike>, <del>, <a>, <code>, <pre>
+	htmlStr = regexp.MustCompile(`(?i)<(?!\/?(b|i|strong|em|u|s|strike|del|a|code|pre)(\s|>))[^>]+>`).ReplaceAllString(htmlStr, "")
+
+	// 5️⃣ 转回 HTML 实体
+	htmlStr = html.UnescapeString(htmlStr)
+
+	// 6️⃣ 合并多余换行和空格
+	htmlStr = regexp.MustCompile(`\n{2,}`).ReplaceAllString(htmlStr, "\n\n")
+	htmlStr = strings.TrimSpace(htmlStr)
+
+	return htmlStr
+}
+
 func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 	var botModel bot.Bot
 	var has bool
@@ -193,31 +223,21 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 	case 1:
 		imgs, text := extractImgsAndText(task.Content)
 
-		caption := text
+		// 清理 HTML
+		caption := CleanHTMLForTelegram(text)
 		if len(caption) > 1024 {
 			caption = caption[:1020] + "..."
 		}
 
-		var markup *tgbotapi.InlineKeyboardMarkup
-		if len(task.ExtrendButton) > 0 {
-			markup = buildMarkupFromExtrend(task.ExtrendButton)
-		}
-
+		// 发送单图 + caption
 		if len(imgs) > 0 {
 			first := imgs[0]
-
 			resp, err := http.Get(first)
 			if err != nil {
-				global.GVA_LOG.Error("download image failed", zap.Error(err), zap.String("url", first))
 				return err
 			}
 			defer resp.Body.Close()
-
-			data, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				global.GVA_LOG.Error("read downloaded image failed", zap.Error(err), zap.String("url", first))
-				return err
-			}
+			data, _ := ioutil.ReadAll(resp.Body)
 
 			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
 				Name:  filepath.Base(first),
@@ -228,14 +248,11 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 			if markup != nil {
 				photo.ReplyMarkup = markup
 			}
-
-			if _, err = botAPI.Send(photo); err != nil {
-				global.GVA_LOG.Error("send photo with caption failed", zap.Error(err), zap.String("url", first))
-				return err
-			}
-			return nil
+			_, err = botAPI.Send(photo)
+			return err
 		}
 
+		// 没有图片则直接发送文本
 		msg := tgbotapi.NewMessage(chatID, caption)
 		msg.ParseMode = tgbotapi.ModeHTML
 		if markup != nil {
