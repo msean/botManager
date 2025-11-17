@@ -63,8 +63,12 @@ func (tm *TaskManager) StopTask(taskID uint) {
 }
 
 func (tm *TaskManager) ReloadTask(task *bot.BotTask, sendFunc TgSendFunc) {
-	tm.StopTask(task.ID)
-	tm.StartTask(task, sendFunc)
+	if task.Status == 1 {
+		tm.StopTask(task.ID)
+		tm.StartTask(task, sendFunc)
+	} else {
+		tm.StopTask(task.ID)
+	}
 }
 
 func (tm *TaskManager) StopAll() {
