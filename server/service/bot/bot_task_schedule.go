@@ -3,10 +3,6 @@ package bot
 import (
 	"encoding/json"
 	"fmt"
-	"html"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -17,6 +13,7 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"go.uber.org/zap"
+	"golang.org/x/net/html"
 )
 
 type (
@@ -223,12 +220,37 @@ func CleanHTMLForTelegram(htmlStr string) string {
 	return htmlStr
 }
 
+func extractVideosFromHTML(content string) []string {
+	var urls []string
+	doc, err := html.Parse(strings.NewReader(content))
+	if err != nil {
+		return urls
+	}
+
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "source" {
+			for _, attr := range n.Attr {
+				if attr.Key == "src" {
+					urls = append(urls, attr.Val)
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+	return urls
+}
+
 func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
-	// 获取 Bot
-	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID))
-	if !has || err != nil {
+	var botModel bot.Bot
+	var has bool
+	var err error
+	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID)); !has || err != nil {
 		if !has {
-			return fmt.Errorf("bot %d not found", task.BotID)
+			err = fmt.Errorf("bot %d not found", task.BotID)
 		}
 		return err
 	}
@@ -238,82 +260,86 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 		return err
 	}
 
-	// 构建按钮
+	// 处理按钮（二维数组）
 	var markup *tgbotapi.InlineKeyboardMarkup
 	if len(task.ExtrendButton) > 0 {
-		var btnRows [][]bot.ButtonItem
-		if err := json.Unmarshal(task.ExtrendButton, &btnRows); err != nil {
-			return fmt.Errorf("解析按钮失败: %w", err)
-		}
-
-		if len(btnRows) > 0 {
-			var keyboard [][]tgbotapi.InlineKeyboardButton
-			for _, row := range btnRows {
-				if len(row) == 0 {
-					continue
-				}
-				var tgRow []tgbotapi.InlineKeyboardButton
+		var btns [][]bot.ButtonItem
+		if err := json.Unmarshal(task.ExtrendButton, &btns); err == nil && len(btns) > 0 {
+			var rows [][]tgbotapi.InlineKeyboardButton
+			for _, row := range btns {
+				var telegramRow []tgbotapi.InlineKeyboardButton
 				for _, b := range row {
-					tgRow = append(tgRow, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
+					telegramRow = append(telegramRow, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
 				}
-				keyboard = append(keyboard, tgRow)
+				rows = append(rows, telegramRow)
 			}
-			if len(keyboard) > 0 {
-				m := tgbotapi.NewInlineKeyboardMarkup(keyboard...)
-				markup = &m
-			}
+			m := tgbotapi.NewInlineKeyboardMarkup(rows...)
+			markup = &m
 		}
 	}
 
 	switch task.TaskSendType {
-	case 0: // default，只发送按钮
+	case 0: // 仅按钮
 		if markup != nil {
-			msg := tgbotapi.NewMessage(chatID, " ") // Telegram 必须有文本
+			msg := tgbotapi.NewMessage(chatID, "")
 			msg.ReplyMarkup = markup
-			_, err := botAPI.Send(msg)
-			return err
+			_, err = botAPI.Send(msg)
 		}
-		return nil // 没有按钮不发送
+		return err
 
-	case 1: // 预设页面
+	case 1: // 富文本
 		imgs, text := extractImgsAndText(task.Content)
+		videos := extractVideosFromHTML(task.Content)
+
 		caption := CleanHTMLForTelegram(text)
 		if len(caption) > 1024 {
 			caption = caption[:1020] + "..."
 		}
 
-		if len(imgs) > 0 {
-			first := imgs[0]
-			resp, err := http.Get(first)
-			if err != nil {
+		// 先发送图片
+		for i, img := range imgs {
+			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(img))
+			if i == 0 {
+				photo.Caption = caption
+				photo.ParseMode = tgbotapi.ModeHTML
+				if markup != nil {
+					photo.ReplyMarkup = markup
+				}
+			}
+			if _, err := botAPI.Send(photo); err != nil {
 				return err
 			}
-			defer resp.Body.Close()
-			data, _ := ioutil.ReadAll(resp.Body)
+		}
 
-			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
-				Name:  filepath.Base(first),
-				Bytes: data,
-			})
-			photo.Caption = caption
-			photo.ParseMode = tgbotapi.ModeHTML
-			if markup != nil {
-				photo.ReplyMarkup = markup
+		// 发送视频
+		for i, vid := range videos {
+			video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(vid))
+			if i == 0 && len(imgs) == 0 { // 如果前面没有图片，第一条视频附加 caption
+				video.Caption = caption
+				video.ParseMode = tgbotapi.ModeHTML
+				if markup != nil {
+					video.ReplyMarkup = markup
+				}
+			} else if i == 0 && markup != nil {
+				video.ReplyMarkup = markup
 			}
-			_, err = botAPI.Send(photo)
-			return err
+			if _, err := botAPI.Send(video); err != nil {
+				return err
+			}
 		}
 
-		// 没有图片则发送文本
-		msg := tgbotapi.NewMessage(chatID, caption)
-		msg.ParseMode = tgbotapi.ModeHTML
-		if markup != nil {
-			msg.ReplyMarkup = markup
+		// 如果没有图片和视频，则发送纯文本
+		if len(imgs) == 0 && len(videos) == 0 && caption != "" {
+			msg := tgbotapi.NewMessage(chatID, caption)
+			msg.ParseMode = tgbotapi.ModeHTML
+			if markup != nil {
+				msg.ReplyMarkup = markup
+			}
+			_, err = botAPI.Send(msg)
 		}
-		_, err = botAPI.Send(msg)
 		return err
 
-	case 2: // 普通文本
+	case 2: // 文本
 		msg := tgbotapi.NewMessage(chatID, task.Content)
 		if markup != nil {
 			msg.ReplyMarkup = markup
@@ -321,16 +347,17 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 		_, err = botAPI.Send(msg)
 		return err
 
-	case 3: // 多图
+	case 3: // 图片
 		var urls []string
-		_ = json.Unmarshal([]byte(task.Content), &urls)
-		for _, url := range urls {
+		if err := json.Unmarshal([]byte(task.Content), &urls); err != nil {
+			return err
+		}
+		for i, url := range urls {
 			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(url))
-			if markup != nil {
+			if i == 0 && markup != nil {
 				photo.ReplyMarkup = markup
 			}
-			_, err = botAPI.Send(photo)
-			if err != nil {
+			if _, err := botAPI.Send(photo); err != nil {
 				return err
 			}
 		}
@@ -338,21 +365,22 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 
 	case 4: // 视频
 		var urls []string
-		_ = json.Unmarshal([]byte(task.Content), &urls)
-		for _, url := range urls {
+		if err := json.Unmarshal([]byte(task.Content), &urls); err != nil {
+			return err
+		}
+		for i, url := range urls {
 			video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(url))
-			if markup != nil {
+			if i == 0 && markup != nil {
 				video.ReplyMarkup = markup
 			}
-			_, err = botAPI.Send(video)
-			if err != nil {
+			if _, err := botAPI.Send(video); err != nil {
 				return err
 			}
 		}
 		return nil
 
 	default:
-		return fmt.Errorf("不支持的 TaskSendType：%d", task.TaskSendType)
+		return fmt.Errorf("不支持的 TaskSendType: %d", task.TaskSendType)
 	}
 }
 
