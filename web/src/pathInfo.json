@@ -11,6 +11,8 @@
   "/src/view/bot/botChatGroup/botChatGroupForm.vue": "BotChatGroupForm",
   "/src/view/bot/botTask/botTask.vue": "BotTask",
   "/src/view/bot/botTask/botTaskForm.vue": "BotTaskForm",
+  "/src/view/bot/botTask2/botTask.vue": "BotTask",
+  "/src/view/bot/botTask2/botTaskForm.vue": "BotTaskForm",
   "/src/view/dashboard/components/banner.vue": "Banner",
   "/src/view/dashboard/components/card.vue": "Card",
   "/src/view/dashboard/components/charts-content-numbers.vue": "ChartsContentNumbers",
