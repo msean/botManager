@@ -36,6 +36,10 @@ func (taskService *BotTaskService) CreateBotTask(ctx context.Context, task *bot.
 	if task.StopTime, err = time.ParseInLocation(layout, task.StopTimeText, time.Local); err != nil {
 		return
 	}
+	if task.StopTime.After(task.NextSendTime) || task.StopTime.Equal(task.NextSendTime) {
+		err = fmt.Errorf("发送时间大于或者等于结束时间")
+		return
+	}
 	if err = global.GVA_DB.Create(task).Error; err != nil {
 		return
 	}

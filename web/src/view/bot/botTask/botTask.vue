@@ -23,6 +23,22 @@
           />
         </el-form-item>
 
+        <el-form-item label="机器人" prop="botID">
+          <el-select 
+            v-model="searchInfo.botID" 
+            placeholder="请选择机器人" 
+            clearable 
+            style="width:200px"
+          >
+            <el-option 
+              v-for="bot in botOptions" 
+              :key="bot.botID" 
+              :label="bot.name" 
+              :value="bot.botID" 
+            />
+          </el-select>
+        </el-form-item>
+
         <template v-if="showAllQuery">
           <!-- 展开更多查询项 -->
         </template>
@@ -288,10 +304,17 @@
             />
           </el-form-item>
         </el-col>
-
         <!-- 上一次发送时间：仅编辑显示且禁用 -->
         <el-form-item label="上一次发送时间" v-if="type==='update'">
-          <el-date-picker v-model="formData.preSendTime" type="date" style="width:100%" disabled />
+          <el-date-picker
+            v-model="formData.preSendTime"
+            type="datetime"
+            style="width: 100%"
+            placeholder="选择日期时间"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            disabled
+          />
         </el-form-item>
 
         <!-- 状态开关 -->
@@ -365,6 +388,7 @@
         <el-descriptions-item label="发送间隔">{{ detailForm.sendInterval }}</el-descriptions-item>
         <el-descriptions-item label="下一次发送时间">{{ detailForm.nextSendTime }}</el-descriptions-item>
         <el-descriptions-item label="上一次发送时间">{{ detailForm.preSendTime }}</el-descriptions-item>
+        <el-descriptions-item label="结束时间">{{ detailForm.stopTime }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           {{ detailForm.status === 1 ? '运行' : detailForm.status === 2 ? '停止' : '' }}
         </el-descriptions-item>
