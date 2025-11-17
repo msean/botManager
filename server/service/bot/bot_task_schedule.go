@@ -216,56 +216,72 @@ func CleanHTMLForTelegram(htmlStr string) string {
 		return ""
 	})
 
-	// 3️⃣ 转义 HTML 实体
 	htmlStr = html.UnescapeString(htmlStr)
 
-	// 4️⃣ 合并多余换行
 	htmlStr = regexp.MustCompile(`\n{2,}`).ReplaceAllString(htmlStr, "\n\n")
 	htmlStr = strings.TrimSpace(htmlStr)
 	return htmlStr
 }
 
-func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
-	var botModel bot.Bot
-	var has bool
-	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID)); !has || err != nil {
+func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
+	// 获取 Bot
+	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID))
+	if !has || err != nil {
 		if !has {
-			err = fmt.Errorf("bot %d not found", task.BotID)
+			return fmt.Errorf("bot %d not found", task.BotID)
 		}
-		return
+		return err
 	}
+
 	botAPI, err := tgbotapi.NewBotAPI(botModel.Token)
 	if err != nil {
 		return err
 	}
 
+	// 构建按钮
 	var markup *tgbotapi.InlineKeyboardMarkup
 	if len(task.ExtrendButton) > 0 {
-		var btns []bot.ButtonItem
-		_ = json.Unmarshal(task.ExtrendButton, &btns)
+		var btnRows [][]bot.ButtonItem
+		if err := json.Unmarshal(task.ExtrendButton, &btnRows); err != nil {
+			return fmt.Errorf("解析按钮失败: %w", err)
+		}
 
-		if len(btns) > 0 {
-			var row []tgbotapi.InlineKeyboardButton
-			for _, b := range btns {
-				row = append(row, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
+		if len(btnRows) > 0 {
+			var keyboard [][]tgbotapi.InlineKeyboardButton
+			for _, row := range btnRows {
+				if len(row) == 0 {
+					continue
+				}
+				var tgRow []tgbotapi.InlineKeyboardButton
+				for _, b := range row {
+					tgRow = append(tgRow, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
+				}
+				keyboard = append(keyboard, tgRow)
 			}
-			m := tgbotapi.NewInlineKeyboardMarkup(row)
-			markup = &m
+			if len(keyboard) > 0 {
+				m := tgbotapi.NewInlineKeyboardMarkup(keyboard...)
+				markup = &m
+			}
 		}
 	}
 
 	switch task.TaskSendType {
+	case 0: // default，只发送按钮
+		if markup != nil {
+			msg := tgbotapi.NewMessage(chatID, " ") // Telegram 必须有文本
+			msg.ReplyMarkup = markup
+			_, err := botAPI.Send(msg)
+			return err
+		}
+		return nil // 没有按钮不发送
 
-	case 1:
+	case 1: // 预设页面
 		imgs, text := extractImgsAndText(task.Content)
-
-		// 清理 HTML
 		caption := CleanHTMLForTelegram(text)
 		if len(caption) > 1024 {
 			caption = caption[:1020] + "..."
 		}
 
-		// 发送单图 + caption
 		if len(imgs) > 0 {
 			first := imgs[0]
 			resp, err := http.Get(first)
@@ -288,7 +304,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 			return err
 		}
 
-		// 没有图片则直接发送文本
+		// 没有图片则发送文本
 		msg := tgbotapi.NewMessage(chatID, caption)
 		msg.ParseMode = tgbotapi.ModeHTML
 		if markup != nil {
@@ -296,6 +312,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 		}
 		_, err = botAPI.Send(msg)
 		return err
+
 	case 2: // 普通文本
 		msg := tgbotapi.NewMessage(chatID, task.Content)
 		if markup != nil {
@@ -304,18 +321,11 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 		_, err = botAPI.Send(msg)
 		return err
 
-	case 3: // 图片（多图）
+	case 3: // 多图
 		var urls []string
 		_ = json.Unmarshal([]byte(task.Content), &urls)
-		global.GVA_LOG.Info("SendTelegramMessage", zap.Any("urls", urls))
-
 		for _, url := range urls {
-			data, _ := ioutil.ReadFile(url)
-			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
-				Name:  "file.jpg",
-				Bytes: data,
-			})
-			photo = tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(url))
+			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(url))
 			if markup != nil {
 				photo.ReplyMarkup = markup
 			}
@@ -329,7 +339,6 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 	case 4: // 视频
 		var urls []string
 		_ = json.Unmarshal([]byte(task.Content), &urls)
-
 		for _, url := range urls {
 			video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(url))
 			if markup != nil {

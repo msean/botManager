@@ -21,18 +21,25 @@ type BotTaskService struct{}
 func (taskService *BotTaskService) CreateBotTask(ctx context.Context, task *bot.BotTask) (err error) {
 	task.ID = 0
 	task.PreSendTime = nil
-	if task.NextSendTimeStr != "" {
-		layout := "2006-01-02 15:04:05"
-		var parsed time.Time
-		if parsed, err = time.ParseInLocation(layout, task.NextSendTimeStr, time.Local); err != nil {
-			return
-		}
-
-		task.NextSendTime = parsed
+	if task.NextSendTimeStr == "" {
+		err = fmt.Errorf("下次发送时间不能为空")
+		return
+	}
+	if task.StopTimeText == "" {
+		err = fmt.Errorf("下次发送时间不能为空")
+		return
+	}
+	layout := "2006-01-02 15:04:05"
+	if task.NextSendTime, err = time.ParseInLocation(layout, task.NextSendTimeStr, time.Local); err != nil {
+		return
+	}
+	if task.StopTime, err = time.ParseInLocation(layout, task.StopTimeText, time.Local); err != nil {
+		return
 	}
 	if err = global.GVA_DB.Create(task).Error; err != nil {
 		return
 	}
+
 	BotTaskManager.StartTask(task, SendTelegramMessage)
 	return err
 }
@@ -99,7 +106,8 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 		return
 	}
 	task.ChatGroupName = botChatGroupModel.ChatGroupName
-
+	task.NextSendTimeStr = task.NextSendTime.Format("2006-01-02 15:04:05")
+	task.StopTimeText = task.StopTime.Format("2006-01-02 15:04:05")
 	return
 }
 

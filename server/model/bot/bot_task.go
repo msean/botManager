@@ -20,9 +20,10 @@ type BotTask struct {
 	Content         string          `json:"content" form:"content" gorm:"column:content;type:text;"`                                 //发送内容
 	ExtrendButton   json.RawMessage `json:"extrendButton" form:"extrendButton" gorm:"comment:扩展按钮;column:extrend_button;type:text;"` //扩展按钮
 	SendInterval    int64           `json:"sendInterval" form:"sendInterval" gorm:"comment:发送间隔;column:send_interval;"`              //发送间隔
-	NextSendTimeStr string          `json:"NextSendTimeStr" form:"NextSendTimeStr" gorm:"-"`                                         //下一次发送时间
+	NextSendTimeStr string          `json:"nextSendTimeStr" form:"nextSendTimeStr" gorm:"-"`                                         //下一次发送时间
 	NextSendTime    time.Time       `json:"nextSendTime" form:"nextSendTime" gorm:"comment:下一次发送时间;column:next_send_time;"`
 	StopTime        time.Time       `json:"stopTime" form:"stopTime" gorm:"comment:任务结束时间;column:stop_time;"`            //任务结束时间
+	StopTimeText    string          `json:"stopTimeText" form:"stopTimeText" gorm:"comment:-;"`                          //任务结束时间
 	PreSendTime     *time.Time      `json:"preSendTime" form:"preSendTime" gorm:"comment:上一次发送时间;column:pre_send_time;"` //上一次发送时间
 	Status          int64           `json:"status" form:"status" gorm:"comment:状态(1开 2关);column:status;"`                //状态
 }

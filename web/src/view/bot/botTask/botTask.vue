@@ -77,8 +77,20 @@
         </el-table-column>
         <el-table-column label="扩展按钮" prop="extrendButton" width="200">
           <template #default="scope">
-            <div v-for="(btn, idx) in scope.row.extrendButton || []" :key="idx">
-              {{ btn.name }} - {{ btn.url }}
+            <div v-if="scope.row.extrendButton && scope.row.extrendButton.length">
+              <div 
+                v-for="(row, rowIndex) in scope.row.extrendButton" 
+                :key="rowIndex" 
+                style="margin-bottom: 4px;"
+              >
+                <span 
+                  v-for="(btn, btnIndex) in row" 
+                  :key="btnIndex"
+                  style="margin-right: 6px;"
+                >
+                  {{ btn.name }}
+                </span>
+              </div>
             </div>
           </template>
         </el-table-column>
@@ -130,7 +142,7 @@
         </div>
       </template>
 
-      <el-form :model="formData" label-width="120px" ref="elFormRef" label-position="left" class="drawer-form">
+      <el-form :model="formData" :rules="rules" label-width="120px" ref="elFormRef" label-position="left" class="drawer-form">
           <el-col :span="16">
              <el-form-item label="发送标题" prop="title">
                 <el-input v-model="formData.title" clearable placeholder="请输入发送标题" />
@@ -180,15 +192,67 @@
           </el-upload>
         </el-form-item>
 
-        <!-- 扩展按钮 -->
-        <el-form-item label="扩展按钮">
-          <div v-for="(btn, index) in formData.extrendButton" :key="index" style="display:flex; align-items:center; margin-bottom:5px;">
-            <el-input v-model="btn.name" placeholder="按钮名称" style="margin-right:5px;" />
-            <el-input v-model="btn.url" placeholder="按钮跳转地址" style="margin-right:5px;" />
-            <el-button type="danger" icon="delete" @click="removeExtraButton(index)" />
-          </div>
-          <el-button type="primary" icon="plus" @click="addExtraButton">添加按钮</el-button>
-        </el-form-item>
+       <!-- 扩展按钮 -->
+      <el-form-item label="扩展按钮">
+        <div class="btn-group-wrapper">
+  <!-- 每行按钮 -->
+  <div
+    v-for="(row, rowIndex) in formData.extrendButton"
+    :key="rowIndex"
+    class="btn-row"
+  >
+    <!-- 行内按钮 -->
+    <div
+      v-for="(btn, btnIndex) in row"
+      :key="btnIndex"
+      class="btn-item"
+    >
+      <span class="btn-text">{{ btn.name }}</span>
+      <el-icon class="btn-edit" @click.stop="openEditDialog(rowIndex, btnIndex)">
+        <Edit />
+      </el-icon>
+      <el-icon class="btn-delete" @click.stop="removeButton(rowIndex, btnIndex)">
+        <Close />
+      </el-icon>
+    </div>
+
+    <!-- 当前行新增按钮 -->
+    <el-button class="add-btn" type="primary" link @click="openAddDialog(rowIndex)">
+      + 添加按钮
+    </el-button>
+
+    <!-- 删除整行 -->
+    <el-button class="delete-row-btn" type="danger" link @click="removeRow(rowIndex)">
+      删除该行
+    </el-button>
+  </div>
+
+  <!-- 新增空行按钮 -->
+  <el-button type="primary" plain size="small" @click="addNewRow" style="margin-top: 10px;">
+    + 新增一行
+  </el-button>
+</div>
+
+
+
+  <!-- 编辑/新增按钮 弹窗 -->
+  <el-dialog v-model="dialogVisible" title="编辑按钮" width="400px">
+    <el-form :model="editForm" label-width="90px">
+      <el-form-item label="名称">
+        <el-input v-model="editForm.name" />
+      </el-form-item>
+      <el-form-item label="跳转链接">
+        <el-input v-model="editForm.url" />
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <el-button @click="dialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="saveButton">保存</el-button>
+    </template>
+  </el-dialog>
+</el-form-item>
+
 
         <!-- 发送间隔 -->
         <el-col :span="16">
@@ -199,9 +263,23 @@
 
         <!-- 下一次发送时间 -->
         <el-col :span="16">
-          <el-form-item label="下一次发送时间" prop="NextSendTimeStr">
+          <el-form-item label="下一次发送时间" prop="nextSendTimeStr">
             <el-date-picker
-              v-model="formData.NextSendTimeStr"
+              v-model="formData.nextSendTimeStr"
+              type="datetime"
+              style="width: 100%"
+              placeholder="选择日期时间"
+              format="YYYY-MM-DD HH:mm"
+              value-format="YYYY-MM-DD HH:mm:ss"
+            />
+          </el-form-item>
+        </el-col>
+
+        <!-- 下一次发送时间 -->
+        <el-col :span="16">
+          <el-form-item label="结束时间" prop="stopTimeText">
+            <el-date-picker
+              v-model="formData.stopTimeText"
               type="datetime"
               style="width: 100%"
               placeholder="选择日期时间"
@@ -221,6 +299,24 @@
           <el-switch v-model="formData.status" active-text="开启" inactive-text="关闭" />
         </el-form-item>
       </el-form>
+
+
+      <!-- 添加/编辑按钮弹窗 -->
+      <el-dialog v-model="btnDialogVisible" :title="isEdit ? '编辑按钮' : '新增按钮'" width="400px">
+        <el-form :model="btnForm" label-width="80px">
+          <el-form-item label="名称">
+            <el-input v-model="btnForm.name" />
+          </el-form-item>
+          <el-form-item label="链接">
+            <el-input v-model="btnForm.url" />
+          </el-form-item>
+        </el-form>
+
+        <template #footer>
+          <el-button @click="btnDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmButton">确定</el-button>
+        </template>
+      </el-dialog>
     </el-drawer>
 
     <!-- ================= 详情抽屉 ================= -->
@@ -244,15 +340,26 @@
               </video>
             </div>
           </template>
-
           <!-- 富文本类型 -->
           <template v-else-if="detailForm.taskSendType === 1">
             <div v-html="safeHtml" class="rich-view-content"></div>
           </template>
         </el-descriptions-item>
         <el-descriptions-item label="扩展按钮">
-          <div v-for="(btn, idx) in detailForm.extrendButton || []" :key="idx">
-            {{ btn.name }} - {{ btn.url }}
+          <div v-if="detailForm.extrendButton && detailForm.extrendButton.length">
+            <div 
+              v-for="(row, rowIndex) in detailForm.extrendButton" 
+              :key="rowIndex" 
+              style="margin-bottom: 4px;"
+            >
+              <span 
+                v-for="(btn, btnIndex) in row" 
+                :key="btnIndex"
+                style="margin-right: 6px; padding: 2px 6px; background-color: #f5f7fa; border-radius: 4px;"
+              >
+                {{ btn.name }}
+              </span>
+            </div>
           </div>
         </el-descriptions-item>
         <el-descriptions-item label="发送间隔">{{ detailForm.sendInterval }}</el-descriptions-item>
@@ -277,6 +384,7 @@ import { formatDate } from '@/utils/format'
 import { useAppStore } from '@/pinia'
 import { computed } from 'vue'
 import DOMPurify from 'dompurify'
+import ButtonGroupEditor from "@/components/ButtonGroupEditor.vue";
 
 
 const appStore = useAppStore()
@@ -305,6 +413,18 @@ const formData = reactive({
   status: true, // ⚠ 表单内部用 true/false
   uploadFileList: []
 })
+
+const rules = {
+  nextSendTimeStr: [
+    { required: true, message: '请选择下一次发送时间', trigger: 'change' }
+  ],
+  stopTimeText: [
+    { required: true, message: '请选择结束时间', trigger: 'change' }
+  ],
+  sendInterval: [
+    { required: true, message: '发送间隔不能为空', trigger: 'blur' }
+  ]
+}
 
 const elFormRef = ref()
 const elSearchFormRef = ref()
@@ -356,7 +476,9 @@ const resetFormData = () => {
     nextSendTime: new Date(),
     preSendTime: new Date(),
     status: true,  
-    uploadFileList: []
+    uploadFileList: [],
+    nextSendTimeStr: '',
+    stopTimeText: '',
   })
   groupOptions.value = []
 }
@@ -513,4 +635,125 @@ const renderSendType = (val) => {
 const parseContent = (content) => {
   try { return JSON.parse(content || '[]') } catch(e) { return [] }
 }
+
+// 扩展按钮二维数组初始化
+if (!formData.extrendButton || !Array.isArray(formData.extrendButton)) {
+  formData.extrendButton = [[]]
+}
+
+const dialogVisible = ref(false);
+const editForm = ref({ name: "", url: "" });
+let currentRow = null;
+let currentIndex = null;
+
+// 打开编辑弹窗
+if (!formData.extrendButton || !Array.isArray(formData.extrendButton) || formData.extrendButton.length === 0) {
+  formData.extrendButton = [[]];
+}
+
+// 打开编辑弹窗
+function openEditDialog(rowIndex, btnIndex) {
+  currentRow = rowIndex;
+  currentIndex = btnIndex;
+  editForm.value = { ...formData.extrendButton[rowIndex][btnIndex] };
+  dialogVisible.value = true;
+}
+
+// 打开新增按钮弹窗（追加到当前行）
+function openAddDialog(rowIndex) {
+  currentRow = rowIndex;
+  currentIndex = null; // 表示新增
+  editForm.value = { name: "", url: "" };
+  dialogVisible.value = true;
+}
+
+// 新增一行
+function addNewRow() {
+  formData.extrendButton.push([]); // 新增空数组作为新行
+}
+
+// 删除一行
+function removeRow(rowIndex) {
+  formData.extrendButton.splice(rowIndex, 1);
+  if (formData.extrendButton.length === 0) {
+    // 保证至少有一行
+    formData.extrendButton.push([]);
+  }
+}
+
+function removeButton(rowIndex, btnIndex) {
+  formData.extrendButton[rowIndex].splice(btnIndex, 1);
+}
+
+// 保存按钮
+function saveButton() {
+  if (!editForm.value.name) return;
+  if (currentIndex === null) {
+    // 追加到当前行
+    formData.extrendButton[currentRow].push({ ...editForm.value });
+  } else {
+    formData.extrendButton[currentRow][currentIndex] = { ...editForm.value };
+  }
+  dialogVisible.value = false;
+}
 </script>
+
+
+<style scoped>
+.btn-group-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: nowrap;       /* 强制不换行 */
+  gap: 8px;                /* 按钮间距 */
+  align-items: center;
+  overflow-x: auto;        /* 超出宽度横向滚动 */
+  padding: 5px 0;
+}
+
+.btn-item {
+  display: flex;
+  align-items: center;
+  background-color: #f5f7fa;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  gap: 5px;
+  flex-shrink: 0;          /* 保证按钮不会缩小 */
+}
+
+.btn-text {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.btn-edit, .btn-delete {
+  cursor: pointer;
+  color: #909399;
+  transition: color 0.2s;
+  font-size: 12px;
+}
+
+.btn-edit:hover {
+  color: #409eff;
+}
+
+.btn-delete:hover {
+  color: #f56c6c;
+}
+
+.add-btn {
+  flex-shrink: 0;
+  color: #409eff;
+}
+
+.delete-row-btn {
+  flex-shrink: 0;
+  color: #f56c6c;
+}
+</style>
