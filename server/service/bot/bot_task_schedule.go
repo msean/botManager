@@ -86,13 +86,29 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 		select {
 		case <-tr.StopChan:
 			return
-
 		default:
 			now := time.Now()
 
+			// 如果任务设置了 StopTime 且已到期，停止任务
+			if !tr.Task.StopTime.IsZero() && now.After(tr.Task.StopTime) {
+				tr.Task.Status = 2
+				global.GVA_DB.Model(tr.Task).Update("status", 2)
+				global.GVA_LOG.Info("TaskRunner StopTask due to StopTime", zap.Int("taskID", int(tr.Task.ID)))
+				return
+			}
+
+			// 更新 NextSendTime，保证它在未来
 			for !tr.Task.NextSendTime.After(now) {
 				tr.Task.NextSendTime = tr.Task.NextSendTime.Add(time.Duration(tr.Task.SendInterval) * time.Minute)
+				// 如果下次发送时间已经超过 StopTime，则任务结束
+				if !tr.Task.StopTime.IsZero() && tr.Task.NextSendTime.After(tr.Task.StopTime) {
+					tr.Task.Status = 2
+					global.GVA_DB.Model(tr.Task).Update("status", 2)
+					global.GVA_LOG.Info("TaskRunner StopTask due to StopTime (next send)", zap.Int("taskID", int(tr.Task.ID)))
+					return
+				}
 			}
+
 			global.GVA_LOG.Info("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Time("nextSendTime", tr.Task.NextSendTime))
 
 			wait := time.Until(tr.Task.NextSendTime)
@@ -102,7 +118,6 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 			case <-tr.StopChan:
 				timer.Stop()
 				return
-
 			case <-timer.C:
 				err := sendFunc(tr.Task.ChatGroupID, tr.Task)
 				if err != nil {
@@ -113,6 +128,18 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 				now = time.Now()
 				tr.Task.PreSendTime = &now
 				tr.Task.NextSendTime = now.Add(time.Duration(tr.Task.SendInterval) * time.Minute)
+
+				// 如果下次发送时间已经超过 StopTime，则任务结束
+				if !tr.Task.StopTime.IsZero() && tr.Task.NextSendTime.After(tr.Task.StopTime) {
+					tr.Task.Status = 2
+					global.GVA_DB.Model(tr.Task).Updates(map[string]interface{}{
+						"pre_send_time":  tr.Task.PreSendTime,
+						"next_send_time": tr.Task.NextSendTime,
+						"status":         2,
+					})
+					global.GVA_LOG.Info("TaskRunner StopTask due to StopTime after send", zap.Int("taskID", int(tr.Task.ID)))
+					return
+				}
 
 				global.GVA_DB.Model(tr.Task).Updates(map[string]interface{}{
 					"pre_send_time":  tr.Task.PreSendTime,
@@ -164,28 +191,37 @@ func CleanHTMLForTelegram(htmlStr string) string {
 		return ""
 	}
 
-	// 1️⃣ 将 <p> 和 </p> 转换成换行
 	htmlStr = regexp.MustCompile(`(?i)<p[^>]*>`).ReplaceAllString(htmlStr, "")
 	htmlStr = regexp.MustCompile(`(?i)</p>`).ReplaceAllString(htmlStr, "\n")
-
-	// 2️⃣ 将 <div> 和 </div> 转换成换行
 	htmlStr = regexp.MustCompile(`(?i)<div[^>]*>`).ReplaceAllString(htmlStr, "")
 	htmlStr = regexp.MustCompile(`(?i)</div>`).ReplaceAllString(htmlStr, "\n")
-
-	// 3️⃣ 将 <br> 和 <br/> 转换成换行
 	htmlStr = regexp.MustCompile(`(?i)<br\s*/?>`).ReplaceAllString(htmlStr, "\n")
 
-	// 4️⃣ 删除 Telegram 不支持的标签
-	// 只保留 <b>, <i>, <strong>, <em>, <u>, <s>, <strike>, <del>, <a>, <code>, <pre>
-	htmlStr = regexp.MustCompile(`(?i)<(?!\/?(b|i|strong|em|u|s|strike|del|a|code|pre)(\s|>))[^>]+>`).ReplaceAllString(htmlStr, "")
+	allowed := map[string]bool{
+		"b": true, "i": true, "strong": true, "em": true,
+		"u": true, "s": true, "strike": true, "del": true,
+		"a": true, "code": true, "pre": true,
+	}
 
-	// 5️⃣ 转回 HTML 实体
+	tagRe := regexp.MustCompile(`(?i)</?([a-z0-9]+)[^>]*>`)
+	htmlStr = tagRe.ReplaceAllStringFunc(htmlStr, func(tag string) string {
+		m := tagRe.FindStringSubmatch(tag)
+		if len(m) < 2 {
+			return ""
+		}
+		name := strings.ToLower(m[1])
+		if allowed[name] {
+			return tag
+		}
+		return ""
+	})
+
+	// 3️⃣ 转义 HTML 实体
 	htmlStr = html.UnescapeString(htmlStr)
 
-	// 6️⃣ 合并多余换行和空格
+	// 4️⃣ 合并多余换行
 	htmlStr = regexp.MustCompile(`\n{2,}`).ReplaceAllString(htmlStr, "\n\n")
 	htmlStr = strings.TrimSpace(htmlStr)
-
 	return htmlStr
 }
 
@@ -317,7 +353,10 @@ func InitBotTaskManager() {
 	}
 
 	var tasks []bot.BotTask
-	err := global.GVA_DB.Where("status = ?", 1).Find(&tasks).Error
+	// 只加载未结束且 status=1 的任务
+	err := global.GVA_DB.
+		Where("status = ? AND (stop_time IS NULL OR stop_time > ?)", 1, time.Now()).
+		Find(&tasks).Error
 	if err != nil {
 		global.GVA_LOG.Error("加载任务失败", zap.Error(err))
 		return
