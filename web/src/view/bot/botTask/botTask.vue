@@ -91,7 +91,7 @@
             <template v-else>[富文本内容]</template>
           </template>
         </el-table-column>
-        <el-table-column label="扩展按钮" prop="extrendButton" width="200">
+        <el-table-column label="扩展按钮" prop="extrendButton" width="300">
           <template #default="scope">
             <div v-if="scope.row.extrendButton && scope.row.extrendButton.length">
               <div 
@@ -160,8 +160,8 @@
 
       <el-form :model="formData" :rules="rules" label-width="120px" ref="elFormRef" label-position="left" class="drawer-form">
           <el-col :span="16">
-             <el-form-item label="发送标题" prop="title">
-                <el-input v-model="formData.title" clearable placeholder="请输入发送标题" />
+             <el-form-item label="标题" prop="title">
+                <el-input v-model="formData.title" clearable placeholder="请输入标题" />
               </el-form-item>
           </el-col>
           <el-col :span="16">
