@@ -3,7 +3,12 @@ package bot
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"io/ioutil"
+	"net/http"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +51,7 @@ func (tm *TaskManager) StartTask(task *bot.BotTask, sendFunc TgSendFunc) {
 	tm.tasks[task.ID] = runner
 
 	go runner.Run(sendFunc)
+	global.GVA_LOG.Info("TaskManager StartTask", zap.Any("task", runner))
 }
 
 func (tm *TaskManager) StopTask(taskID uint) {
@@ -56,6 +62,7 @@ func (tm *TaskManager) StopTask(taskID uint) {
 		close(runner.StopChan)
 		delete(tm.tasks, taskID)
 	}
+	global.GVA_LOG.Info("TaskManager StopTask", zap.Any("task", taskID))
 }
 
 func (tm *TaskManager) ReloadTask(task *bot.BotTask, sendFunc TgSendFunc) {
@@ -71,33 +78,85 @@ func (tm *TaskManager) StopAll() {
 		close(runner.StopChan)
 	}
 	tm.tasks = make(map[uint]*TaskRunner)
+	global.GVA_LOG.Info("TaskManager StopAll")
 }
 
 func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
-	global.GVA_LOG.Info("TaskRunner", zap.Any("next_send_time", tr.Task.NextSendTime))
 	for {
 		select {
 		case <-tr.StopChan:
 			return
 
-		case <-time.After(time.Until(tr.Task.NextSendTime)):
-			fmt.Printf("开始执行任务 %d\n", tr.Task.ID)
-
-			err := sendFunc(tr.Task.ChatGroupID, tr.Task)
-			if err != nil {
-				global.GVA_LOG.Error("SendTelegramMessage", zap.Any("tr.Task", tr.Task), zap.Error(err))
-			}
-
-			// 记录发送时间
+		default:
 			now := time.Now()
-			global.GVA_DB.Model(tr.Task).Updates(map[string]interface{}{
-				"pre_send_time":  now,
-				"next_send_time": now.Add(time.Duration(tr.Task.SendInterval) * time.Minute),
-			})
 
-			tr.Task.NextSendTime = tr.Task.NextSendTime.Add(time.Duration(tr.Task.SendInterval) * time.Minute)
+			for !tr.Task.NextSendTime.After(now) {
+				tr.Task.NextSendTime = tr.Task.NextSendTime.Add(time.Duration(tr.Task.SendInterval) * time.Minute)
+			}
+			global.GVA_LOG.Info("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Time("nextSendTime", tr.Task.NextSendTime))
+
+			wait := time.Until(tr.Task.NextSendTime)
+			timer := time.NewTimer(wait)
+
+			select {
+			case <-tr.StopChan:
+				timer.Stop()
+				return
+
+			case <-timer.C:
+				err := sendFunc(tr.Task.ChatGroupID, tr.Task)
+				if err != nil {
+					global.GVA_LOG.Error("发送失败", zap.Error(err))
+					continue
+				}
+
+				now = time.Now()
+				tr.Task.PreSendTime = &now
+				tr.Task.NextSendTime = now.Add(time.Duration(tr.Task.SendInterval) * time.Minute)
+
+				global.GVA_DB.Model(tr.Task).Updates(map[string]interface{}{
+					"pre_send_time":  tr.Task.PreSendTime,
+					"next_send_time": tr.Task.NextSendTime,
+				})
+			}
 		}
 	}
+}
+
+func extractImgsAndText(htmlStr string) (imgs []string, textWithoutImgs string) {
+	// 找所有 <img ... src="..."> 并取 src
+	imgRe := regexp.MustCompile(`(?i)<img[^>]+src=["']([^"']+)["'][^>]*>`)
+	matches := imgRe.FindAllStringSubmatch(htmlStr, -1)
+	for _, m := range matches {
+		if len(m) >= 2 {
+			imgs = append(imgs, m[1])
+		}
+	}
+	// 去掉所有 <img> 标签，保留其余 HTML
+	textWithoutImgs = imgRe.ReplaceAllString(htmlStr, "")
+	// 去掉空的 <p></p> 等多余空白（可选）
+	// 将 HTML 实体转回正常字符（比如 &gt; -> >）
+	textWithoutImgs = html.UnescapeString(textWithoutImgs)
+	textWithoutImgs = strings.TrimSpace(textWithoutImgs)
+	return
+}
+
+// 辅助：创建 InlineKeyboardMarkup（如果没有按钮则返回 nil）
+func buildMarkupFromExtrend(raw json.RawMessage) *tgbotapi.InlineKeyboardMarkup {
+	if len(raw) == 0 {
+		return nil
+	}
+	var btns []bot.ButtonItem
+	if err := json.Unmarshal(raw, &btns); err != nil || len(btns) == 0 {
+		return nil
+	}
+	var row []tgbotapi.InlineKeyboardButton
+	for _, b := range btns {
+		// 只创建 URL 按钮（和你之前逻辑保持一致）
+		row = append(row, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
+	}
+	m := tgbotapi.NewInlineKeyboardMarkup(row)
+	return &m
 }
 
 func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
@@ -132,14 +191,58 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) (err error) {
 	switch task.TaskSendType {
 
 	case 1:
-		msg := tgbotapi.NewMessage(chatID, task.Content)
-		msg.ParseMode = "HTML"
+		imgs, text := extractImgsAndText(task.Content)
+
+		caption := text
+		if len(caption) > 1024 {
+			caption = caption[:1020] + "..."
+		}
+
+		var markup *tgbotapi.InlineKeyboardMarkup
+		if len(task.ExtrendButton) > 0 {
+			markup = buildMarkupFromExtrend(task.ExtrendButton)
+		}
+
+		if len(imgs) > 0 {
+			first := imgs[0]
+
+			resp, err := http.Get(first)
+			if err != nil {
+				global.GVA_LOG.Error("download image failed", zap.Error(err), zap.String("url", first))
+				return err
+			}
+			defer resp.Body.Close()
+
+			data, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				global.GVA_LOG.Error("read downloaded image failed", zap.Error(err), zap.String("url", first))
+				return err
+			}
+
+			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
+				Name:  filepath.Base(first),
+				Bytes: data,
+			})
+			photo.Caption = caption
+			photo.ParseMode = tgbotapi.ModeHTML
+			if markup != nil {
+				photo.ReplyMarkup = markup
+			}
+
+			if _, err = botAPI.Send(photo); err != nil {
+				global.GVA_LOG.Error("send photo with caption failed", zap.Error(err), zap.String("url", first))
+				return err
+			}
+			return nil
+		}
+
+		msg := tgbotapi.NewMessage(chatID, caption)
+		msg.ParseMode = tgbotapi.ModeHTML
 		if markup != nil {
 			msg.ReplyMarkup = markup
 		}
 		_, err = botAPI.Send(msg)
 		return err
-
 	case 2: // 普通文本
 		msg := tgbotapi.NewMessage(chatID, task.Content)
 		if markup != nil {
@@ -195,4 +298,18 @@ func InitBotTaskManager() {
 	BotTaskManager = &TaskManager{
 		tasks: make(map[uint]*TaskRunner),
 	}
+
+	var tasks []bot.BotTask
+	err := global.GVA_DB.Where("status = ?", 1).Find(&tasks).Error
+	if err != nil {
+		global.GVA_LOG.Error("加载任务失败", zap.Error(err))
+		return
+	}
+
+	for _, task := range tasks {
+		t := task
+		BotTaskManager.StartTask(&t, SendTelegramMessage)
+	}
+
+	global.GVA_LOG.Info("InitBotTaskManager", zap.Int("count", len(tasks)))
 }
