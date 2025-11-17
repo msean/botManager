@@ -117,6 +117,9 @@
         <el-table-column align="left" label="上一次发送时间" prop="preSendTime" width="180">
           <template #default="scope">{{ formatDate(scope.row.preSendTime) }}</template>
         </el-table-column>
+        <el-table-column align="left" label="结束时间" prop="stopTime" width="180">
+          <template #default="scope">{{ formatDate(scope.row.stopTime) }}</template>
+        </el-table-column>
         <el-table-column align="left" label="状态" prop="status" width="120">
           <template #default="scope">
             {{ scope.row.status === 1 ? '运行' : scope.row.status === 2 ? '停止' : '' }}
