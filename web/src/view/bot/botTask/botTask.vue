@@ -206,6 +206,7 @@
             multiple
             :file-list="formData.uploadFileList"
             :on-success="handleUploadSuccess"
+            :on-remove="handleRemove"
           >
             <i class="el-icon-plus"></i>
           </el-upload>
@@ -489,6 +490,13 @@ const handleUploadSuccess = (res, file) => {
 
   // 再把数组转成字符串赋值给 content
   formData.content = JSON.stringify(contentArray)
+}
+
+const handleRemove = (file, fileList) => {
+  // fileList 是当前上传组件内部维护的最新列表
+  // 更新 content
+  const urls = fileList.map(f => f.response?.url || f.url) // response.url 或已有的 url
+  formData.content = JSON.stringify(urls)
 }
 
 // ================== 表单重置 ==================
