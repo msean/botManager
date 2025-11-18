@@ -78,6 +78,21 @@ func (taskService *BotTaskService) DeleteBotTaskByIds(ctx context.Context, IDs [
 // UpdateBotTask 更新任务列表记录
 // Author [yourname](https://github.com/yourname)
 func (taskService *BotTaskService) UpdateBotTask(ctx context.Context, task *bot.BotTask) (err error) {
+	if task.NextSendTimeStr == "" {
+		err = fmt.Errorf("下次发送时间不能为空")
+		return
+	}
+	if task.StopTimeText == "" {
+		err = fmt.Errorf("下次发送时间不能为空")
+		return
+	}
+	layout := "2006-01-02 15:04:05"
+	if task.NextSendTime, err = time.ParseInLocation(layout, task.NextSendTimeStr, time.Local); err != nil {
+		return
+	}
+	if task.StopTime, err = time.ParseInLocation(layout, task.StopTimeText, time.Local); err != nil {
+		return
+	}
 	if err = global.GVA_DB.Model(&bot.BotTask{}).Where("id = ?", task.ID).Updates(&task).Error; err != nil {
 		return
 	}
