@@ -17,6 +17,11 @@ type (
 		BanContent string `json:"banContent" form:"banContent" ` //禁用内容
 		BotID      int64  `json:"botID" form:"botID" `           //机器人ID
 	}
+	BotChannelCache struct {
+		BotID       int64  `json:"botID" form:"botID"`             //机器人id
+		ChannelID   int64  `json:"channelID" form:"channelID"`     //频道ID
+		ChannelName string `json:"channelName" form:"channelName"` //渠道名称
+	}
 )
 
 func (cache BotChatGroupBanMemCache) TableName() string {
@@ -29,6 +34,10 @@ func (cache BotChatGroupCache) TableName() string {
 
 func (cache BotBanContentCache) TableName() string {
 	return bot.BotBanContent{}.TableName()
+}
+
+func (cache BotChannelCache) TableName() string {
+	return bot.BotChannel{}.TableName()
 }
 
 var _ bot.BotChatGroup
@@ -56,6 +65,19 @@ func BotChatGroupPk(botID, chatGroupID int) []KvPkPair {
 		{
 			PKCol: "chat_group_id",
 			PKVal: chatGroupID,
+		},
+	}
+}
+
+func BotChannelPk(botID, channelID int) []KvPkPair {
+	return []KvPkPair{
+		{
+			PKCol: "bot_id",
+			PKVal: botID,
+		},
+		{
+			PKCol: "channel_id",
+			PKVal: channelID,
 		},
 	}
 }

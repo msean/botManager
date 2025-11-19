@@ -122,8 +122,10 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 			case <-timer.C:
 				err := sendFunc(tr.Task.ChatGroupID, tr.Task)
 				if err != nil {
-					global.GVA_LOG.Error("发送失败", zap.Error(err))
+					global.GVA_LOG.Error("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Error(err))
 					continue
+				} else {
+					global.GVA_LOG.Error("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Error(err))
 				}
 
 				now = time.Now()

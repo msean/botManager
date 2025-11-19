@@ -91,6 +91,7 @@ func bizModel() error {
 		bot.BotChatGroup{},
 		bot.BotBanGroupMem{},
 		bot.BotTask{},
+		bot.BotChannel{},
 	)
 	if err != nil {
 		return err

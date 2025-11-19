@@ -33,11 +33,29 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return
 	}
 
+	// 拉人
 	if tgMsg.MyChatMember != nil {
 		svc.SyncChatGroup(botModel, tgMsg)
 		return nil
 	}
 
+	// 频道
+	if tgMsg.ChannelPost != nil {
+		svc.HandelChannel(botModel, tgMsg)
+	} else {
+		svc.HandelChatGroup(botModel, tgMsg)
+	}
+
+	return nil
+}
+
+// HandelChatGroup 处理群频道
+func (svc *BotMsgHandlerSvc) HandelChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
+	svc.SyncChannelMsg(botModel, tgMsg)
+}
+
+// HandelChatGroup 处理群聊消息
+func (svc *BotMsgHandlerSvc) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 	svc.SyncChatGroup(botModel, tgMsg)
 
 	// 只要消息是转发的都需要禁止
@@ -58,11 +76,33 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		}
 	}
 
-	if find, err = svc.CheckGroupMem(botModel, tgMsg); err != nil || find {
-		return
+	_, err = svc.CheckGroupMem(botModel, tgMsg)
+	return
+}
+
+func (svc *BotMsgHandlerSvc) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
+	svc.SyncChatGroup(botModel, tgMsg)
+
+	// 只要消息是转发的都需要禁止
+	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
+		svc.BanUser(botModel, tgMsg, global.BanTypeForword)
+		return nil
 	}
 
-	return nil
+	// 普通消息
+	if tgMsg.Message == nil {
+		return nil
+	}
+
+	var find bool
+	if tgMsg.Message.Text != "" {
+		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
+			return
+		}
+	}
+
+	_, err = svc.CheckGroupMem(botModel, tgMsg)
+	return
 }
 
 func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
@@ -273,4 +313,78 @@ func (svc *BotMsgHandlerSvc) SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Upda
 			)
 		}
 	}
+}
+
+func (svc *BotMsgHandlerSvc) SyncChannelMsg(botModel bot.Bot, tgMsg tgbotapi.Update) {
+	msg := tgMsg.ChannelPost
+
+	if msg == nil || msg.Chat == nil {
+		return
+	}
+
+	channelChatID := msg.Chat.ID
+	channelChatName := msg.Chat.Title
+
+	global.GVA_LOG.Debug("SyncChannelMsg",
+		zap.Int64("chatID", channelChatID),
+	)
+
+	pkPairs := cache.BotChannelPk(botModel.BotID, int(channelChatID))
+
+	// 尝试从缓存或数据库读取
+	var channelCache cache.BotChannelCache
+	has, err := cache.CacheGet(channelCache.TableName(), pkPairs, &channelCache, cache.LoadFromDBGet)
+	if err != nil {
+		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", channelChatID), zap.Error(err))
+		return
+	}
+
+	// 如果缓存或数据库不存在，创建新记录
+	if !has {
+		newGroup := bot.BotChannel{
+			BotID:       botModel.BotID,
+			ChannelID:   channelChatID,
+			ChannelName: channelChatName,
+		}
+		if createErr := global.GVA_DB.Create(&newGroup).Error; createErr != nil {
+			global.GVA_LOG.Error("failed to create new chat group",
+				zap.Int64("chatID", channelChatID),
+				zap.String("chatName", channelChatName),
+				zap.Error(createErr),
+			)
+			return
+		}
+		global.GVA_LOG.Info("new chat group added",
+			zap.Int64("chatID", channelChatID),
+			zap.String("chatName", channelChatName),
+		)
+		return
+	}
+
+	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
+	if channelCache.ChannelName != channelChatName {
+		if err := global.GVA_DB.Model(&bot.BotChannel{}).
+			Where("bot_id = ? AND channel_id = ?", botModel.BotID, channelChatID).
+			Update("channel_name", channelChatName).Error; err != nil {
+			global.GVA_LOG.Error("failed to update chat group name",
+				zap.Int64("chatID", channelChatID),
+				zap.String("newName", channelChatName),
+				zap.Error(err),
+			)
+		} else {
+			global.GVA_LOG.Info("chat group name updated",
+				zap.Int64("chatID", channelChatID),
+				zap.String("newName", channelChatName),
+			)
+		}
+
+		if err = cache.CacheDelete(channelCache.TableName(), pkPairs); err != nil {
+			global.GVA_LOG.Error("failed to update chat group name",
+				zap.Int64("chatID", channelChatID),
+				zap.String("newName", channelChatName),
+				zap.Error(err),
+			)
+		}
+	}
+	return
 }

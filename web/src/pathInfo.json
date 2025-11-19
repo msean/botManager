@@ -7,6 +7,8 @@
   "/src/view/bot/botBanContent/botBanContentForm.vue": "botBanContentForm",
   "/src/view/bot/botBanGroupMem/botBanGroupMem.vue": "BotBanGroupMem",
   "/src/view/bot/botBanGroupMem/botBanGroupMemForm.vue": "BotBanGroupMemForm",
+  "/src/view/bot/botChannel/botChannel.vue": "BotChannel",
+  "/src/view/bot/botChannel/botChannelForm.vue": "BotChannelForm",
   "/src/view/bot/botChatGroup/botChatGroup.vue": "BotChatGroup",
   "/src/view/bot/botChatGroup/botChatGroupForm.vue": "BotChatGroupForm",
   "/src/view/bot/botTask/botTask.vue": "BotTask",

@@ -8,4 +8,5 @@ type ServiceGroup struct {
 	BotBanGroupMemService
 	BotMsgHandlerSvc
 	BotTaskService
+	BotChannelService
 }
