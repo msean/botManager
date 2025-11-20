@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -83,7 +82,6 @@ func (tm *TaskManager) StopAll() {
 }
 
 func (tr *TaskRunner) Run() {
-	spew.Dump(">>>>>>>>>>>>>>tr.Task.NextSendTime", tr.Task.NextSendTime)
 	for {
 		select {
 		case <-tr.StopChan:
@@ -111,7 +109,6 @@ func (tr *TaskRunner) Run() {
 				}
 			}
 
-			spew.Dump("###########tr.Task.NextSendTime", tr.Task.NextSendTime)
 			global.GVA_LOG.Info("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Time("nextSendTime", tr.Task.NextSendTime))
 
 			wait := time.Until(tr.Task.NextSendTime)
@@ -127,7 +124,7 @@ func (tr *TaskRunner) Run() {
 					global.GVA_LOG.Error("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Error(err))
 					continue
 				} else {
-					global.GVA_LOG.Error("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Error(err))
+					global.GVA_LOG.Info("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Error(err))
 				}
 
 				now = time.Now()
