@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -121,21 +120,21 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 	switch task.GroupType {
 	case global.GroupTypeChat:
 		var botChatGroupModel bot.BotChatGroup
-		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_DB, int(task.ChatGroupID)); !has || err != nil {
+		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_DB, int(task.GroupID)); !has || err != nil {
 			if !has {
 				err = fmt.Errorf("没有找到改机器人")
 			}
-			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("chatGroupID", task.ChatGroupID), zap.Bool("has", has), zap.Error(err))
+			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("GroupID", task.GroupID), zap.Bool("has", has), zap.Error(err))
 			return
 		}
 		task.GroupName = botChatGroupModel.ChatGroupName
 	case global.GroupTypeChannel:
 		var botChannel bot.BotChannel
-		if botChannel, has, err = dao.BotChannelDao.FromBotID(global.GVA_DB, int(task.ChatGroupID)); !has || err != nil {
+		if botChannel, has, err = dao.BotChannelDao.FromBotID(global.GVA_DB, int(task.GroupID)); !has || err != nil {
 			if !has {
-				err = fmt.Errorf("没有找到改机器人")
+				err = fmt.Errorf("没有找到改渠道")
 			}
-			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("chatGroupID", task.ChatGroupID), zap.Bool("has", has), zap.Error(err))
+			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("groupID", task.GroupID), zap.Bool("has", has), zap.Error(err))
 			return
 		}
 		task.GroupName = botChannel.ChannelName
@@ -199,8 +198,6 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 	if channelMapper, err = dao.BotChannelDao.MappByChannelIDList(global.GVA_DB, channelList); err != nil {
 		return
 	}
-	spew.Dump(chatGroupMapper)
-	spew.Dump(channelMapper)
 
 	for _, object := range tasks {
 		object.BotName = botMapper[int(object.BotID)].Name
