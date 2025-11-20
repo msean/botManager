@@ -14,24 +14,8 @@ func StartHandlerfunc(update tgbotapi.Update, token string, botID int64) {
 	}
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("⚡能源租用"),
-			tgbotapi.NewKeyboardButton("💵能量理财"),
-			tgbotapi.NewKeyboardButton("📅888租号"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("🔥智能托管"),
-			tgbotapi.NewKeyboardButton("✏️笔数套餐"),
-			tgbotapi.NewKeyboardButton("💎会员星星"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("✅TRX闪兑"),
-			tgbotapi.NewKeyboardButton("🛠常用功能"),
-			tgbotapi.NewKeyboardButton("📣供需广告"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("🦊实用导航"),
-			tgbotapi.NewKeyboardButton("🏦钱包功能"),
-			tgbotapi.NewKeyboardButton("🌐新浪头条"),
+			tgbotapi.NewKeyboardButton("⚡充值"),
+			tgbotapi.NewKeyboardButton("💵充值价格"),
 		),
 	)
 
