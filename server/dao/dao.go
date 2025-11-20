@@ -5,4 +5,5 @@ var (
 	BotChatGroupDao = newbotChatGroupDao()
 	SysParamsDao    = newsysParamsDao()
 	BotGroupMemDao  = newbotGroupMemDao()
+	BotChannelDao   = newbotChannelDao()
 )

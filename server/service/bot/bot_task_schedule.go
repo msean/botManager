@@ -21,7 +21,6 @@ type (
 		mu    sync.Mutex
 		tasks map[uint]*TaskRunner
 	}
-	TgSendFunc func(int64, *bot.BotTask) error
 )
 
 var BotTaskManager *TaskManager
@@ -31,7 +30,7 @@ type TaskRunner struct {
 	StopChan chan struct{}
 }
 
-func (tm *TaskManager) StartTask(task *bot.BotTask, sendFunc TgSendFunc) {
+func (tm *TaskManager) StartTask(task *bot.BotTask) {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 
@@ -47,7 +46,7 @@ func (tm *TaskManager) StartTask(task *bot.BotTask, sendFunc TgSendFunc) {
 	}
 	tm.tasks[task.ID] = runner
 
-	go runner.Run(sendFunc)
+	go runner.Run()
 	global.GVA_LOG.Info("TaskManager StartTask", zap.Any("task", runner))
 }
 
@@ -62,10 +61,10 @@ func (tm *TaskManager) StopTask(taskID uint) {
 	global.GVA_LOG.Info("TaskManager StopTask", zap.Any("task", taskID))
 }
 
-func (tm *TaskManager) ReloadTask(task *bot.BotTask, sendFunc TgSendFunc) {
+func (tm *TaskManager) ReloadTask(task *bot.BotTask) {
 	if task.Status == 1 {
 		tm.StopTask(task.ID)
-		tm.StartTask(task, sendFunc)
+		tm.StartTask(task)
 	} else {
 		tm.StopTask(task.ID)
 	}
@@ -82,7 +81,7 @@ func (tm *TaskManager) StopAll() {
 	global.GVA_LOG.Info("TaskManager StopAll")
 }
 
-func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
+func (tr *TaskRunner) Run() {
 	for {
 		select {
 		case <-tr.StopChan:
@@ -120,7 +119,7 @@ func (tr *TaskRunner) Run(sendFunc TgSendFunc) {
 				timer.Stop()
 				return
 			case <-timer.C:
-				err := sendFunc(tr.Task.ChatGroupID, tr.Task)
+				err := SendTelegramMessage(tr.Task.ChatGroupID, tr.Task)
 				if err != nil {
 					global.GVA_LOG.Error("TaskRunner Run", zap.Int("taskID", int(tr.Task.ID)), zap.Error(err))
 					continue
@@ -407,7 +406,7 @@ func InitBotTaskManager() {
 
 	for _, task := range tasks {
 		t := task
-		BotTaskManager.StartTask(&t, SendTelegramMessage)
+		BotTaskManager.StartTask(&t)
 	}
 
 	global.GVA_LOG.Info("InitBotTaskManager", zap.Int("count", len(tasks)))

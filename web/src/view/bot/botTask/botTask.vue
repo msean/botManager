@@ -72,9 +72,16 @@
           <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
         <el-table-column align="left" label="标题" prop="title" width="120" />
-        <el-table-column align="left" label="群聊名称" prop="chatGroupName" width="120" />
         <el-table-column align="left" label="机器人名称" prop="botName" width="120" />
-        <el-table-column align="left" label="发送类型" prop="taskSendType" width="120">
+        <el-table-column align="left" label="类型" prop="sendGroupType" width="120">
+          <template #default="scope">
+            <span>
+              {{ scope.row.sendGroupType === 1 ? '群聊' : scope.row.sendGroupType === 2 ? '频道' : '-' }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column align="left" label="群聊/频道名称" prop="groupName" width="120" />
+        <el-table-column align="left" label="内容类型" prop="taskSendType" width="120">
           <template #default="scope">{{ renderSendType(scope.row.taskSendType) }}</template>
         </el-table-column>
         <el-table-column label="发送内容" prop="content" width="200">
@@ -175,15 +182,42 @@
             </el-form-item>
           </el-col>
           <el-col :span="16">
-            <el-form-item label="群聊" prop="chatGroupID">
-              <el-select v-model="formData.chatGroupID" placeholder="请选择群聊" style="width:100%">
-                <el-option v-for="group in groupOptions" :key="group.chatGroupID" :label="group.chatGroupName" :value="group.chatGroupID" />
-              </el-select>
-            </el-form-item>
-          </el-col>
+          <el-form-item label="类型(群聊/频道)" prop="sendGroupType">
+            <el-select v-model="formData.sendGroupType" placeholder="请选择类型" style="width: 100%">
+              <el-option :label="'群聊'" :value="1" />
+              <el-option :label="'频道'" :value="2" />
+            </el-select>
+          </el-form-item>
+        </el-col>
 
+        <el-col :span="16">
+          <el-form-item :label="formData.sendGroupType === 1 ? '群聊名称' : '频道名称'" prop="groupID">
+            <el-select v-model="formData.groupID" placeholder="请选择" style="width:100%">
+              
+              <template v-if="formData.sendGroupType === 1">
+                <el-option 
+                  v-for="group in groupOptions" 
+                  :key="group.chatGroupID" 
+                  :label="group.chatGroupName" 
+                  :value="group.chatGroupID" 
+                />
+              </template>
+
+              <!-- 频道选项 -->
+              <template v-else>
+                <el-option 
+                  v-for="ch in channelOptions" 
+                  :key="ch.channelID" 
+                  :label="ch.channelName" 
+                  :value="ch.channelID" 
+                />
+              </template>
+
+            </el-select>
+          </el-form-item>
+        </el-col>
         <!-- 发送类型 -->
-        <el-form-item label="发送类型" prop="taskSendType">
+        <el-form-item label="内容类型" prop="taskSendType">
           <el-radio-group v-model="formData.taskSendType" @change="handleSendTypeChange">
             <el-radio-button :label="1">预设页面</el-radio-button>
             <el-radio-button :label="2">文本</el-radio-button>
@@ -253,8 +287,6 @@
   </el-button>
 </div>
 
-
-
   <!-- 编辑/新增按钮 弹窗 -->
   <el-dialog v-model="dialogVisible" title="编辑按钮" width="400px">
     <el-form :model="editForm" label-width="90px">
@@ -321,14 +353,12 @@
           />
         </el-form-item>
 
-        <!-- 状态开关 -->
         <el-form-item label="状态" prop="status">
           <el-switch v-model="formData.status" active-text="开启" inactive-text="关闭" />
         </el-form-item>
       </el-form>
 
 
-      <!-- 添加/编辑按钮弹窗 -->
       <el-dialog v-model="btnDialogVisible" :title="isEdit ? '编辑按钮' : '新增按钮'" width="400px">
         <el-form :model="btnForm" label-width="80px">
           <el-form-item label="名称">
@@ -350,8 +380,13 @@
     <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
       <el-descriptions :column="1" border label-width="150px">
         <el-descriptions-item label="机器人名称">{{ detailForm.botName }}</el-descriptions-item>
-        <el-descriptions-item label="群聊名称">{{ detailForm.chatGroupName }}</el-descriptions-item>
-        <el-descriptions-item label="发送类型">{{ renderSendType(detailForm.taskSendType) }}</el-descriptions-item>
+        <el-descriptions-item label="类型">
+          {{ detailForm.sendGroupType === 1 ? '群聊' : '频道' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="detailForm.sendGroupType === 1 ? '群聊名称' : '频道名称'">
+          {{ detailForm.groupName }}
+        </el-descriptions-item>
+        <el-descriptions-item label="内容类型">{{ renderSendType(detailForm.taskSendType) }}</el-descriptions-item>
         <el-descriptions-item label="发送内容">
           <!-- 文本类型 -->
           <template v-if="detailForm.taskSendType === 2">
@@ -407,12 +442,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { createBotTask, updateBotTask, deleteBotTaskByIds, findBotTask, getBotTaskList, deleteBotTask } from '@/api/bot/botTask'
 import { getBotChoiceWithChatGroup } from '@/api/bot/bot'
 import RichEdit from '@/components/richtext/rich-edit.vue'
-import RichView from '@/components/richtext/rich-view.vue'
 import { formatDate } from '@/utils/format'
 import { useAppStore } from '@/pinia'
 import { computed } from 'vue'
 import DOMPurify from 'dompurify'
-import ButtonGroupEditor from "@/components/ButtonGroupEditor.vue";
 
 
 const appStore = useAppStore()
@@ -460,6 +493,7 @@ const elSearchFormRef = ref()
 // ================== Bot + Group ==================
 const botOptions = ref([])
 const groupOptions = ref([])
+const channelOptions = ref([])
 
 const loadBotOptions = async () => {
   const res = await getBotChoiceWithChatGroup()
@@ -470,6 +504,7 @@ loadBotOptions()
 const handleBotChange = (botID) => {
   const bot = botOptions.value.find(b => b.botID === botID)
   groupOptions.value = bot ? bot.botChatGroups || [] : []
+  channelOptions.value = bot ? bot.botChannels || [] : []
   formData.chatGroupID = undefined
 }
 
@@ -516,6 +551,7 @@ const resetFormData = () => {
     stopTimeText: '',
   })
   groupOptions.value = []
+  channelOptions.value=[]
 }
 
 // ================== 表格查询 ==================
@@ -625,6 +661,7 @@ const updateBotTaskFunc = async (row) => {
 
   const bot = botOptions.value.find(b => b.botID === data.botID)
   groupOptions.value = bot ? bot.botChatGroups : []
+  channelOptions.value = bot ? bot.botChannels : []
 
   if (formData.taskSendType === 3 || formData.taskSendType === 4) {
     let urls = []

@@ -13,3 +13,8 @@ const (
 	BanTypeMem     = 2
 	BanTypeForword = 3
 )
+
+const (
+	GroupTypeChat    = 1
+	GroupTypeChannel = 2
+)

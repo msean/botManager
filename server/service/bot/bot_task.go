@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -107,7 +108,6 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 		return
 	}
 	var botModel bot.Bot
-	var botChatGroupModel bot.BotChatGroup
 	var has bool
 	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID)); !has || err != nil {
 		if !has {
@@ -117,14 +117,30 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 		return
 	}
 	task.BotName = botModel.Name
-	if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_DB, int(task.ChatGroupID)); !has || err != nil {
-		if !has {
-			err = fmt.Errorf("没有找到改机器人")
+
+	switch task.GroupType {
+	case global.GroupTypeChat:
+		var botChatGroupModel bot.BotChatGroup
+		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_DB, int(task.ChatGroupID)); !has || err != nil {
+			if !has {
+				err = fmt.Errorf("没有找到改机器人")
+			}
+			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("chatGroupID", task.ChatGroupID), zap.Bool("has", has), zap.Error(err))
+			return
 		}
-		global.GVA_LOG.Error("taskService GetBotTask", zap.Any("chatGroupID", task.ChatGroupID), zap.Bool("has", has), zap.Error(err))
-		return
+		task.GroupName = botChatGroupModel.ChatGroupName
+	case global.GroupTypeChannel:
+		var botChannel bot.BotChannel
+		if botChannel, has, err = dao.BotChannelDao.FromBotID(global.GVA_DB, int(task.ChatGroupID)); !has || err != nil {
+			if !has {
+				err = fmt.Errorf("没有找到改机器人")
+			}
+			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("chatGroupID", task.ChatGroupID), zap.Bool("has", has), zap.Error(err))
+			return
+		}
+		task.GroupName = botChannel.ChannelName
 	}
-	task.ChatGroupName = botChatGroupModel.ChatGroupName
+
 	task.NextSendTimeStr = task.NextSendTime.Format("2006-01-02 15:04:05")
 	task.StopTimeText = task.StopTime.Format("2006-01-02 15:04:05")
 	return
@@ -157,9 +173,14 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 	}
 	var botList []int
 	var chatGroupList []int
+	var channelList []int
 	for _, object := range tasks {
 		botList = append(botList, int(object.BotID))
-		chatGroupList = append(chatGroupList, int(object.ChatGroupID))
+		if object.GroupType == global.GroupTypeChat {
+			chatGroupList = append(chatGroupList, int(object.GroupID))
+		} else {
+			channelList = append(channelList, int(object.GroupID))
+		}
 	}
 
 	var botMapper map[int]bot.Bot
@@ -167,14 +188,27 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
+	var channelMapper map[int]bot.BotChannel
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+		return
+	}
 
 	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_DB, chatGroupList); err != nil {
 		return
 	}
+	if channelMapper, err = dao.BotChannelDao.MappByChannelIDList(global.GVA_DB, channelList); err != nil {
+		return
+	}
+	spew.Dump(chatGroupMapper)
+	spew.Dump(channelMapper)
 
 	for _, object := range tasks {
 		object.BotName = botMapper[int(object.BotID)].Name
-		object.ChatGroupName = chatGroupMapper[int(object.ChatGroupID)].ChatGroupName
+		if object.GroupType == global.GroupTypeChat {
+			object.GroupName = chatGroupMapper[int(object.GroupID)].ChatGroupName
+		} else {
+			object.GroupName = channelMapper[int(object.GroupID)].ChannelName
+		}
 	}
 
 	return tasks, total, err

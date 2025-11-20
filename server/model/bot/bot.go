@@ -16,6 +16,7 @@ type Bot struct {
 	BotID     int            `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;index"`                 //机器人ID
 	Token     string         `json:"token" form:"token" gorm:"comment:token;column:token;size:256;"`              //机器人token
 	Chats     []BotChatGroup `json:"botChatGroups" form:"botChatGroups" gorm:"foreignKey:BotID;references:BotID"` //机器人token
+	Channels  []BotChannel   `json:"botChannels" form:"botChannels" gorm:"foreignKey:BotID;references:BotID"`     //机器人token
 }
 
 // TableName 机器人 Bot自定义表名 bot
