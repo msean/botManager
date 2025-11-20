@@ -1,12 +1,14 @@
 package bot
 
+import "github.com/msean/botmanager/server/service/bot/handle"
+
 type ServiceGroup struct {
 	BotBanContentService
 	BotService
 	BanRecordService
 	BotChatGroupService
 	BotBanGroupMemService
-	BotMsgHandlerSvc
+	handle.BotMsgHandlerSvc
 	BotTaskService
 	BotChannelService
 }

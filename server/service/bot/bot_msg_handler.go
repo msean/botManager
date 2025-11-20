@@ -1,390 +1,396 @@
 package bot
 
-import (
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"strings"
-	"time"
+// import (
+// 	"encoding/json"
+// 	"fmt"
+// 	"strconv"
+// 	"strings"
+// 	"time"
 
-	"github.com/gin-gonic/gin"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/msean/botmanager/server/dao"
-	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/model/bot"
-	"github.com/msean/botmanager/server/model/system"
-	"github.com/msean/botmanager/server/service/cache"
-	"github.com/msean/botmanager/server/utils/bot_handler"
-	"go.uber.org/zap"
-)
+// 	"github.com/gin-gonic/gin"
+// 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+// 	"github.com/msean/botmanager/server/dao"
+// 	"github.com/msean/botmanager/server/global"
+// 	"github.com/msean/botmanager/server/model/bot"
+// 	"github.com/msean/botmanager/server/model/system"
+// 	"github.com/msean/botmanager/server/service/cache"
+// 	"github.com/msean/botmanager/server/utils/bot_handler"
+// 	"go.uber.org/zap"
+// )
 
-type BotMsgHandlerSvc struct{}
+// type BotMsgHandlerSvc struct{}
 
-func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err error) {
-	var tgMsg tgbotapi.Update
-	if err = json.Unmarshal(body, &tgMsg); err != nil {
-		global.GVA_LOG.Error("invalid telegram tgMsg", zap.Error(err))
-		return
-	}
+// func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err error) {
+// 	var tgMsg tgbotapi.Update
+// 	if err = json.Unmarshal(body, &tgMsg); err != nil {
+// 		global.GVA_LOG.Error("invalid telegram tgMsg", zap.Error(err))
+// 		return
+// 	}
 
-	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, botID)
-	if err != nil || !has {
-		global.GVA_LOG.Error("bot not found", zap.Int("botID", botID), zap.Error(err))
-		return
-	}
+// 	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, botID)
+// 	if err != nil || !has {
+// 		global.GVA_LOG.Error("bot not found", zap.Int("botID", botID), zap.Error(err))
+// 		return
+// 	}
 
-	// 拉人
-	if tgMsg.MyChatMember != nil {
-		svc.SyncChatGroup(botModel, tgMsg)
-		return nil
-	}
+// 	chatType := tgMsg.Message.Chat.Type
+// 	switch  chatType{
+// 	case "private":
 
-	// 频道
-	if tgMsg.ChannelPost != nil {
-		svc.HandelChannel(botModel, tgMsg)
-	} else {
-		svc.HandelChatGroup(botModel, tgMsg)
-	}
+// 	}
 
-	return nil
-}
+// 	// 拉人
+// 	if tgMsg.MyChatMember != nil {
+// 		svc.SyncChatGroup(botModel, tgMsg)
+// 		return nil
+// 	}
 
-// HandelChatGroup 处理群频道
-func (svc *BotMsgHandlerSvc) HandelChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
-	svc.SyncChannelMsg(botModel, tgMsg)
-}
+// 	// 频道
+// 	if tgMsg.ChannelPost != nil {
+// 		svc.HandelChannel(botModel, tgMsg)
+// 	} else {
+// 		svc.HandelChatGroup(botModel, tgMsg)
+// 	}
 
-// HandelChatGroup 处理群聊消息
-func (svc *BotMsgHandlerSvc) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
-	svc.SyncChatGroup(botModel, tgMsg)
+// 	return nil
+// }
 
-	// 只要消息是转发的都需要禁止
-	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
-		svc.BanUser(botModel, tgMsg, global.BanTypeForword)
-		return nil
-	}
+// // HandelChatGroup 处理群频道
+// func (svc *BotMsgHandlerSvc) HandelChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
+// 	svc.SyncChannelMsg(botModel, tgMsg)
+// }
 
-	// 普通消息
-	if tgMsg.Message == nil {
-		return nil
-	}
+// // HandelChatGroup 处理群聊消息
+// func (svc *BotMsgHandlerSvc) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
+// 	svc.SyncChatGroup(botModel, tgMsg)
 
-	var find bool
-	if tgMsg.Message.Text != "" {
-		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
-			return
-		}
-	}
+// 	// 只要消息是转发的都需要禁止
+// 	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
+// 		svc.BanUser(botModel, tgMsg, global.BanTypeForword)
+// 		return nil
+// 	}
 
-	_, err = svc.CheckGroupMem(botModel, tgMsg)
-	return
-}
+// 	// 普通消息
+// 	if tgMsg.Message == nil {
+// 		return nil
+// 	}
 
-func (svc *BotMsgHandlerSvc) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
-	svc.SyncChatGroup(botModel, tgMsg)
+// 	var find bool
+// 	if tgMsg.Message.Text != "" {
+// 		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
+// 			return
+// 		}
+// 	}
 
-	// 只要消息是转发的都需要禁止
-	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
-		svc.BanUser(botModel, tgMsg, global.BanTypeForword)
-		return nil
-	}
+// 	_, err = svc.CheckGroupMem(botModel, tgMsg)
+// 	return
+// }
 
-	// 普通消息
-	if tgMsg.Message == nil {
-		return nil
-	}
+// func (svc *BotMsgHandlerSvc) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
+// 	svc.SyncChatGroup(botModel, tgMsg)
 
-	var find bool
-	if tgMsg.Message.Text != "" {
-		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
-			return
-		}
-	}
+// 	// 只要消息是转发的都需要禁止
+// 	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
+// 		svc.BanUser(botModel, tgMsg, global.BanTypeForword)
+// 		return nil
+// 	}
 
-	_, err = svc.CheckGroupMem(botModel, tgMsg)
-	return
-}
+// 	// 普通消息
+// 	if tgMsg.Message == nil {
+// 		return nil
+// 	}
 
-func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
-	// 获取封禁时长
-	var param system.SysParams
-	param, err = dao.SysParamsDao.FromKey(global.GVA_DB, global.UserBanDuritonKey, global.DefaultUserBanDuriton)
-	if err != nil {
-		global.GVA_LOG.Error("get ban duration failed", zap.Error(err))
-		return
-	}
-	durationMinutes, _ := strconv.Atoi(param.Value)
+// 	var find bool
+// 	if tgMsg.Message.Text != "" {
+// 		if find, err = svc.CheckBanContent(botModel, tgMsg); err != nil || find {
+// 			return
+// 		}
+// 	}
 
-	// 发送api 封禁用户
-	chatID := tgMsg.Message.Chat.ID
-	messageID := tgMsg.Message.MessageID
+// 	_, err = svc.CheckGroupMem(botModel, tgMsg)
+// 	return
+// }
 
-	botHandler := bot_handler.NewBot(botModel.Token)
-	var banErr error
-	until := time.Now().Add(time.Duration(durationMinutes) * time.Minute).Unix()
-	if banErr = botHandler.BanUser(tgMsg.Message.Chat.ID, tgMsg.Message.From.ID, until); banErr != nil {
-		global.GVA_LOG.Error("ban user failed", zap.Error(err))
-	} else {
-		global.GVA_LOG.Info("ban user success",
-			zap.Int64("chatID", tgMsg.Message.Chat.ID),
-			zap.Int64("user_id", tgMsg.Message.Chat.ID),
-			zap.Int64("util", until),
-		)
-	}
+// func (svc *BotMsgHandlerSvc) BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
+// 	// 获取封禁时长
+// 	var param system.SysParams
+// 	param, err = dao.SysParamsDao.FromKey(global.GVA_DB, global.UserBanDuritonKey, global.DefaultUserBanDuriton)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("get ban duration failed", zap.Error(err))
+// 		return
+// 	}
+// 	durationMinutes, _ := strconv.Atoi(param.Value)
 
-	if chatID != 0 && messageID != 0 && banErr == nil {
-		if deleteErr := botHandler.DeleteMsg(chatID, messageID); deleteErr != nil {
-			global.GVA_LOG.Error("delete msg error",
-				zap.Int64("chatID", tgMsg.Message.Chat.ID),
-				zap.Int64("user_id", tgMsg.Message.Chat.ID),
-				zap.Int64("util", until),
-				zap.Error(deleteErr),
-			)
-		}
-	}
+// 	// 发送api 封禁用户
+// 	chatID := tgMsg.Message.Chat.ID
+// 	messageID := tgMsg.Message.MessageID
 
-	remark := ""
-	if banErr != nil {
-		remark = banErr.Error()
-	}
-	msg := ""
-	if _type == global.BanTypeWord {
-		msg = tgMsg.Message.Text
-	}
-	record := bot.BanRecord{
-		BotID:       botModel.BotID,
-		UserID:      tgMsg.Message.From.ID,
-		UserName:    tgMsg.Message.From.UserName,
-		ChatID:      tgMsg.Message.Chat.ID,
-		ChatName:    tgMsg.Message.Chat.Title,
-		BanDuration: int64(durationMinutes),
-		Remark:      remark,
-		BanType:     _type,
-		FullName:    fmt.Sprintf("%s%s", tgMsg.Message.From.FirstName, tgMsg.Message.From.LastName),
-		Msg:         msg,
-	}
-	if err := global.GVA_DB.Create(&record).Error; err != nil {
-		global.GVA_LOG.Error("failed to insert BanRecord", zap.Any("record", record), zap.Error(err))
-	}
-	return
-}
+// 	botHandler := bot_handler.NewBot(botModel.Token)
+// 	var banErr error
+// 	until := time.Now().Add(time.Duration(durationMinutes) * time.Minute).Unix()
+// 	if banErr = botHandler.BanUser(tgMsg.Message.Chat.ID, tgMsg.Message.From.ID, until); banErr != nil {
+// 		global.GVA_LOG.Error("ban user failed", zap.Error(err))
+// 	} else {
+// 		global.GVA_LOG.Info("ban user success",
+// 			zap.Int64("chatID", tgMsg.Message.Chat.ID),
+// 			zap.Int64("user_id", tgMsg.Message.Chat.ID),
+// 			zap.Int64("util", until),
+// 		)
+// 	}
 
-func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, err error) {
-	// var banContents []bot.BotBanContent
-	// banContents, err = dao.BotDao.ListBotBannerContentByID(global.GVA_DB, botModel.BotID)
-	// if err != nil {
-	// 	global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
-	// 	return
-	// }
-	if tgMsg.Message == nil {
-		return
-	}
+// 	if chatID != 0 && messageID != 0 && banErr == nil {
+// 		if deleteErr := botHandler.DeleteMsg(chatID, messageID); deleteErr != nil {
+// 			global.GVA_LOG.Error("delete msg error",
+// 				zap.Int64("chatID", tgMsg.Message.Chat.ID),
+// 				zap.Int64("user_id", tgMsg.Message.Chat.ID),
+// 				zap.Int64("util", until),
+// 				zap.Error(deleteErr),
+// 			)
+// 		}
+// 	}
 
-	var botBanContentCache []cache.BotBanContentCache
-	if _, err = cache.CacheGet(cache.BotBanContentCache{}.TableName(), cache.BotBanContentPk(botModel.BotID), &botBanContentCache, cache.LoadFromDBList); err != nil {
-		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
-		return
-	}
+// 	remark := ""
+// 	if banErr != nil {
+// 		remark = banErr.Error()
+// 	}
+// 	msg := ""
+// 	if _type == global.BanTypeWord {
+// 		msg = tgMsg.Message.Text
+// 	}
+// 	record := bot.BanRecord{
+// 		BotID:       botModel.BotID,
+// 		UserID:      tgMsg.Message.From.ID,
+// 		UserName:    tgMsg.Message.From.UserName,
+// 		ChatID:      tgMsg.Message.Chat.ID,
+// 		ChatName:    tgMsg.Message.Chat.Title,
+// 		BanDuration: int64(durationMinutes),
+// 		Remark:      remark,
+// 		BanType:     _type,
+// 		FullName:    fmt.Sprintf("%s%s", tgMsg.Message.From.FirstName, tgMsg.Message.From.LastName),
+// 		Msg:         msg,
+// 	}
+// 	if err := global.GVA_DB.Create(&record).Error; err != nil {
+// 		global.GVA_LOG.Error("failed to insert BanRecord", zap.Any("record", record), zap.Error(err))
+// 	}
+// 	return
+// }
 
-	messageText := tgMsg.Message.Text
-	global.GVA_LOG.Info("msg", zap.String("bot", botModel.Name), zap.String("msg", tgMsg.Message.Text))
+// func (svc *BotMsgHandlerSvc) CheckBanContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, err error) {
+// 	// var banContents []bot.BotBanContent
+// 	// banContents, err = dao.BotDao.ListBotBannerContentByID(global.GVA_DB, botModel.BotID)
+// 	// if err != nil {
+// 	// 	global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
+// 	// 	return
+// 	// }
+// 	if tgMsg.Message == nil {
+// 		return
+// 	}
 
-	for _, rule := range botBanContentCache {
-		if strings.Contains(messageText, rule.BanContent) {
-			global.GVA_LOG.Info("found banned word",
-				zap.String("word", rule.BanContent),
-				zap.String("user", tgMsg.Message.From.UserName),
-				zap.String("msg", messageText),
-			)
+// 	var botBanContentCache []cache.BotBanContentCache
+// 	if _, err = cache.CacheGet(cache.BotBanContentCache{}.TableName(), cache.BotBanContentPk(botModel.BotID), &botBanContentCache, cache.LoadFromDBList); err != nil {
+// 		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
+// 		return
+// 	}
 
-			svc.BanUser(botModel, tgMsg, global.BanTypeWord)
+// 	messageText := tgMsg.Message.Text
+// 	global.GVA_LOG.Info("msg", zap.String("bot", botModel.Name), zap.String("msg", tgMsg.Message.Text))
 
-			find = true
-			return
-		}
-	}
-	return
-}
+// 	for _, rule := range botBanContentCache {
+// 		if strings.Contains(messageText, rule.BanContent) {
+// 			global.GVA_LOG.Info("found banned word",
+// 				zap.String("word", rule.BanContent),
+// 				zap.String("user", tgMsg.Message.From.UserName),
+// 				zap.String("msg", messageText),
+// 			)
 
-func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err error) {
-	if tgMsg.Message == nil {
-		return
-	}
+// 			svc.BanUser(botModel, tgMsg, global.BanTypeWord)
 
-	chatID := tgMsg.Message.Chat.ID
-	user := tgMsg.Message.From
+// 			find = true
+// 			return
+// 		}
+// 	}
+// 	return
+// }
 
-	var botChatGroupBanMemList []cache.BotChatGroupBanMemCache
-	if _, err = cache.CacheGet(cache.BotChatGroupBanMemCache{}.TableName(), cache.BotChatGroupMemPk(botModel.BotID, int(chatID)), &botChatGroupBanMemList, cache.LoadFromDBList); err != nil {
-		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
-		return
-	}
+// func (svc *BotMsgHandlerSvc) CheckGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err error) {
+// 	if tgMsg.Message == nil {
+// 		return
+// 	}
 
-	fullName := fmt.Sprintf("%s%s", user.FirstName, user.LastName)
+// 	chatID := tgMsg.Message.Chat.ID
+// 	user := tgMsg.Message.From
 
-	for _, ban := range botChatGroupBanMemList {
-		banStr := strings.ToLower(strings.TrimSpace(ban.BanMemContent))
-		if banStr == "" {
-			continue
-		}
+// 	var botChatGroupBanMemList []cache.BotChatGroupBanMemCache
+// 	if _, err = cache.CacheGet(cache.BotChatGroupBanMemCache{}.TableName(), cache.BotChatGroupMemPk(botModel.BotID, int(chatID)), &botChatGroupBanMemList, cache.LoadFromDBList); err != nil {
+// 		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
+// 		return
+// 	}
 
-		if strings.Contains(fullName, banStr) {
-			global.GVA_LOG.Info("found banned member",
-				zap.String("ban_word", ban.BanMemContent),
-				zap.String("member", user.UserName),
-				zap.Int64("chatID", chatID),
-			)
+// 	fullName := fmt.Sprintf("%s%s", user.FirstName, user.LastName)
 
-			svc.BanUser(botModel, tgMsg, global.BanTypeMem)
+// 	for _, ban := range botChatGroupBanMemList {
+// 		banStr := strings.ToLower(strings.TrimSpace(ban.BanMemContent))
+// 		if banStr == "" {
+// 			continue
+// 		}
 
-			found = true
-			return
-		}
-	}
-	return
-}
+// 		if strings.Contains(fullName, banStr) {
+// 			global.GVA_LOG.Info("found banned member",
+// 				zap.String("ban_word", ban.BanMemContent),
+// 				zap.String("member", user.UserName),
+// 				zap.Int64("chatID", chatID),
+// 			)
 
-func (svc *BotMsgHandlerSvc) SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
-	if tgMsg.Message == nil {
-		return
-	}
-	chatID := tgMsg.Message.Chat.ID
-	chatName := tgMsg.Message.Chat.Title
+// 			svc.BanUser(botModel, tgMsg, global.BanTypeMem)
 
-	if chatID == 0 || chatName == "" {
-		return
-	}
+// 			found = true
+// 			return
+// 		}
+// 	}
+// 	return
+// }
 
-	// 构造缓存主键
-	pkPairs := cache.BotChatGroupPk(botModel.BotID, int(chatID))
+// func (svc *BotMsgHandlerSvc) SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
+// 	if tgMsg.Message == nil {
+// 		return
+// 	}
+// 	chatID := tgMsg.Message.Chat.ID
+// 	chatName := tgMsg.Message.Chat.Title
 
-	// 尝试从缓存或数据库读取
-	var chatGroupCache cache.BotChatGroupCache
-	has, err := cache.CacheGet(chatGroupCache.TableName(), pkPairs, &chatGroupCache, cache.LoadFromDBGet)
-	if err != nil {
-		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", chatID), zap.Error(err))
-		return
-	}
+// 	if chatID == 0 || chatName == "" {
+// 		return
+// 	}
 
-	// 如果缓存或数据库不存在，创建新记录
-	if !has {
-		newGroup := bot.BotChatGroup{
-			BotID:         botModel.BotID,
-			ChatGroupID:   chatID,
-			ChatGroupName: chatName,
-		}
-		if createErr := global.GVA_DB.Create(&newGroup).Error; createErr != nil {
-			global.GVA_LOG.Error("failed to create new chat group",
-				zap.Int64("chatID", chatID),
-				zap.String("chatName", chatName),
-				zap.Error(createErr),
-			)
-			return
-		}
-		global.GVA_LOG.Info("new chat group added",
-			zap.Int64("chatID", chatID),
-			zap.String("chatName", chatName),
-		)
-		return
-	}
+// 	// 构造缓存主键
+// 	pkPairs := cache.BotChatGroupPk(botModel.BotID, int(chatID))
 
-	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
-	if chatGroupCache.ChatGroupName != chatName {
-		if err := global.GVA_DB.Model(&bot.BotChatGroup{}).
-			Where("bot_id = ? AND chat_group_id = ?", botModel.BotID, chatID).
-			Update("chat_group_name", chatName).Error; err != nil {
-			global.GVA_LOG.Error("failed to update chat group name",
-				zap.Int64("chatID", chatID),
-				zap.String("newName", chatName),
-				zap.Error(err),
-			)
-		} else {
-			global.GVA_LOG.Info("chat group name updated",
-				zap.Int64("chatID", chatID),
-				zap.String("newName", chatName),
-			)
-		}
+// 	// 尝试从缓存或数据库读取
+// 	var chatGroupCache cache.BotChatGroupCache
+// 	has, err := cache.CacheGet(chatGroupCache.TableName(), pkPairs, &chatGroupCache, cache.LoadFromDBGet)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", chatID), zap.Error(err))
+// 		return
+// 	}
 
-		if err = cache.CacheDelete(chatGroupCache.TableName(), pkPairs); err != nil {
-			global.GVA_LOG.Error("failed to update chat group name",
-				zap.Int64("chatID", chatID),
-				zap.String("newName", chatName),
-				zap.Error(err),
-			)
-		}
-	}
-}
+// 	// 如果缓存或数据库不存在，创建新记录
+// 	if !has {
+// 		newGroup := bot.BotChatGroup{
+// 			BotID:         botModel.BotID,
+// 			ChatGroupID:   chatID,
+// 			ChatGroupName: chatName,
+// 		}
+// 		if createErr := global.GVA_DB.Create(&newGroup).Error; createErr != nil {
+// 			global.GVA_LOG.Error("failed to create new chat group",
+// 				zap.Int64("chatID", chatID),
+// 				zap.String("chatName", chatName),
+// 				zap.Error(createErr),
+// 			)
+// 			return
+// 		}
+// 		global.GVA_LOG.Info("new chat group added",
+// 			zap.Int64("chatID", chatID),
+// 			zap.String("chatName", chatName),
+// 		)
+// 		return
+// 	}
 
-func (svc *BotMsgHandlerSvc) SyncChannelMsg(botModel bot.Bot, tgMsg tgbotapi.Update) {
-	msg := tgMsg.ChannelPost
+// 	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
+// 	if chatGroupCache.ChatGroupName != chatName {
+// 		if err := global.GVA_DB.Model(&bot.BotChatGroup{}).
+// 			Where("bot_id = ? AND chat_group_id = ?", botModel.BotID, chatID).
+// 			Update("chat_group_name", chatName).Error; err != nil {
+// 			global.GVA_LOG.Error("failed to update chat group name",
+// 				zap.Int64("chatID", chatID),
+// 				zap.String("newName", chatName),
+// 				zap.Error(err),
+// 			)
+// 		} else {
+// 			global.GVA_LOG.Info("chat group name updated",
+// 				zap.Int64("chatID", chatID),
+// 				zap.String("newName", chatName),
+// 			)
+// 		}
 
-	if msg == nil || msg.Chat == nil {
-		return
-	}
+// 		if err = cache.CacheDelete(chatGroupCache.TableName(), pkPairs); err != nil {
+// 			global.GVA_LOG.Error("failed to update chat group name",
+// 				zap.Int64("chatID", chatID),
+// 				zap.String("newName", chatName),
+// 				zap.Error(err),
+// 			)
+// 		}
+// 	}
+// }
 
-	channelChatID := msg.Chat.ID
-	channelChatName := msg.Chat.Title
+// func (svc *BotMsgHandlerSvc) SyncChannelMsg(botModel bot.Bot, tgMsg tgbotapi.Update) {
+// 	msg := tgMsg.ChannelPost
 
-	global.GVA_LOG.Debug("SyncChannelMsg",
-		zap.Int64("chatID", channelChatID),
-	)
+// 	if msg == nil || msg.Chat == nil {
+// 		return
+// 	}
 
-	pkPairs := cache.BotChannelPk(botModel.BotID, int(channelChatID))
+// 	channelChatID := msg.Chat.ID
+// 	channelChatName := msg.Chat.Title
 
-	// 尝试从缓存或数据库读取
-	var channelCache cache.BotChannelCache
-	has, err := cache.CacheGet(channelCache.TableName(), pkPairs, &channelCache, cache.LoadFromDBGet)
-	if err != nil {
-		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", channelChatID), zap.Error(err))
-		return
-	}
+// 	global.GVA_LOG.Debug("SyncChannelMsg",
+// 		zap.Int64("chatID", channelChatID),
+// 	)
 
-	// 如果缓存或数据库不存在，创建新记录
-	if !has {
-		newGroup := bot.BotChannel{
-			BotID:       botModel.BotID,
-			ChannelID:   channelChatID,
-			ChannelName: channelChatName,
-		}
-		if createErr := global.GVA_DB.Create(&newGroup).Error; createErr != nil {
-			global.GVA_LOG.Error("failed to create new chat group",
-				zap.Int64("chatID", channelChatID),
-				zap.String("chatName", channelChatName),
-				zap.Error(createErr),
-			)
-			return
-		}
-		global.GVA_LOG.Info("new chat group added",
-			zap.Int64("chatID", channelChatID),
-			zap.String("chatName", channelChatName),
-		)
-		return
-	}
+// 	pkPairs := cache.BotChannelPk(botModel.BotID, int(channelChatID))
 
-	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
-	if channelCache.ChannelName != channelChatName {
-		if err := global.GVA_DB.Model(&bot.BotChannel{}).
-			Where("bot_id = ? AND channel_id = ?", botModel.BotID, channelChatID).
-			Update("channel_name", channelChatName).Error; err != nil {
-			global.GVA_LOG.Error("failed to update chat group name",
-				zap.Int64("chatID", channelChatID),
-				zap.String("newName", channelChatName),
-				zap.Error(err),
-			)
-		} else {
-			global.GVA_LOG.Info("chat group name updated",
-				zap.Int64("chatID", channelChatID),
-				zap.String("newName", channelChatName),
-			)
-		}
+// 	// 尝试从缓存或数据库读取
+// 	var channelCache cache.BotChannelCache
+// 	has, err := cache.CacheGet(channelCache.TableName(), pkPairs, &channelCache, cache.LoadFromDBGet)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", channelChatID), zap.Error(err))
+// 		return
+// 	}
 
-		if err = cache.CacheDelete(channelCache.TableName(), pkPairs); err != nil {
-			global.GVA_LOG.Error("failed to update chat group name",
-				zap.Int64("chatID", channelChatID),
-				zap.String("newName", channelChatName),
-				zap.Error(err),
-			)
-		}
-	}
-	return
-}
+// 	// 如果缓存或数据库不存在，创建新记录
+// 	if !has {
+// 		newGroup := bot.BotChannel{
+// 			BotID:       botModel.BotID,
+// 			ChannelID:   channelChatID,
+// 			ChannelName: channelChatName,
+// 		}
+// 		if createErr := global.GVA_DB.Create(&newGroup).Error; createErr != nil {
+// 			global.GVA_LOG.Error("failed to create new chat group",
+// 				zap.Int64("chatID", channelChatID),
+// 				zap.String("chatName", channelChatName),
+// 				zap.Error(createErr),
+// 			)
+// 			return
+// 		}
+// 		global.GVA_LOG.Info("new chat group added",
+// 			zap.Int64("chatID", channelChatID),
+// 			zap.String("chatName", channelChatName),
+// 		)
+// 		return
+// 	}
+
+// 	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
+// 	if channelCache.ChannelName != channelChatName {
+// 		if err := global.GVA_DB.Model(&bot.BotChannel{}).
+// 			Where("bot_id = ? AND channel_id = ?", botModel.BotID, channelChatID).
+// 			Update("channel_name", channelChatName).Error; err != nil {
+// 			global.GVA_LOG.Error("failed to update chat group name",
+// 				zap.Int64("chatID", channelChatID),
+// 				zap.String("newName", channelChatName),
+// 				zap.Error(err),
+// 			)
+// 		} else {
+// 			global.GVA_LOG.Info("chat group name updated",
+// 				zap.Int64("chatID", channelChatID),
+// 				zap.String("newName", channelChatName),
+// 			)
+// 		}
+
+// 		if err = cache.CacheDelete(channelCache.TableName(), pkPairs); err != nil {
+// 			global.GVA_LOG.Error("failed to update chat group name",
+// 				zap.Int64("chatID", channelChatID),
+// 				zap.String("newName", channelChatName),
+// 				zap.Error(err),
+// 			)
+// 		}
+// 	}
+// 	return
+// }
