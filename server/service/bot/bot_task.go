@@ -45,7 +45,7 @@ func (taskService *BotTaskService) CreateBotTask(ctx context.Context, task *bot.
 		return
 	}
 
-	BotTaskManager.StartTask(task, SendTelegramMessage)
+	BotTaskManager.StartTask(task)
 	return err
 }
 
@@ -97,7 +97,7 @@ func (taskService *BotTaskService) UpdateBotTask(ctx context.Context, task *bot.
 	if err = global.GVA_DB.Model(&bot.BotTask{}).Where("id = ?", task.ID).Updates(&task).Error; err != nil {
 		return
 	}
-	BotTaskManager.ReloadTask(task, SendTelegramMessage)
+	BotTaskManager.ReloadTask(task)
 	return err
 }
 
