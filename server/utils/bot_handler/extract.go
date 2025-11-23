@@ -106,12 +106,13 @@ func ExtractVideosFromHTML(content string) []string {
 	f(doc)
 	return urls
 }
-
 func HandleTexWithMarup(chatID int64, token string, content string, markup any) (err error) {
 	botAPI, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return
 	}
+
+	// 处理内容
 	imgs, text := ExtractImgsAndText(content)
 	videos := ExtractVideosFromHTML(content)
 	caption := CleanHTMLForTelegram(text)
@@ -119,14 +120,22 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 		caption = caption[:1020] + "..."
 	}
 
-	// 先发送图片
+	// 处理 ReplyMarkup
+	var sendMarkup interface{}
+	if markup != nil {
+		if kb, ok := markup.(tgbotapi.InlineKeyboardMarkup); ok && len(kb.InlineKeyboard) > 0 {
+			sendMarkup = kb
+		}
+	}
+
+	// 发送图片
 	for i, img := range imgs {
 		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(img))
 		if i == 0 {
 			photo.Caption = caption
 			photo.ParseMode = tgbotapi.ModeHTML
-			if markup != nil {
-				photo.ReplyMarkup = markup
+			if sendMarkup != nil {
+				photo.ReplyMarkup = sendMarkup
 			}
 		}
 		if _, err = botAPI.Send(photo); err != nil {
@@ -137,28 +146,29 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 	// 发送视频
 	for i, vid := range videos {
 		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(vid))
-		if i == 0 && len(imgs) == 0 { // 如果前面没有图片，第一条视频附加 caption
+		if i == 0 && len(imgs) == 0 { // 第一条视频附加 caption
 			video.Caption = caption
 			video.ParseMode = tgbotapi.ModeHTML
-			if markup != nil {
-				video.ReplyMarkup = markup
+			if sendMarkup != nil {
+				video.ReplyMarkup = sendMarkup
 			}
-		} else if i == 0 && markup != nil {
-			video.ReplyMarkup = markup
+		} else if i == 0 && sendMarkup != nil {
+			video.ReplyMarkup = sendMarkup
 		}
 		if _, err = botAPI.Send(video); err != nil {
 			return
 		}
 	}
 
-	// 如果没有图片和视频，则发送纯文本
+	// 发送纯文本
 	if len(imgs) == 0 && len(videos) == 0 && caption != "" {
 		msg := tgbotapi.NewMessage(chatID, caption)
 		msg.ParseMode = tgbotapi.ModeHTML
-		if markup != nil {
-			msg.ReplyMarkup = markup
+		if sendMarkup != nil {
+			msg.ReplyMarkup = sendMarkup
 		}
 		_, err = botAPI.Send(msg)
 	}
+
 	return err
 }
