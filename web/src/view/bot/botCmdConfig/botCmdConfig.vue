@@ -433,7 +433,7 @@ const enterDialog = async () => {
 
     const payload = {
       ...formData.value,
-      cmdButtons: JSON.stringify(formData.value.cmdButtons),  // ⭐⭐⭐ 修复：转为 JSON 字符串
+      cmdButtons: formData.value.cmdButtons, 
     }
 
     let res
