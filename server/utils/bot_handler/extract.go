@@ -107,7 +107,7 @@ func ExtractVideosFromHTML(content string) []string {
 	return urls
 }
 
-func HandleTexWithMarup(chatID int64, token string, content string, markup *tgbotapi.InlineKeyboardMarkup) (err error) {
+func HandleTexWithMarup(chatID int64, token string, content string, markup any) (err error) {
 	botAPI, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return

@@ -6,6 +6,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 )
 
@@ -92,7 +93,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		StartHandlerfunc(update, token, cfg)
 	default:
 		if inCfg {
-			SendCfgMessage(update, token, cfg)
+			SendCfgMessage(update, token, cfg, 1)
 		}
 	}
 	ProcessBindCommand(update, token, botID, cmd)
@@ -107,51 +108,56 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, bindC
 	}
 }
 
-func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache) error {
+func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache, buttonType int) error {
+	var markup interface{} // 最终传给 HandleTexWithMarup
 
-	b, _ := tgbotapi.NewBotAPI(token)
+	switch buttonType {
+	case 1: // 普通键盘（ReplyKeyboard）
+		var keyboard [][]tgbotapi.KeyboardButton
 
-	var chatID int64
-	if update.CallbackQuery != nil {
-		chatID = update.CallbackQuery.Message.Chat.ID
-	} else {
-		chatID = update.Message.Chat.ID
-	}
+		if len(cfg.CmdButtons) > 0 {
+			var buttons [][]struct {
+				Name    string `json:"name"`
+				BindCmd string `json:"bindCmd"`
+			}
+			_ = json.Unmarshal([]byte(cfg.CmdButtons), &buttons)
 
-	// 普通键盘按钮（ReplyKeyboard）
-	var keyboard [][]tgbotapi.KeyboardButton
+			for _, row := range buttons {
+				kbRow := []tgbotapi.KeyboardButton{}
+				for _, btn := range row {
+					kbRow = append(kbRow, tgbotapi.NewKeyboardButton(btn.Name))
+				}
+				keyboard = append(keyboard, kbRow)
+			}
 
-	if len(cfg.CmdButtons) > 0 {
-		var buttons [][]struct {
+			// 创建 ReplyKeyboardMarkup
+			replyKeyboard := tgbotapi.ReplyKeyboardMarkup{
+				Keyboard:        keyboard,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: false,
+			}
+			markup = replyKeyboard
+		}
+
+	case 2: // 内联键盘（InlineKeyboard）
+		var rows [][]struct {
 			Name    string `json:"name"`
 			BindCmd string `json:"bindCmd"`
 		}
-		_ = json.Unmarshal([]byte(cfg.CmdButtons), &buttons)
+		_ = json.Unmarshal([]byte(cfg.CmdButtons), &rows)
 
-		for _, row := range buttons {
-			kbRow := []tgbotapi.KeyboardButton{}
-			for _, btn := range row {
-				kbRow = append(kbRow, tgbotapi.NewKeyboardButton(btn.Name))
+		inlineRows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		for _, row := range rows {
+			btnRow := make([]tgbotapi.InlineKeyboardButton, 0)
+			for _, b := range row {
+				btnRow = append(btnRow, tgbotapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd))
 			}
-			keyboard = append(keyboard, kbRow)
+			inlineRows = append(inlineRows, btnRow)
 		}
+		markup = tgbotapi.NewInlineKeyboardMarkup(inlineRows...)
 	}
 
-	// 创建 Reply Keyboard
-	replyKeyboard := tgbotapi.ReplyKeyboardMarkup{
-		Keyboard:              keyboard,
-		ResizeKeyboard:        true, // 自适应
-		OneTimeKeyboard:       false,
-		InputFieldPlaceholder: "",
-	}
+	chatID := update.Message.Chat.ID // 获取聊天 ID
 
-	// 发送文本 + 普通按钮键盘
-	msg := tgbotapi.NewMessage(chatID, cfg.Content)
-	msg.ParseMode = "HTML"
-	if len(keyboard) > 0 {
-		msg.ReplyMarkup = replyKeyboard
-	}
-
-	_, err := b.Send(msg)
-	return err
+	return bot_handler.HandleTexWithMarup(chatID, token, cfg.Content, markup)
 }
