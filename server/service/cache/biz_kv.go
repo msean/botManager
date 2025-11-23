@@ -1,8 +1,6 @@
 package cache
 
 import (
-	"encoding/json"
-
 	"github.com/msean/botmanager/server/model/bot"
 )
 
@@ -41,10 +39,10 @@ type (
 	}
 
 	BotCmdCache struct {
-		BotID      int64           `json:"botID"`
-		Cmd        string          `json:"cmd"`
-		Content    string          `json:"content"`
-		CmdButtons json.RawMessage `json:"cmdButtons"`
+		BotID      int64  `json:"botID"`
+		Cmd        string `json:"cmd"`
+		Content    string `json:"content"`
+		CmdButtons string `json:"cmdButtons"`
 	}
 	BotCmdCacheList struct {
 		BotID   int           `json:"botID"`

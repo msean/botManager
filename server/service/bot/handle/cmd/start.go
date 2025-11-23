@@ -33,7 +33,7 @@ func StartHandlerfunc(update tgbotapi.Update, token string, cfg cache.BotCmdCach
 	bot, _ := tgbotapi.NewBotAPI(token)
 	chatID := update.Message.Chat.ID
 
-	keyboard := BuildReplyKeyboard(cfg.CmdButtons)
+	keyboard := BuildReplyKeyboard([]byte(cfg.CmdButtons))
 
 	// 3. 回复欢迎语 + 键盘
 	msg := tgbotapi.NewMessage(chatID, cfg.Content)

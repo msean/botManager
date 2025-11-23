@@ -14,11 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const DefaultTimeout = 24 * time.Hour
-
 const (
 	LoadFromDBGet  LoadType = "get"  // 单条
 	LoadFromDBList LoadType = "list" // 列表
+	DefaultTimeout          = 24 * time.Hour
 )
 
 type (
@@ -42,6 +41,8 @@ type (
 	}
 )
 
+var cachePrefix = "sf_backend"
+
 // ---------------------------------------------------------------------------
 // KvCacheObject 工具方法
 // ---------------------------------------------------------------------------
@@ -53,7 +54,7 @@ func NewKvCacheObject(table string, pairs []KvPkPair) *KvCacheObject {
 
 // 类别前缀 key:  zk:{table}
 func (c *KvCacheObject) categoryKey() string {
-	return fmt.Sprintf("zk:%s", c.table)
+	return fmt.Sprintf("%s:%s", cachePrefix, c.table)
 }
 
 // individualKey 对应每条缓存的唯一 key，例如 "123", "1_2024_abc"

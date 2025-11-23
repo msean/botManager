@@ -46,6 +46,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		// 1. 主命令 → config
 		cmdCfgMapper[c.Cmd] = c
 
+		global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("buttons", c.CmdButtons))
 		// 2. 按钮映射
 		if len(c.CmdButtons) > 0 {
 
@@ -54,7 +55,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 				BindCmd string `json:"bindCmd"`
 			}
 
-			_ = json.Unmarshal(c.CmdButtons, &buttons)
+			_ = json.Unmarshal([]byte(c.CmdButtons), &buttons)
 
 			global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("buttons", buttons))
 			for _, row := range buttons {
@@ -125,7 +126,7 @@ func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache)
 			Name    string `json:"name"`
 			BindCmd string `json:"bindCmd"`
 		}
-		_ = json.Unmarshal(cfg.CmdButtons, &buttons)
+		_ = json.Unmarshal([]byte(cfg.CmdButtons), &buttons)
 
 		for _, row := range buttons {
 			kbRow := []tgbotapi.KeyboardButton{}
