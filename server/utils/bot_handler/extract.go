@@ -106,6 +106,7 @@ func ExtractVideosFromHTML(content string) []string {
 	f(doc)
 	return urls
 }
+
 func HandleTexWithMarup(chatID int64, token string, content string, markup any) (err error) {
 	botAPI, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
@@ -120,23 +121,33 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 		caption = caption[:1020] + "..."
 	}
 
-	// 处理 ReplyMarkup
+	// 处理 ReplyMarkup（支持 InlineKeyboard 和 ReplyKeyboard）
 	var sendMarkup interface{}
 	if markup != nil {
-		if kb, ok := markup.(tgbotapi.InlineKeyboardMarkup); ok && len(kb.InlineKeyboard) > 0 {
-			sendMarkup = kb
+		switch kb := markup.(type) {
+		case tgbotapi.InlineKeyboardMarkup:
+			if len(kb.InlineKeyboard) > 0 {
+				sendMarkup = kb
+			}
+		case tgbotapi.ReplyKeyboardMarkup:
+			if len(kb.Keyboard) > 0 {
+				sendMarkup = kb
+			}
 		}
 	}
 
+	firstMessage := true // 标记是否为第一条消息
+
 	// 发送图片
-	for i, img := range imgs {
+	for _, img := range imgs {
 		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(img))
-		if i == 0 {
+		if firstMessage {
 			photo.Caption = caption
 			photo.ParseMode = tgbotapi.ModeHTML
 			if sendMarkup != nil {
 				photo.ReplyMarkup = sendMarkup
 			}
+			firstMessage = false
 		}
 		if _, err = botAPI.Send(photo); err != nil {
 			return
@@ -144,16 +155,15 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 	}
 
 	// 发送视频
-	for i, vid := range videos {
+	for _, vid := range videos {
 		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(vid))
-		if i == 0 && len(imgs) == 0 { // 第一条视频附加 caption
+		if firstMessage {
 			video.Caption = caption
 			video.ParseMode = tgbotapi.ModeHTML
 			if sendMarkup != nil {
 				video.ReplyMarkup = sendMarkup
 			}
-		} else if i == 0 && sendMarkup != nil {
-			video.ReplyMarkup = sendMarkup
+			firstMessage = false
 		}
 		if _, err = botAPI.Send(video); err != nil {
 			return
