@@ -68,6 +68,9 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		}
 	}
 
+	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("any", cmdCfgMapper))
+	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("any", triggerMapper))
+
 	// 找到对应配置
 	var ok bool
 	if cfg, ok = cmdCfgMapper[text]; ok {
@@ -82,6 +85,8 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 			}
 		}
 	}
+
+	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("cmd", cmd), zap.Any("inCfg", inCfg))
 
 	switch cmd {
 	case "/start":
