@@ -2,7 +2,6 @@ package cache
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/msean/botmanager/server/model/bot"
 )
@@ -99,23 +98,15 @@ func NewBotChatGroupBanMemCListCache(botID int) *BotChatGroupBanMemCListCache {
 	}
 }
 
-func (BotChatGroupBanMemCListCache) TableName() string {
-	return fmt.Sprintf("%s_list", bot.BotChatGroup{}.TableName())
-}
-func (BotChatGroupCache) TableName() string { return bot.BotChatGroup{}.TableName() }
-func (BotBanContentListCache) TableName() string {
-	return fmt.Sprintf("%s_list", bot.BotBanContent{}.TableName())
-}
-func (BotChannelCache) TableName() string { return bot.BotChannel{}.TableName() }
-func (BotCmdCache) TableName() string     { return bot.BotCmdConfig{}.TableName() }
-func (BotCmdCacheList) TableName() string {
-	return fmt.Sprintf("%s_list", bot.BotCmdConfig{}.TableName())
-}
+func (BotChatGroupBanMemCListCache) TableName() string { return bot.BotChatGroup{}.TableName() }
+func (BotChatGroupCache) TableName() string            { return bot.BotChatGroup{}.TableName() }
+func (BotBanContentListCache) TableName() string       { return bot.BotBanContent{}.TableName() }
+func (BotChannelCache) TableName() string              { return bot.BotChannel{}.TableName() }
+func (BotCmdCache) TableName() string                  { return bot.BotCmdConfig{}.TableName() }
+func (BotCmdCacheList) TableName() string              { return bot.BotCmdConfig{}.TableName() }
 
 func (c BotChatGroupBanMemCListCache) Pairs() []KvPkPair {
-	return []KvPkPair{
-		{"bot_id", c.BotID},
-	}
+	return []KvPkPair{{"bot_id", c.BotID}}
 }
 
 func (c BotChatGroupCache) Pairs() []KvPkPair {
