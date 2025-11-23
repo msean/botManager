@@ -372,14 +372,25 @@ const type = ref('')
 const updateBotCmdConfigFunc = async (row) => {
   const res = await findBotCmdConfig({ ID: row.ID })
   if (res.code === 0) {
+    let cmdButtonsData = res.data.cmdButtons || []
+    if (typeof cmdButtonsData === 'string') {
+      try {
+        cmdButtonsData = JSON.parse(cmdButtonsData)
+      } catch (err) {
+        cmdButtonsData = []
+      }
+    }
+
     formData.value = {
       ...res.data,
-      cmdButtons: JSON.parse(res.data.cmdButtons || '[]')  // ⭐ 彻底修复
+      cmdButtons: cmdButtonsData
     }
+
     type.value = 'update'
     dialogFormVisible.value = true
   }
 }
+
 
 
 // 删除行

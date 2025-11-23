@@ -2,11 +2,15 @@ package bot
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils"
+	"go.uber.org/zap"
 )
 
 type BotCmdConfigService struct{}
@@ -21,21 +25,64 @@ func (botCmdConfigService *BotCmdConfigService) CreateBotCmdConfig(ctx context.C
 // DeleteBotCmdConfig 删除机器人命令配置记录
 // Author [yourname](https://github.com/yourname)
 func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&bot.BotCmdConfig{}, "id = ?", ID).Error
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	var object bot.BotCmdConfig
+	var has bool
+	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(id)); !has || err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", id), zap.Error(err))
+		return
+	}
+
+	if err = global.GVA_DB.Delete(&bot.BotCmdConfig{}, "id = ?", ID).Error; err != nil {
+		return
+	}
+	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
+	}
 	return err
 }
 
 // DeleteBotCmdConfigByIds 批量删除机器人命令配置记录
 // Author [yourname](https://github.com/yourname)
 func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfigByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]bot.BotCmdConfig{}, "id in ?", IDs).Error
+	ids := utils.StringsToIntsIgnoreError(IDs)
+	var objects []bot.BotCmdConfig
+	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("ids", IDs), zap.Error(err))
+		return
+	}
+
+	if err = global.GVA_DB.Delete(&[]bot.BotCmdConfig{}, "id in ?", IDs).Error; err != nil {
+		return
+	}
+
+	for _, object := range objects {
+		if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
+			global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
+		}
+	}
 	return err
 }
 
 // UpdateBotCmdConfig 更新机器人命令配置记录
 // Author [yourname](https://github.com/yourname)
 func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.Context, botCmdConfig bot.BotCmdConfig) (err error) {
-	err = global.GVA_DB.Model(&bot.BotCmdConfig{}).Where("id = ?", botCmdConfig.ID).Updates(&botCmdConfig).Error
+	var object bot.BotCmdConfig
+	var has bool
+	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(botCmdConfig.ID)); !has || err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.ID), zap.Error(err))
+		return
+	}
+	if err = global.GVA_DB.Model(&bot.BotBanContent{}).Where("id = ?", botCmdConfig.ID).Updates(&botCmdConfig).Error; err != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.BotID))
+		return
+	}
+	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
+		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
+	}
 	return err
 }
 
