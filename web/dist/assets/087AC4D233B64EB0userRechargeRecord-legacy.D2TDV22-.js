@@ -1,0 +1,4 @@
+/*! 
+ Build based on gin-vue-admin 
+ Time : 1763877205000 */
+System.register(["./087AC4D233B64EB0index-legacy.Cup_JrP9.js"],function(e,r){"use strict";var t;return{setters:[function(e){t=e.s}],execute:function(){e("c",function(e){return t({url:"/userRechargeRecord/createUserRechargeRecord",method:"post",data:e})}),e("d",function(e){return t({url:"/userRechargeRecord/deleteUserRechargeRecord",method:"delete",params:e})}),e("a",function(e){return t({url:"/userRechargeRecord/deleteUserRechargeRecordByIds",method:"delete",params:e})}),e("u",function(e){return t({url:"/userRechargeRecord/updateUserRechargeRecord",method:"put",data:e})}),e("f",function(e){return t({url:"/userRechargeRecord/findUserRechargeRecord",method:"get",params:e})}),e("g",function(e){return t({url:"/userRechargeRecord/getUserRechargeRecordList",method:"get",params:e})})}}});

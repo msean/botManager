@@ -1,4 +1,0 @@
-/*! 
- Build based on gin-vue-admin 
- Time : 1763610175000 */
-import e from"./087AC4D233B64EB0menuItem.D8tn0jG4.js";import r from"./087AC4D233B64EB0asyncSubmenu.H6Vl2oEC.js";import{J as n,g as o,i as t,d as u,o as a,w as i,c as s,F as d,K as f,a2 as l}from"./087AC4D233B64EB0index.CC2dYAkt.js";const m=Object.assign({name:"AsideComponent"},{__name:"index",props:{routerInfo:{type:Object,default:()=>null},mode:{type:String,default:"vertical"}},setup(m){const c=m,p=n(()=>{var n;return c.routerInfo.children&&(null==(n=c.routerInfo.children)?void 0:n.filter(e=>!e.hidden).length)?r:e});return(e,r)=>{const n=o("AsideComponent");return m.routerInfo.hidden?u("",!0):(a(),t(l(p.value),{key:0,"router-info":m.routerInfo},{default:i(()=>[m.routerInfo.children&&m.routerInfo.children.length?(a(!0),s(d,{key:0},f(m.routerInfo.children,e=>(a(),t(n,{key:e.name,"router-info":e},null,8,["router-info"]))),128)):u("",!0)]),_:1},8,["router-info"]))}}});export{m as default};

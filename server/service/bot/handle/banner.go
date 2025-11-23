@@ -21,8 +21,9 @@ func BanChatGroupContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, er
 		return
 	}
 
-	var botBanContentCache []cache.BotBanContentCache
-	if _, err = cache.CacheGet(cache.BotBanContentCache{}.TableName(), cache.BotBanContentPk(botModel.BotID), &botBanContentCache, cache.LoadFromDBList); err != nil {
+	cacheObjects := cache.NewBotBanContentListCache(botModel.BotID)
+	_, err = cache.CacheGetItem(cacheObjects)
+	if err != nil {
 		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
 		return
 	}
@@ -30,7 +31,7 @@ func BanChatGroupContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, er
 	messageText := tgMsg.Message.Text
 	global.GVA_LOG.Info("msg", zap.String("bot", botModel.Name), zap.String("msg", tgMsg.Message.Text))
 
-	for _, rule := range botBanContentCache {
+	for _, rule := range cacheObjects.Objects {
 		if strings.Contains(messageText, rule.BanContent) {
 			global.GVA_LOG.Info("found banned word",
 				zap.String("word", rule.BanContent),
@@ -55,15 +56,15 @@ func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err e
 	chatID := tgMsg.Message.Chat.ID
 	user := tgMsg.Message.From
 
-	var botChatGroupBanMemList []cache.BotChatGroupBanMemCache
-	if _, err = cache.CacheGet(cache.BotChatGroupBanMemCache{}.TableName(), cache.BotChatGroupMemPk(botModel.BotID, int(chatID)), &botChatGroupBanMemList, cache.LoadFromDBList); err != nil {
+	cacheObjects := cache.NewBotChatGroupBanMemCListCache(botModel.BotID)
+	_, err = cache.CacheGetItem(cacheObjects)
+	if err != nil {
 		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
 		return
 	}
-
 	fullName := fmt.Sprintf("%s%s", user.FirstName, user.LastName)
 
-	for _, ban := range botChatGroupBanMemList {
+	for _, ban := range cacheObjects.Objects {
 		banStr := strings.ToLower(strings.TrimSpace(ban.BanMemContent))
 		if banStr == "" {
 			continue

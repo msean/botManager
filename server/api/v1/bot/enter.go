@@ -7,4 +7,5 @@ var (
 	botBanGroupMemService = service.ServiceGroupApp.BotServiceGroup.BotBanGroupMemService
 	taskService           = service.ServiceGroupApp.BotServiceGroup.BotTaskService
 	botChannelService     = service.ServiceGroupApp.BotServiceGroup.BotChannelService
+	botCmdConfigService   = service.ServiceGroupApp.BotServiceGroup.BotCmdConfigService
 )

@@ -19,12 +19,11 @@ func SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
 		return
 	}
 
-	// 构造缓存主键
-	pkPairs := cache.BotChatGroupPk(botModel.BotID, int(chatID))
-
-	// 尝试从缓存或数据库读取
-	var chatGroupCache cache.BotChatGroupCache
-	has, err := cache.CacheGet(chatGroupCache.TableName(), pkPairs, &chatGroupCache, cache.LoadFromDBGet)
+	cacheObject := cache.NewBotChatGroupCache(bot.BotChatGroup{
+		BotID:       botModel.BotID,
+		ChatGroupID: chatID,
+	})
+	has, err := cache.CacheGetItem(cacheObject)
 	if err != nil {
 		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", chatID), zap.Error(err))
 		return
@@ -53,7 +52,7 @@ func SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
 	}
 
 	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
-	if chatGroupCache.ChatGroupName != chatName {
+	if cacheObject.ChatGroupName != chatName {
 		if err := global.GVA_DB.Model(&bot.BotChatGroup{}).
 			Where("bot_id = ? AND chat_group_id = ?", botModel.BotID, chatID).
 			Update("chat_group_name", chatName).Error; err != nil {
@@ -69,7 +68,7 @@ func SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
 			)
 		}
 
-		if err = cache.CacheDelete(chatGroupCache.TableName(), pkPairs); err != nil {
+		if err = cache.CacheDelete(cacheObject); err != nil {
 			global.GVA_LOG.Error("failed to update chat group name",
 				zap.Int64("chatID", chatID),
 				zap.String("newName", chatName),
@@ -93,11 +92,11 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 		zap.Int64("chatID", channelChatID),
 	)
 
-	pkPairs := cache.BotChannelPk(botModel.BotID, int(channelChatID))
-
-	// 尝试从缓存或数据库读取
-	var channelCache cache.BotChannelCache
-	has, err := cache.CacheGet(channelCache.TableName(), pkPairs, &channelCache, cache.LoadFromDBGet)
+	cacheObject := cache.NewBotChannelCache(bot.BotChannel{
+		BotID:     botModel.BotID,
+		ChannelID: channelChatID,
+	})
+	has, err := cache.CacheGetItem(cacheObject)
 	if err != nil {
 		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", channelChatID), zap.Error(err))
 		return
@@ -126,7 +125,7 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 	}
 
 	// 如果数据库/缓存存在，但名称不同，则更新数据库和缓存
-	if channelCache.ChannelName != channelChatName {
+	if cacheObject.ChannelName != channelChatName {
 		if err := global.GVA_DB.Model(&bot.BotChannel{}).
 			Where("bot_id = ? AND channel_id = ?", botModel.BotID, channelChatID).
 			Update("channel_name", channelChatName).Error; err != nil {
@@ -142,7 +141,7 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 			)
 		}
 
-		if err = cache.CacheDelete(channelCache.TableName(), pkPairs); err != nil {
+		if err = cache.CacheDelete(cacheObject); err != nil {
 			global.GVA_LOG.Error("failed to update chat group name",
 				zap.Int64("chatID", channelChatID),
 				zap.String("newName", channelChatName),

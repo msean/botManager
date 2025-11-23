@@ -6,4 +6,6 @@ var (
 	SysParamsDao    = newsysParamsDao()
 	BotGroupMemDao  = newbotGroupMemDao()
 	BotChannelDao   = newbotChannelDao()
+	RechargeDao     = newRechargeDao()
+	BotCmdDao       = newbotCmdDao()
 )

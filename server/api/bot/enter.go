@@ -11,6 +11,7 @@ type ApiGroup struct {
 	BotChatGroupApi
 	BotTaskApi
 	BotChannelApi
+	BotCmdConfigApi
 }
 
 var (
@@ -22,4 +23,5 @@ var (
 	botMsgHandlerSvc      = service.ServiceGroupApp.BotServiceGroup.BotMsgHandlerSvc
 	taskService           = service.ServiceGroupApp.BotServiceGroup.BotTaskService
 	botChannelService     = service.ServiceGroupApp.BotServiceGroup.BotChannelService
+	botCmdConfigService   = service.ServiceGroupApp.BotServiceGroup.BotCmdConfigService
 )

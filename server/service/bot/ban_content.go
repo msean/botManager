@@ -22,9 +22,6 @@ func (svc *BotBanContentService) CreateBotBanContent(ctx context.Context, botBan
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.ID))
 		return
 	}
-	if deleteErr := cache.ReleaseBotBanContent(int(botBanContent.BotID)); deleteErr != nil {
-		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.ID))
-	}
 	return err
 }
 
@@ -46,7 +43,7 @@ func (svc *BotBanContentService) DeleteBotBanContent(ctx context.Context, ID str
 		return
 	}
 
-	if deleteErr := cache.ReleaseBotBanContent(int(botContent.BotID)); deleteErr != nil {
+	if deleteErr := cache.NewBotBanContentListCache(int(botContent.BotID)).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", botContent.BotID))
 	}
 	return err
@@ -68,7 +65,7 @@ func (svc *BotBanContentService) DeleteBotBanContentByIds(ctx context.Context, I
 	}
 
 	for _, object := range objects {
-		if deleteErr := cache.ReleaseBotBanContent(int(object.BotID)); deleteErr != nil {
+		if deleteErr := cache.NewBotBanContentListCache(int(object.BotID)).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
 		}
 	}
@@ -82,7 +79,7 @@ func (svc *BotBanContentService) UpdateBotBanContent(ctx context.Context, botBan
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.BotID))
 		return
 	}
-	if deleteErr := cache.ReleaseBotBanContent(int(botBanContent.BotID)); deleteErr != nil {
+	if deleteErr := cache.NewBotBanContentListCache(int(botBanContent.BotID)).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", botBanContent.BotID))
 	}
 	return err

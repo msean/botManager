@@ -38,7 +38,7 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroup(ctx context.C
 	if err = global.GVA_DB.Delete(&bot.BotChatGroup{}, "id = ?", id).Error; err != nil {
 		return
 	}
-	if deleteErr := cache.ReleaseBotChatGroup(int(object.BotID), int(object.ChatGroupID)); deleteErr != nil {
+	if deleteErr := cache.NewBotChatGroupCache(object).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("ReleaseBotChatGroup", zap.Any("BotID", object.BotID), zap.Int64("ChatGroupID", object.ChatGroupID))
 	}
 	return err
@@ -58,7 +58,7 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroupByIds(ctx cont
 		return
 	}
 	for _, object := range objects {
-		if deleteErr := cache.ReleaseBotChatGroup(int(object.BotID), int(object.ChatGroupID)); deleteErr != nil {
+		if deleteErr := cache.NewBotChatGroupCache(object).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("ReleaseBotChatGroup", zap.Any("BotID", object.BotID))
 		}
 	}

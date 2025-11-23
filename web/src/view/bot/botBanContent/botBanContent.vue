@@ -161,7 +161,6 @@ const formData = ref({
   banContent: '',
   botID: undefined
 })
-const botList = ref([])
 const page = ref(1)
 const total = ref(0)
 const pageSize = ref(10)
@@ -212,6 +211,7 @@ const handleCurrentChange = (val) => {
 }
 
 // ======= 获取机器人列表 =======
+const botList = ref([])
 const getBotList = async () => {
   const res = await getBotChoice()
   if (res.code === 0) {

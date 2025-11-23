@@ -5,6 +5,7 @@ import (
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/model/recharge"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -92,6 +93,9 @@ func bizModel() error {
 		bot.BotBanGroupMem{},
 		bot.BotTask{},
 		bot.BotChannel{},
+		bot.BotCmdConfig{},
+		recharge.RechargeConfig{},
+		recharge.UserRechargeRecord{},
 	)
 	if err != nil {
 		return err

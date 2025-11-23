@@ -1,12 +1,13 @@
-
 package request
 
 import (
-	"github.com/msean/botmanager/server/model/common/request"
 	"time"
+
+	"github.com/msean/botmanager/server/model/common/request"
 )
 
-type BotBanGroupMemSearch struct{
-    CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
-    request.PageInfo
+type BotBanGroupMemSearch struct {
+	CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
+	BotID          int         `json:"botID" form:"botID"`
+	request.PageInfo
 }

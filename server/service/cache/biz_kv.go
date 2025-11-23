@@ -1,104 +1,166 @@
 package cache
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/msean/botmanager/server/model/bot"
 )
 
 type (
 	BotChatGroupBanMemCache struct {
-		BanMemContent string `json:"banMemContent" form:"banMemContent" gorm:"column:banMemContent"` //banMemContent
+		BotID         int    `json:"botID"`
+		ChatGroupID   int    `json:"chatGroupID"`
+		BanMemContent string `json:"banMemContent"`
 	}
+
+	BotChatGroupBanMemCListCache struct {
+		BotID   int                       `json:"botID"`
+		Objects []BotChatGroupBanMemCache `json:"objects"`
+	}
+
 	BotChatGroupCache struct {
-		ChatGroupID   int64  `json:"chatGroupID" form:"chatGroupID"`     //群组ID
-		ChatGroupName string `json:"chatGroupName" form:"chatGroupName"` //群组ID
-		BotID         int    `json:"botID" form:"botID"`                 //机器人ID
+		BotID         int    `json:"botID"`
+		ChatGroupID   int    `json:"chatGroupID"`
+		ChatGroupName string `json:"chatGroupName"`
 	}
+
 	BotBanContentCache struct {
-		BanContent string `json:"banContent" form:"banContent" ` //禁用内容
-		BotID      int64  `json:"botID" form:"botID" `           //机器人ID
+		BotID      int    `json:"botID"`
+		BanContent string `json:"banContent"`
 	}
+
+	BotBanContentListCache struct {
+		BotID   int                  `json:"botID"`
+		Objects []BotBanContentCache `json:"objects"`
+	}
+
 	BotChannelCache struct {
-		BotID       int64  `json:"botID" form:"botID"`             //机器人id
-		ChannelID   int64  `json:"channelID" form:"channelID"`     //频道ID
-		ChannelName string `json:"channelName" form:"channelName"` //渠道名称
+		BotID       int    `json:"botID"`
+		ChannelID   int    `json:"channelID"`
+		ChannelName string `json:"channelName"`
+	}
+
+	BotCmdCache struct {
+		BotID      int64           `json:"botID"`
+		Cmd        string          `json:"cmd"`
+		Content    string          `json:"content"`
+		CmdButtons json.RawMessage `json:"cmdButtons"`
+	}
+	BotCmdCacheList struct {
+		BotID   int           `json:"botID"`
+		Objects []BotCmdCache `json:"objects"`
 	}
 )
 
-func (cache BotChatGroupBanMemCache) TableName() string {
-	return bot.BotBanGroupMem{}.TableName()
-}
-
-func (cache BotChatGroupCache) TableName() string {
-	return bot.BotChatGroup{}.TableName()
-}
-
-func (cache BotBanContentCache) TableName() string {
-	return bot.BotBanContent{}.TableName()
-}
-
-func (cache BotChannelCache) TableName() string {
-	return bot.BotChannel{}.TableName()
-}
-
-var _ bot.BotChatGroup
-
-func BotChatGroupMemPk(botID, chatGroupID int) []KvPkPair {
-
-	return []KvPkPair{
-		{
-			PKCol: "bot_id",
-			PKVal: botID,
-		},
-		{
-			PKCol: "chat_group_id",
-			PKVal: chatGroupID,
-		},
+func NewBotChatGroupBanMemCache(object bot.BotBanGroupMem) *BotChatGroupBanMemCache {
+	return &BotChatGroupBanMemCache{
+		BotID:       int(object.BotID),
+		ChatGroupID: int(object.ChatGroupID),
 	}
 }
 
-func BotChatGroupPk(botID, chatGroupID int) []KvPkPair {
-	return []KvPkPair{
-		{
-			PKCol: "bot_id",
-			PKVal: botID,
-		},
-		{
-			PKCol: "chat_group_id",
-			PKVal: chatGroupID,
-		},
+func NewBotChatGroupCache(object bot.BotChatGroup) *BotChatGroupCache {
+	return &BotChatGroupCache{
+		BotID:       int(object.BotID),
+		ChatGroupID: int(object.ChatGroupID),
 	}
 }
 
-func BotChannelPk(botID, channelID int) []KvPkPair {
-	return []KvPkPair{
-		{
-			PKCol: "bot_id",
-			PKVal: botID,
-		},
-		{
-			PKCol: "channel_id",
-			PKVal: channelID,
-		},
+func NewBotBanContentListCache(botID int) *BotBanContentListCache {
+	return &BotBanContentListCache{
+		BotID: botID,
 	}
 }
 
-func BotBanContentPk(botID int) []KvPkPair {
-	return []KvPkPair{
-		{
-			PKCol: "bot_id",
-			PKVal: botID,
-		},
+func NewBotChannelCache(object bot.BotChannel) *BotChannelCache {
+	return &BotChannelCache{
+		BotID:     int(object.BotID),
+		ChannelID: int(object.ChannelID),
 	}
 }
 
-func ReleaseBotBanContent(botID int) (err error) {
-	return CacheDelete(BotBanContentCache{}.TableName(), BotBanContentPk(botID))
+func NewBotCmdCache(object bot.BotCmdConfig) *BotCmdCache {
+	return &BotCmdCache{
+		BotID: object.BotID,
+		Cmd:   object.Cmd,
+	}
 }
 
-func ReleaseBotChatGroup(botID, chatGroupID int) (err error) {
-	return CacheDelete(BotChatGroupCache{}.TableName(), BotChatGroupPk(botID, chatGroupID))
+func NewBotCmdCacheList(botID int) *BotCmdCacheList {
+	return &BotCmdCacheList{
+		BotID: botID,
+	}
 }
 
-func ReleaseBotChatGroupMem(botID, chatGroupID int) (err error) {
-	return CacheDelete(BotChatGroupBanMemCache{}.TableName(), BotChatGroupPk(botID, chatGroupID))
+func NewBotChatGroupBanMemCListCache(botID int) *BotChatGroupBanMemCListCache {
+	return &BotChatGroupBanMemCListCache{
+		BotID: botID,
+	}
 }
+
+func (BotChatGroupBanMemCListCache) TableName() string {
+	return fmt.Sprintf("%s_list", bot.BotChatGroup{}.TableName())
+}
+func (BotChatGroupCache) TableName() string { return bot.BotChatGroup{}.TableName() }
+func (BotBanContentListCache) TableName() string {
+	return fmt.Sprintf("%s_list", bot.BotBanContent{}.TableName())
+}
+func (BotChannelCache) TableName() string { return bot.BotChannel{}.TableName() }
+func (BotCmdCache) TableName() string     { return bot.BotCmdConfig{}.TableName() }
+func (BotCmdCacheList) TableName() string {
+	return fmt.Sprintf("%s_list", bot.BotCmdConfig{}.TableName())
+}
+
+func (c BotChatGroupBanMemCListCache) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+	}
+}
+
+func (c BotChatGroupCache) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+		{"chat_group_id", c.ChatGroupID},
+	}
+}
+
+func (c BotBanContentListCache) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+	}
+}
+
+func (c BotChannelCache) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+		{"channel_id", c.ChannelID},
+	}
+}
+
+func (c BotCmdCache) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+		{"cmd", c.Cmd},
+	}
+}
+
+func (c BotCmdCacheList) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+	}
+}
+
+func (BotChatGroupBanMemCListCache) LoadType() LoadType { return LoadFromDBList }
+func (BotChatGroupCache) LoadType() LoadType            { return LoadFromDBGet }
+func (BotBanContentListCache) LoadType() LoadType       { return LoadFromDBList }
+func (BotChannelCache) LoadType() LoadType              { return LoadFromDBGet }
+func (BotCmdCache) LoadType() LoadType                  { return LoadFromDBGet }
+func (BotCmdCacheList) LoadType() LoadType              { return LoadFromDBList }
+
+func (c BotChatGroupBanMemCListCache) Release() error { return CacheDelete(c) }
+func (c BotChatGroupCache) Release() error            { return CacheDelete(c) }
+func (c BotBanContentListCache) Release() error       { return CacheDelete(c) }
+func (c BotChannelCache) Release() error              { return CacheDelete(c) }
+func (c BotCmdCache) Release() error                  { return CacheDelete(c) }
+func (c BotCmdCacheList) Release() error              { return CacheDelete(c) }

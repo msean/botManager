@@ -193,7 +193,6 @@
         <el-col :span="16">
           <el-form-item :label="formData.sendGroupType === 1 ? '群聊名称' : '频道名称'" prop="groupID">
             <el-select v-model="formData.groupID" placeholder="请选择" style="width:100%">
-              
               <template v-if="formData.sendGroupType === 1">
                 <el-option 
                   v-for="group in groupOptions" 
@@ -212,7 +211,6 @@
                   :value="ch.channelID" 
                 />
               </template>
-
             </el-select>
           </el-form-item>
         </el-col>
@@ -249,62 +247,61 @@
        <!-- 扩展按钮 -->
       <el-form-item label="扩展按钮">
         <div class="btn-group-wrapper">
-  <!-- 每行按钮 -->
-  <div
-    v-for="(row, rowIndex) in formData.extrendButton"
-    :key="rowIndex"
-    class="btn-row"
-  >
-    <!-- 行内按钮 -->
-    <div
-      v-for="(btn, btnIndex) in row"
-      :key="btnIndex"
-      class="btn-item"
-    >
-      <span class="btn-text">{{ btn.name }}</span>
-      <el-icon class="btn-edit" @click.stop="openEditDialog(rowIndex, btnIndex)">
-        <Edit />
-      </el-icon>
-      <el-icon class="btn-delete" @click.stop="removeButton(rowIndex, btnIndex)">
-        <Close />
-      </el-icon>
-    </div>
+          <!-- 每行按钮 -->
+          <div
+            v-for="(row, rowIndex) in formData.extrendButton"
+            :key="rowIndex"
+            class="btn-row"
+          >
+            <!-- 行内按钮 -->
+            <div
+              v-for="(btn, btnIndex) in row"
+              :key="btnIndex"
+              class="btn-item"
+            >
+              <span class="btn-text">{{ btn.name }}</span>
+              <el-icon class="btn-edit" @click.stop="openEditDialog(rowIndex, btnIndex)">
+                <Edit />
+              </el-icon>
+              <el-icon class="btn-delete" @click.stop="removeButton(rowIndex, btnIndex)">
+                <Close />
+              </el-icon>
+            </div>
 
-    <!-- 当前行新增按钮 -->
-    <el-button class="add-btn" type="primary" link @click="openAddDialog(rowIndex)">
-      + 添加按钮
-    </el-button>
+            <!-- 当前行新增按钮 -->
+            <el-button class="add-btn" type="primary" link @click="openAddDialog(rowIndex)">
+              + 添加按钮
+            </el-button>
 
-    <!-- 删除整行 -->
-    <el-button class="delete-row-btn" type="danger" link @click="removeRow(rowIndex)">
-      删除该行
-    </el-button>
-  </div>
+            <!-- 删除整行 -->
+            <el-button class="delete-row-btn" type="danger" link @click="removeRow(rowIndex)">
+              删除该行
+            </el-button>
+          </div>
 
-  <!-- 新增空行按钮 -->
-  <el-button type="primary" plain size="small" @click="addNewRow" style="margin-top: 10px;">
-    + 新增一行
-  </el-button>
-</div>
+          <!-- 新增空行按钮 -->
+          <el-button type="primary" plain size="small" @click="addNewRow" style="margin-top: 10px;">
+            + 新增一行
+          </el-button>
+        </div>
 
-  <!-- 编辑/新增按钮 弹窗 -->
-  <el-dialog v-model="dialogVisible" title="编辑按钮" width="400px">
-    <el-form :model="editForm" label-width="90px">
-      <el-form-item label="名称">
-        <el-input v-model="editForm.name" />
+        <!-- 编辑/新增按钮 弹窗 -->
+        <el-dialog v-model="dialogVisible" title="编辑按钮" width="400px">
+          <el-form :model="editForm" label-width="90px">
+            <el-form-item label="名称">
+              <el-input v-model="editForm.name" />
+            </el-form-item>
+            <el-form-item label="跳转链接">
+              <el-input v-model="editForm.url" />
+            </el-form-item>
+          </el-form>
+
+          <template #footer>
+            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="saveButton">保存</el-button>
+          </template>
+        </el-dialog>
       </el-form-item>
-      <el-form-item label="跳转链接">
-        <el-input v-model="editForm.url" />
-      </el-form-item>
-    </el-form>
-
-    <template #footer>
-      <el-button @click="dialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="saveButton">保存</el-button>
-    </template>
-  </el-dialog>
-</el-form-item>
-
 
         <!-- 发送间隔 -->
         <el-col :span="16">
@@ -509,8 +506,6 @@ const handleBotChange = (botID) => {
 }
 
 // ================== 扩展按钮 ==================
-const addExtraButton = () => formData.extrendButton.push({ name: '', url: '' })
-const removeExtraButton = (index) => formData.extrendButton.splice(index, 1)
 const uploadUrl = `${import.meta.env.VITE_BASE_API}/public/uploadMedia`
 // ================== 上传 ==================
 const handleUploadSuccess = (res, file) => {

@@ -12,6 +12,7 @@ type RouterGroup struct {
 	BotBanGroupMemRouter
 	BotTaskRouter
 	BotChannelRouter
+	BotCmdConfigRouter
 }
 
 var (
@@ -23,4 +24,5 @@ var (
 	botBanGroupMemApi = api.ApiGroupApp.BotApiGroup.BotBanGroupMemApi
 	taskApi           = api.ApiGroupApp.BotApiGroup.BotTaskApi
 	botChannelApi     = api.ApiGroupApp.BotApiGroup.BotChannelApi
+	botCmdConfigApi   = api.ApiGroupApp.BotApiGroup.BotCmdConfigApi
 )

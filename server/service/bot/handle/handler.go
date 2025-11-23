@@ -32,7 +32,7 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 	// 私聊
 	case "private":
 		global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("msg", tgMsg.Message.Text))
-		cmd.TgMsgHandler.Handle(tgMsg, botModel.Token, int64(botModel.BotID))
+		cmd.Handle(tgMsg, botModel.Token, int64(botModel.BotID))
 	default:
 		if tgMsg.MyChatMember != nil {
 			SyncChatGroup(botModel, tgMsg)

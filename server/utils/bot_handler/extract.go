@@ -1,0 +1,164 @@
+package bot_handler
+
+import (
+	"encoding/json"
+	"regexp"
+	"strings"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/msean/botmanager/server/model/bot"
+	"golang.org/x/net/html"
+)
+
+func ExtractImgsAndText(htmlStr string) (imgs []string, textWithoutImgs string) {
+	// 找所有 <img ... src="..."> 并取 src
+	imgRe := regexp.MustCompile(`(?i)<img[^>]+src=["']([^"']+)["'][^>]*>`)
+	matches := imgRe.FindAllStringSubmatch(htmlStr, -1)
+	for _, m := range matches {
+		if len(m) >= 2 {
+			imgs = append(imgs, m[1])
+		}
+	}
+	// 去掉所有 <img> 标签，保留其余 HTML
+	textWithoutImgs = imgRe.ReplaceAllString(htmlStr, "")
+	// 去掉空的 <p></p> 等多余空白（可选）
+	// 将 HTML 实体转回正常字符（比如 &gt; -> >）
+	textWithoutImgs = html.UnescapeString(textWithoutImgs)
+	textWithoutImgs = strings.TrimSpace(textWithoutImgs)
+	return
+}
+
+// 辅助：创建 InlineKeyboardMarkup（如果没有按钮则返回 nil）
+func BuildMarkupFromExtrend(raw json.RawMessage) *tgbotapi.InlineKeyboardMarkup {
+	if len(raw) == 0 {
+		return nil
+	}
+	var btns []bot.ButtonItem
+	if err := json.Unmarshal(raw, &btns); err != nil || len(btns) == 0 {
+		return nil
+	}
+	var row []tgbotapi.InlineKeyboardButton
+	for _, b := range btns {
+		// 只创建 URL 按钮（和你之前逻辑保持一致）
+		row = append(row, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
+	}
+	m := tgbotapi.NewInlineKeyboardMarkup(row)
+	return &m
+}
+
+func CleanHTMLForTelegram(htmlStr string) string {
+	if htmlStr == "" {
+		return ""
+	}
+
+	htmlStr = regexp.MustCompile(`(?i)<p[^>]*>`).ReplaceAllString(htmlStr, "")
+	htmlStr = regexp.MustCompile(`(?i)</p>`).ReplaceAllString(htmlStr, "\n")
+	htmlStr = regexp.MustCompile(`(?i)<div[^>]*>`).ReplaceAllString(htmlStr, "")
+	htmlStr = regexp.MustCompile(`(?i)</div>`).ReplaceAllString(htmlStr, "\n")
+	htmlStr = regexp.MustCompile(`(?i)<br\s*/?>`).ReplaceAllString(htmlStr, "\n")
+
+	allowed := map[string]bool{
+		"b": true, "i": true, "strong": true, "em": true,
+		"u": true, "s": true, "strike": true, "del": true,
+		"a": true, "code": true, "pre": true,
+	}
+
+	tagRe := regexp.MustCompile(`(?i)</?([a-z0-9]+)[^>]*>`)
+	htmlStr = tagRe.ReplaceAllStringFunc(htmlStr, func(tag string) string {
+		m := tagRe.FindStringSubmatch(tag)
+		if len(m) < 2 {
+			return ""
+		}
+		name := strings.ToLower(m[1])
+		if allowed[name] {
+			return tag
+		}
+		return ""
+	})
+
+	htmlStr = html.UnescapeString(htmlStr)
+
+	htmlStr = regexp.MustCompile(`\n{2,}`).ReplaceAllString(htmlStr, "\n\n")
+	htmlStr = strings.TrimSpace(htmlStr)
+	return htmlStr
+}
+
+func ExtractVideosFromHTML(content string) []string {
+	var urls []string
+	doc, err := html.Parse(strings.NewReader(content))
+	if err != nil {
+		return urls
+	}
+
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "source" {
+			for _, attr := range n.Attr {
+				if attr.Key == "src" {
+					urls = append(urls, attr.Val)
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+	return urls
+}
+
+func HandleTexWithMarup(chatID int64, token string, content string, markup *tgbotapi.InlineKeyboardMarkup) (err error) {
+	botAPI, err := tgbotapi.NewBotAPI(token)
+	if err != nil {
+		return
+	}
+	imgs, text := ExtractImgsAndText(content)
+	videos := ExtractVideosFromHTML(content)
+	caption := CleanHTMLForTelegram(text)
+	if len(caption) > 1024 {
+		caption = caption[:1020] + "..."
+	}
+
+	// 先发送图片
+	for i, img := range imgs {
+		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(img))
+		if i == 0 {
+			photo.Caption = caption
+			photo.ParseMode = tgbotapi.ModeHTML
+			if markup != nil {
+				photo.ReplyMarkup = markup
+			}
+		}
+		if _, err = botAPI.Send(photo); err != nil {
+			return
+		}
+	}
+
+	// 发送视频
+	for i, vid := range videos {
+		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(vid))
+		if i == 0 && len(imgs) == 0 { // 如果前面没有图片，第一条视频附加 caption
+			video.Caption = caption
+			video.ParseMode = tgbotapi.ModeHTML
+			if markup != nil {
+				video.ReplyMarkup = markup
+			}
+		} else if i == 0 && markup != nil {
+			video.ReplyMarkup = markup
+		}
+		if _, err = botAPI.Send(video); err != nil {
+			return
+		}
+	}
+
+	// 如果没有图片和视频，则发送纯文本
+	if len(imgs) == 0 && len(videos) == 0 && caption != "" {
+		msg := tgbotapi.NewMessage(chatID, caption)
+		msg.ParseMode = tgbotapi.ModeHTML
+		if markup != nil {
+			msg.ReplyMarkup = markup
+		}
+		_, err = botAPI.Send(msg)
+	}
+	return err
+}

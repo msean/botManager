@@ -22,9 +22,6 @@ func (botBanGroupMemService *BotBanGroupMemService) CreateBotBanGroupMem(ctx con
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("botBanGroupMem", botBanGroupMem), zap.Error(err))
 		return
 	}
-	if deleteErr := cache.ReleaseBotChatGroupMem(int(botBanGroupMem.BotID), int(botBanGroupMem.ChatGroupID)); deleteErr != nil {
-		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", botBanGroupMem.BotID), zap.Int64("ChatGroupID", botBanGroupMem.ChatGroupID))
-	}
 	return err
 }
 
@@ -46,7 +43,7 @@ func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMem(ctx con
 		return
 	}
 
-	if deleteErr := cache.ReleaseBotChatGroupMem(int(object.BotID), int(object.ChatGroupID)); deleteErr != nil {
+	if deleteErr := cache.NewBotChatGroupBanMemCListCache(int(object.BotID)).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", object.BotID), zap.Int64("ChatGroupID", object.ChatGroupID))
 	}
 	return err
@@ -67,7 +64,7 @@ func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMemByIds(ct
 		return
 	}
 	for _, object := range objects {
-		if deleteErr := cache.ReleaseBotChatGroupMem(int(object.BotID), int(object.ChatGroupID)); deleteErr != nil {
+		if deleteErr := cache.NewBotChatGroupBanMemCListCache(int(object.BotID)).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", object.BotID))
 		}
 	}
@@ -81,7 +78,7 @@ func (botBanGroupMemService *BotBanGroupMemService) UpdateBotBanGroupMem(ctx con
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", botBanGroupMem.ID))
 		return
 	}
-	if deleteErr := cache.ReleaseBotChatGroupMem(int(botBanGroupMem.BotID), int(botBanGroupMem.ChatGroupID)); deleteErr != nil {
+	if deleteErr := cache.NewBotChatGroupBanMemCListCache(int(botBanGroupMem.BotID)).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("botBanGroupMem", botBanGroupMem))
 	}
 	return err
@@ -105,6 +102,10 @@ func (botBanGroupMemService *BotBanGroupMemService) GetBotBanGroupMemInfoList(ct
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
 		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
+	}
+
+	if info.BotID != 0 {
+		db = db.Where("bot_id=?", info.BotID)
 	}
 
 	err = db.Count(&total).Error

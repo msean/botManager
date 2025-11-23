@@ -22,6 +22,24 @@
           />
         </el-form-item>
 
+         <!-- 机器人选择下拉框 -->
+        <el-form-item label="机器人" prop="botID">
+          <el-select
+            v-model="searchInfo.botID"
+            filterable
+            clearable
+            placeholder="请选择机器人"
+            style="width: 220px"
+          >
+            <el-option
+              v-for="item in botOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+
         <template v-if="showAllQuery">
           <!-- 可扩展更多查询条件 -->
         </template>
@@ -29,8 +47,8 @@
         <el-form-item>
           <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
           <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button link type="primary" icon="arrow-down" @click="showAllQuery = true" v-if="!showAllQuery">展开</el-button>
-          <el-button link type="primary" icon="arrow-up" @click="showAllQuery = false" v-else>收起</el-button>
+          <!-- <el-button link type="primary" icon="arrow-down" @click="showAllQuery = true" v-if="!showAllQuery">展开</el-button> -->
+          <!-- <el-button link type="primary" icon="arrow-up" @click="showAllQuery = false" v-else>收起</el-button> -->
         </el-form-item>
       </el-form>
     </div>
@@ -50,25 +68,12 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-
+        <el-table-column align="left" label="机器人名称" prop="botName" width="240" />
+        <el-table-column align="left" label="群组名称" prop="chatGroupName" width="400" />
         <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
           <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
-
-        <el-table-column align="left" label="机器人名称" prop="botName" width="220" />
-        <el-table-column align="left" label="群组名称" prop="chatGroupName" width="400" />
-
-        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
-          <template #default="scope">
-            <el-button type="primary" link class="table-button" @click="getDetails(scope.row)">
-              <el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看
-            </el-button>
-            <el-button type="primary" link icon="edit" class="table-button" @click="updateBotChatGroupFunc(scope.row)">编辑</el-button>
-            <el-button type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
       </el-table>
-
       <div class="gva-pagination">
         <el-pagination
           layout="total, sizes, prev, pager, next, jumper"
@@ -115,15 +120,6 @@
         </el-form-item>
       </el-form>
     </el-drawer>
-
-    <!-- 详情弹窗 -->
-    <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
-      <el-descriptions :column="1" border>
-        <el-descriptions-item label="机器人ID">{{ detailForm.botID }}</el-descriptions-item>
-        <el-descriptions-item label="群组ID">{{ detailForm.chatGroupID }}</el-descriptions-item>
-        <el-descriptions-item label="群组名称">{{ detailForm.chatGroupName }}</el-descriptions-item>
-      </el-descriptions>
-    </el-drawer>
   </div>
 </template>
 
@@ -146,6 +142,19 @@ import { useAppStore } from "@/pinia"
 defineOptions({
   name: 'BotChatGroup'
 })
+
+const botOptions = ref([])
+
+const setOptions = async () => {
+  const res = await getBotChoice()
+  if (res.code === 0) {
+    botOptions.value = res.data.map(item => ({
+      label: item.name,
+      value: item.botID
+    }))
+  }
+}
+setOptions()
 
 const appStore = useAppStore()
 const btnLoading = ref(false)
@@ -177,6 +186,8 @@ const onReset = () => {
   searchInfo.value = {}
   getTableData()
 }
+
+
 
 const onSubmit = () => {
   elSearchFormRef.value?.validate(async valid => {

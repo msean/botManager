@@ -28,6 +28,24 @@
           />
         </el-form-item>
 
+        <el-form-item label="机器人" prop="botID">
+          <el-select
+            v-model="searchInfo.botID"
+            filterable
+            clearable
+            placeholder="请选择机器人"
+            style="width: 220px"
+          >
+            <el-option
+              v-for="item in botOptions"
+              :key="item.value"
+              :label="item.name"
+              :value="item.botID"
+            />
+          </el-select>
+        </el-form-item>
+        
+
         <el-form-item>
           <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
           <el-button icon="refresh" @click="onReset">重置</el-button>
@@ -206,6 +224,7 @@ defineOptions({ name: 'BotBanGroupMem' })
 
 const btnLoading = ref(false)
 const appStore = useAppStore()
+
 
 // ========= 表格部分 =========
 const formData = ref({ botID: undefined, chatGroupID: undefined, banMemContent: '' })

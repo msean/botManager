@@ -1,28 +1,43 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/msean/botmanager/server/global"
-	"go.uber.org/zap"
+	"github.com/msean/botmanager/server/service/cache"
 )
 
-func StartHandlerfunc(update tgbotapi.Update, token string, botID int64) {
-	botAPI, err := tgbotapi.NewBotAPI(token)
-	if err != nil {
-		global.GVA_LOG.Error("StartHandlerfunc", zap.Error(err))
-		return
+func BuildReplyKeyboard(cmdButtons json.RawMessage) tgbotapi.ReplyKeyboardMarkup {
+	var rows [][]struct {
+		Name    string `json:"name"`
+		BindCmd string `json:"bindCmd"`
 	}
-	keyboard := tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("⚡充值"),
-			tgbotapi.NewKeyboardButton("💵充值价格"),
-		),
-	)
 
-	keyboard.ResizeKeyboard = true
+	json.Unmarshal(cmdButtons, &rows)
 
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "欢迎使用，请选择功能：")
+	keyboardRows := make([][]tgbotapi.KeyboardButton, 0)
+
+	for _, row := range rows {
+		btnRow := make([]tgbotapi.KeyboardButton, 0)
+		for _, b := range row {
+			btnRow = append(btnRow, tgbotapi.NewKeyboardButton(b.BindCmd))
+			// 或显示名字 btnRow = append(btnRow, tgbotapi.NewKeyboardButton(b.Name))
+		}
+		keyboardRows = append(keyboardRows, btnRow)
+	}
+
+	return tgbotapi.NewReplyKeyboard(keyboardRows...)
+}
+
+func StartHandlerfunc(update tgbotapi.Update, token string, cfg cache.BotCmdCache) {
+	bot, _ := tgbotapi.NewBotAPI(token)
+	chatID := update.Message.Chat.ID
+
+	keyboard := BuildReplyKeyboard(cfg.CmdButtons)
+
+	// 3. 回复欢迎语 + 键盘
+	msg := tgbotapi.NewMessage(chatID, cfg.Content)
 	msg.ReplyMarkup = keyboard
 
-	botAPI.Send(msg)
+	bot.Send(msg)
 }
