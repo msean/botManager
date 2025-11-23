@@ -6,5 +6,5 @@ import (
 )
 
 func StartHandlerfunc(update tgbotapi.Update, token string, cfg cache.BotCmdCache) {
-	SendCfgMessage(update, token, cfg, 2)
+	SendCfgMessage(update, token, cfg, 1)
 }

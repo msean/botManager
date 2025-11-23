@@ -93,7 +93,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		StartHandlerfunc(update, token, cfg)
 	default:
 		if inCfg {
-			SendCfgMessage(update, token, cfg, 1)
+			SendCfgMessage(update, token, cfg, 2)
 		}
 	}
 	ProcessBindCommand(update, token, botID, cmd)
