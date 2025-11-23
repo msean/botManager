@@ -81,7 +81,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		}
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
+	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
 
 	switch cmd {
 	case "/start":
@@ -154,5 +154,6 @@ func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache,
 
 	chatID := update.Message.Chat.ID // 获取聊天 ID
 
+	global.GVA_LOG.Debug("BotMsgHandlerSvc send", zap.Any("any", cfg.Content), zap.Any("markup", markup))
 	return bot_handler.HandleTexWithMarup(chatID, token, cfg.Content, markup)
 }
