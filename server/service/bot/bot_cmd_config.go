@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -76,7 +77,8 @@ func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.C
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.ID), zap.Error(err))
 		return
 	}
-	if err = global.GVA_DB.Model(&bot.BotBanContent{}).Where("id = ?", botCmdConfig.ID).Updates(&botCmdConfig).Error; err != nil {
+	spew.Dump(botCmdConfig)
+	if err = global.GVA_DB.Model(&bot.BotCmdConfig{}).Where("id = ?", botCmdConfig.ID).Updates(&botCmdConfig).Error; err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.BotID))
 		return
 	}

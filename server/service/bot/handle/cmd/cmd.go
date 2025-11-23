@@ -47,7 +47,6 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		// 1. 主命令 → config
 		cmdCfgMapper[c.Cmd] = c
 
-		global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("buttons", c.CmdButtons))
 		// 2. 按钮映射
 		if len(c.CmdButtons) > 0 {
 
@@ -58,7 +57,6 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 
 			_ = json.Unmarshal([]byte(c.CmdButtons), &buttons)
 
-			global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("buttons", buttons))
 			for _, row := range buttons {
 				for _, b := range row {
 					// 输入按钮名 → 执行按钮绑定命令
@@ -67,9 +65,6 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 			}
 		}
 	}
-
-	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("any", cmdCfgMapper))
-	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("triggerMapper", triggerMapper))
 
 	// 找到对应配置
 	var ok bool
@@ -86,7 +81,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		}
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("cmd", cmd), zap.Any("inCfg", inCfg))
+	global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
 
 	switch cmd {
 	case "/start":
