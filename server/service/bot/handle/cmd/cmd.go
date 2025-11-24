@@ -57,12 +57,11 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		text = update.Message.Text
 	}
 
-	global.GVA_LOG.Debug("0000000")
 	if update.CallbackQuery != nil {
+		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery")
 		return HandleCallback(update.CallbackQuery, token, botID)
 	}
 
-	global.GVA_LOG.Debug("11111")
 	if text == "" {
 		return
 	}
@@ -220,6 +219,8 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error
 	userID := cb.From.ID
 	data := cb.Data
 
+	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("data", cb.Data))
+
 	parts := strings.Split(data, ":")
 	if len(parts) != 2 {
 		return nil
@@ -228,9 +229,11 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error
 	cmd := parts[0]
 	updateID, _ := strconv.Atoi(parts[1])
 
+	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("updateID", updateID), zap.Any("cmd", cmd))
+
 	switch cmd {
 	case "AdConfirm":
-		return HandleAdConfirm(chatID, userID, updateID, token, botID)
+		return HandleAdConfirm(chatID, userID, updateID, token, botID, cb.Message.MessageID)
 
 	case "AdCancel":
 		return HandleAdCancel(chatID, userID, updateID, token, botID, cb.Message.MessageID)
@@ -256,13 +259,16 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 	return nil
 }
 
-func HandleAdConfirm(chatID int64, userID int64, updateID int, token string, botID int64) error {
+func HandleAdConfirm(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
 	ctx := context.Background()
 
 	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
 
 	val, err := global.GVA_REDIS.Get(ctx, draftKey).Result()
 	if err != nil || val == "" {
+		del := tgbotapi.NewDeleteMessage(chatID, msgID)
+		bot, _ := tgbotapi.NewBotAPI(token)
+		bot.Send(del)
 		bot_handler.SendTextMessage(chatID, token, "❌ 此发布请求已过期，请重新发送内容。")
 		return nil
 	}

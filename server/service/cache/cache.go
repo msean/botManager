@@ -9,5 +9,5 @@ func AdWaitCacheKey(botID, userID int64) string {
 }
 
 func AdDraftCacheKey(botID, userID, updateID int64) string {
-	return fmt.Sprintf("bot:%d:user:%d:ad_draft:%d", botID, userID, updateID)
+	return fmt.Sprintf("bot_manager:ad_draft:%d_%d_%d", botID, userID, updateID)
 }
