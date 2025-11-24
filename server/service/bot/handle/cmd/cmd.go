@@ -9,7 +9,6 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
@@ -60,10 +59,6 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	if update.CallbackQuery != nil {
 		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery")
 		return HandleCallback(update.CallbackQuery, token, botID)
-	}
-
-	if text == "" {
-		return
 	}
 
 	cmds := cache.NewBotCmdCacheList(int(botID))
@@ -239,53 +234,5 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error
 		return HandleAdCancel(chatID, userID, updateID, token, botID, cb.Message.MessageID)
 	}
 
-	return nil
-}
-
-func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
-	ctx := context.Background()
-
-	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
-
-	global.GVA_REDIS.Del(ctx, draftKey)
-
-	bot, _ := tgbotapi.NewBotAPI(token)
-
-	del := tgbotapi.NewDeleteMessage(chatID, msgID)
-	bot.Send(del)
-
-	bot.Send(tgbotapi.NewMessage(chatID, "❌ 已取消发布。"))
-
-	return nil
-}
-
-func HandleAdConfirm(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
-	ctx := context.Background()
-
-	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
-
-	val, err := global.GVA_REDIS.Get(ctx, draftKey).Result()
-	if err != nil || val == "" {
-		del := tgbotapi.NewDeleteMessage(chatID, msgID)
-		bot, _ := tgbotapi.NewBotAPI(token)
-		bot.Send(del)
-		bot_handler.SendTextMessage(chatID, token, "❌ 此发布请求已过期，请重新发送内容。")
-		return nil
-	}
-
-	// 写入订单
-	rec := recharge.UserRechargeRecord{
-		BotID:           botID,
-		PublishTimes:    1,
-		StartTime:       time.Now(),
-		PublishInterval: 30,
-		PublishContent:  val,
-		Status:          1, // 创建
-	}
-	global.GVA_DB.Create(&rec)
-
-	global.GVA_REDIS.Del(ctx, draftKey)
-
-	bot_handler.SendTextMessage(chatID, token, "✅ 广告订单创建成功，请前往后台完成支付。")
 	return nil
 }
