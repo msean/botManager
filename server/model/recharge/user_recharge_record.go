@@ -17,8 +17,9 @@ type UserRechargeRecord struct {
 	PublishContent  string    `json:"publishContent" form:"publishContent" gorm:"comment:发布内容;column:publish_content;type:text;"` //发布内容
 	Status          int64     `json:"status" form:"status" gorm:"comment:状态(1、创建 2、支付成功 3、支付超时失败);column:status;"`                //状态
 	UpdateID        int64     `json:"updateID" form:"updateID" gorm:"column:update_id;"`                                          //状态
-	ChannelID       int64     `json:"channelID" form:"channelID" gorm:"column:channel_id;"`                                       //状态
-	BotName         string    `json:"=botName" form:"botName" gorm:"-;"`
+	ChannelID       int64     `json:"channelID" form:"channelID" gorm:"column:channel_id"`                                        //状态
+	BotName         string    `json:"botName" form:"botName" gorm:"-;"`
+	UserID          int64     `json:"userID" form:"userID" gorm:"column:user_id"`
 }
 
 // TableName 用户充值记录 UserRechargeRecord自定义表名 bot_user_recharge_record

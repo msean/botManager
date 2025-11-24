@@ -52,7 +52,7 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 	return nil
 }
 
-func HandleAdConfirm(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
+func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, botID int64, msgID int) error {
 	ctx := context.Background()
 
 	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
@@ -74,6 +74,8 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int, token string, bot
 		PublishInterval: 30,
 		PublishContent:  val,
 		Status:          1, // 创建
+		UserID:          userID,
+		UpdateID:        updateID,
 	}
 	global.GVA_DB.Create(&rec)
 
