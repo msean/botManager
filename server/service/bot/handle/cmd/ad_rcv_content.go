@@ -64,27 +64,27 @@ func ParseIncomingMedia(msg *tgbotapi.Message) []MediaItem {
 
 	return items
 }
+
 func SendPreviewWithButtons(chatID int64, token string, medias []MediaItem, updateID int) {
 	bot, _ := tgbotapi.NewBotAPI(token)
 
-	// 先按顺序发内容
+	var caption string
+	var photoID string
+	var videoID string
+
+	// 整理用户发送的数据
 	for _, m := range medias {
 		switch m.Type {
 		case "text":
-			msg := tgbotapi.NewMessage(chatID, m.Text)
-			bot.Send(msg)
-
+			caption = m.Text
 		case "photo":
-			msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(m.FileID))
-			bot.Send(msg)
-
+			photoID = m.FileID
 		case "video":
-			msg := tgbotapi.NewVideo(chatID, tgbotapi.FileID(m.FileID))
-			bot.Send(msg)
+			videoID = m.FileID
 		}
 	}
 
-	// 最后一条带按钮（包含 updateID）
+	// 做按钮
 	buttons := tgbotapi.NewInlineKeyboardMarkup(
 		[]tgbotapi.InlineKeyboardButton{
 			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", fmt.Sprintf("AdConfirm:%d", updateID)),
@@ -94,7 +94,25 @@ func SendPreviewWithButtons(chatID int64, token string, medias []MediaItem, upda
 		},
 	)
 
-	msg := tgbotapi.NewMessage(chatID, "请确认是否发布此广告：")
+	// 发送一条消息（按用户原格式）
+	if photoID != "" {
+		msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(photoID))
+		msg.Caption = caption
+		msg.ReplyMarkup = buttons
+		bot.Send(msg)
+		return
+	}
+
+	if videoID != "" {
+		msg := tgbotapi.NewVideo(chatID, tgbotapi.FileID(videoID))
+		msg.Caption = caption
+		msg.ReplyMarkup = buttons
+		bot.Send(msg)
+		return
+	}
+
+	// 只有文本的情况
+	msg := tgbotapi.NewMessage(chatID, caption)
 	msg.ReplyMarkup = buttons
 	bot.Send(msg)
 }

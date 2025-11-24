@@ -14,6 +14,16 @@ import (
 
 type BotMsgHandlerSvc struct{}
 
+func getUpdateText(u tgbotapi.Update) string {
+	if u.Message != nil {
+		return u.Message.Text
+	}
+	if u.CallbackQuery != nil {
+		return u.CallbackQuery.Data
+	}
+	return ""
+}
+
 func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err error) {
 	var tgMsg tgbotapi.Update
 	if err = json.Unmarshal(body, &tgMsg); err != nil {
@@ -27,12 +37,22 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return
 	}
 
-	chatType := tgMsg.Message.Chat.Type
+	var chatType string
+	if tgMsg.Message != nil {
+		chatType = tgMsg.Message.Chat.Type
+	} else if tgMsg.CallbackQuery != nil {
+		chatType = tgMsg.CallbackQuery.Message.Chat.Type
+	} else {
+		return nil
+	}
+
 	switch chatType {
-	// 私聊
 	case "private":
-		global.GVA_LOG.Debug("BotMsgHandlerSvc received msg", zap.Any("msg", tgMsg.Message.Text))
+		global.GVA_LOG.Debug("BotMsgHandlerSvc received msg",
+			zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
+
 		cmd.Handle(tgMsg, botModel.Token, int64(botModel.BotID))
+
 	default:
 		if tgMsg.MyChatMember != nil {
 			SyncChatGroup(botModel, tgMsg)
