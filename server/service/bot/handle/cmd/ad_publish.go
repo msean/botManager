@@ -16,6 +16,6 @@ func PublishAdHandle(update tgbotapi.Update, token string, botID int64) {
 		userID = int64(update.Message.From.ID)
 	}
 	// 设置用户状态：等待输入内容
-	cacheKey := fmt.Sprintf("bot:%d:user:%d:state", botID, userID)
+	cacheKey := fmt.Sprintf("bot_manager:bot:%d:user:%d:state", botID, userID)
 	global.GVA_REDIS.Set(context.Background(), cacheKey, waitAdContentState, waitAdContentExpire)
 }

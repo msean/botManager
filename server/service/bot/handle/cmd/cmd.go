@@ -43,10 +43,12 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		text = update.Message.Text
 	}
 
+	global.GVA_LOG.Debug("0000000")
 	if update.CallbackQuery != nil {
 		return HandleCallback(update.CallbackQuery, token, botID)
 	}
 
+	global.GVA_LOG.Debug("11111")
 	if text == "" {
 		return
 	}
@@ -109,7 +111,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		return
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
+	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("cmd", cmd), zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
 	switch cmd {
 	case startCmd:
 		StartHandlerfunc(update, token, *cmdCfg)
@@ -118,12 +120,13 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 			SendCfgMessage(update, token, *cmdCfg, 2)
 		}
 	}
+	global.GVA_LOG.Debug("BotMsgHandlerSvc ProcessBindCommand", zap.Any("cmd", cmd))
 	ProcessBindCommand(update, token, botID, cmd)
 	return
 }
 
-func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, bindCmd string) {
-	switch bindCmd {
+func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd string) {
+	switch cmd {
 	case AdPublishCmd: // 点击发布广告
 		PublishAdHandle(update, token, botID)
 	case AdRcvContentCmd: // 用户输入广告内容

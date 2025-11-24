@@ -35,7 +35,7 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) {
 	data, _ := json.Marshal(medias)
 
 	// 设置 30 分钟过期（自动处理超时）
-	global.GVA_REDIS.Set(ctx, draftKey, string(data), waitAdContentExpire)
+	global.GVA_REDIS.Set(ctx, draftKey, string(data), confirmAdExpire)
 
 	// 清除等待状态
 	stateKey := fmt.Sprintf("bot:%d:user:%d:state", botID, msg.From.ID)
