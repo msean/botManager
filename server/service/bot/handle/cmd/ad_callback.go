@@ -9,7 +9,6 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
-	"github.com/msean/botmanager/server/service/bot/handle/cmd"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 )
@@ -91,7 +90,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	global.GVA_DB.Where("bot_id = ?", botID).Find(&channels)
 
 	// 群发
-	var medias []cmd.MediaItem
+	var medias []MediaItem
 	json.Unmarshal([]byte(val), &medias)
 	for _, ch := range channels {
 		AdSend(token, ch.ChannelID, medias, nil)
