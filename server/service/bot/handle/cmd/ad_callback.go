@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
+	"github.com/msean/botmanager/server/service/bot/handle/cmd"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 )
@@ -82,5 +85,16 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	global.GVA_REDIS.Del(ctx, draftKey)
 
 	bot_handler.SendTextMessage(chatID, token, "✅ 广告订单创建成功，请前往后台完成支付。")
+
+	// 查询所有频道
+	var channels []bot.BotChannel
+	global.GVA_DB.Where("bot_id = ?", botID).Find(&channels)
+
+	// 群发
+	var medias []cmd.MediaItem
+	json.Unmarshal([]byte(val), &medias)
+	for _, ch := range channels {
+		AdSend(token, ch.ChannelID, medias, nil)
+	}
 	return nil
 }

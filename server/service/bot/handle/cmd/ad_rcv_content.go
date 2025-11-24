@@ -66,11 +66,28 @@ func ParseIncomingMedia(msg *tgbotapi.Message) []MediaItem {
 }
 
 func SendPreviewWithButtons(chatID int64, token string, medias []MediaItem, updateID int) {
-	bot, _ := tgbotapi.NewBotAPI(token)
+	// 创建按钮
+	buttons := tgbotapi.NewInlineKeyboardMarkup(
+		[]tgbotapi.InlineKeyboardButton{
+			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", fmt.Sprintf("AdConfirm:%d", updateID)),
+		},
+		[]tgbotapi.InlineKeyboardButton{
+			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", fmt.Sprintf("AdCancel:%d", updateID)),
+		},
+	)
 
+	// 调用通用发送函数
+	AdSend(token, chatID, medias, buttons)
+}
+
+// SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
+// 如果 replyMarkup != nil，则用作按钮，否则不带按钮
+func AdSend(token string, chatID int64, medias []MediaItem, replyMarkup interface{}) (tgbotapi.Message, error) {
 	var caption string
 	var photoID string
 	var videoID string
+
+	bot, _ := tgbotapi.NewBotAPI(token)
 
 	// 整理用户发送的数据
 	for _, m := range medias {
@@ -84,35 +101,36 @@ func SendPreviewWithButtons(chatID int64, token string, medias []MediaItem, upda
 		}
 	}
 
-	// 做按钮
-	buttons := tgbotapi.NewInlineKeyboardMarkup(
-		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", fmt.Sprintf("AdConfirm:%d", updateID)),
-		},
-		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", fmt.Sprintf("AdCancel:%d", updateID)),
-		},
-	)
-
-	// 发送一条消息（按用户原格式）
+	// PHOTO
 	if photoID != "" {
 		msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(photoID))
 		msg.Caption = caption
-		msg.ReplyMarkup = buttons
-		bot.Send(msg)
-		return
+
+		if replyMarkup != nil {
+			msg.ReplyMarkup = replyMarkup
+		}
+
+		return bot.Send(msg)
 	}
 
+	// VIDEO
 	if videoID != "" {
 		msg := tgbotapi.NewVideo(chatID, tgbotapi.FileID(videoID))
 		msg.Caption = caption
-		msg.ReplyMarkup = buttons
-		bot.Send(msg)
-		return
+
+		if replyMarkup != nil {
+			msg.ReplyMarkup = replyMarkup
+		}
+
+		return bot.Send(msg)
 	}
 
-	// 只有文本的情况
+	// ONLY TEXT
 	msg := tgbotapi.NewMessage(chatID, caption)
-	msg.ReplyMarkup = buttons
-	bot.Send(msg)
+
+	if replyMarkup != nil {
+		msg.ReplyMarkup = replyMarkup
+	}
+
+	return bot.Send(msg)
 }
