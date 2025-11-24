@@ -41,7 +41,7 @@ type (
 	}
 )
 
-var cachePrefix = "sf_backend"
+var cachePrefix = "bot_manager"
 
 // ---------------------------------------------------------------------------
 // KvCacheObject 工具方法

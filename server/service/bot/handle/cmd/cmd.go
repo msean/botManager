@@ -1,13 +1,36 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
+)
+
+var (
+	startCmd        = "/start"           // 开始按钮
+	AdPublishCmd    = "/publishAd"       // 广告发布
+	AdCancelCmd     = "/cancelPublishAd" // 取消广告发布
+	AdRcvContentCmd = "/AdRcvContent"    // 收到广告内容
+	AdConfirmCmd    = "/AdConfirm"       // 确认发布
+)
+
+var (
+	waitAdContentState = "waiting_publish_content" // 用户状态
+)
+
+var (
+	waitAdContentExpire = 30 * time.Minute // 等待用户输入广告超时时间
+	confirmAdExpire     = 30 * time.Minute // 确认广告超时有效时间
 )
 
 func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
@@ -20,43 +43,36 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		text = update.Message.Text
 	}
 
+	if update.CallbackQuery != nil {
+		return HandleCallback(update.CallbackQuery, token, botID)
+	}
+
 	if text == "" {
 		return
 	}
 
-	cacheObjects := cache.NewBotCmdCacheList(int(botID))
-	_, err = cache.CacheGetItem(cacheObjects)
-	if err != nil {
-		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", int(botID)), zap.Error(err))
+	cmds := cache.NewBotCmdCacheList(int(botID))
+	if _, err = cache.CacheGetItem(cmds); err != nil {
+		global.GVA_LOG.Error("botHandle GetBotCmdCacheList", zap.Int("botID", int(botID)), zap.Error(err))
 		return
 	}
 
-	var cfg cache.BotCmdCache
+	var cfg cache.BotCmdCacheWithNoContent
 	var inCfg bool
 	var cmd string
 
-	// 真实命令 → cfg
-	cmdCfgMapper := make(map[string]cache.BotCmdCache)
-
-	// 用户输入 → bindCmd
+	cmdCfgMapper := make(map[string]cache.BotCmdCacheWithNoContent)
 	triggerMapper := make(map[string]string)
 
 	// 构建映射
-	for _, c := range cacheObjects.Objects {
-
-		// 1. 主命令 → config
+	for _, c := range cmds.Objects {
 		cmdCfgMapper[c.Cmd] = c
-
-		// 2. 按钮映射
 		if len(c.CmdButtons) > 0 {
-
 			var buttons [][]struct {
 				Name    string `json:"name"`
 				BindCmd string `json:"bindCmd"`
 			}
-
 			_ = json.Unmarshal([]byte(c.CmdButtons), &buttons)
-
 			for _, row := range buttons {
 				for _, b := range row {
 					// 输入按钮名 → 执行按钮绑定命令
@@ -81,14 +97,25 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		}
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
+	if cmd == "" {
+		if cmd = WaitCmd(update, botID); cmd == "" {
+			return
+		}
+	}
 
+	cmdCfg := cache.NewBotCmdCache(botID, cmd)
+	if _, err = cache.CacheGetItem(cmdCfg); err != nil {
+		global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
+		return
+	}
+
+	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
 	switch cmd {
-	case "/start":
-		StartHandlerfunc(update, token, cfg)
+	case startCmd:
+		StartHandlerfunc(update, token, *cmdCfg)
 	default:
 		if inCfg {
-			SendCfgMessage(update, token, cfg, 2)
+			SendCfgMessage(update, token, *cmdCfg, 2)
 		}
 	}
 	ProcessBindCommand(update, token, botID, cmd)
@@ -97,14 +124,16 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 
 func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, bindCmd string) {
 	switch bindCmd {
-	case "/publishAd":
-	case "/showPrice":
+	case AdPublishCmd: // 点击发布广告
+		PublishAdHandle(update, token, botID)
+	case AdRcvContentCmd: // 用户输入广告内容
+		ReceiveAdContentHandle(update, token, botID)
 	default:
 	}
 }
 
 func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache, buttonType int) error {
-	var markup interface{} // 最终传给 HandleTexWithMarup
+	var markup any // 最终传给 HandleTexWithMarup
 
 	switch buttonType {
 	case 1: // 普通键盘（ReplyKeyboard）
@@ -156,4 +185,86 @@ func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache,
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc send", zap.Any("any", cfg.Content), zap.Any("markup", markup))
 	return bot_handler.HandleTexWithMarup(chatID, token, cfg.Content, markup)
+}
+
+func WaitCmd(update tgbotapi.Update, botID int64) string {
+
+	var userID int64
+
+	cacheKey := fmt.Sprintf("bot:%d:user:%d:state", botID, userID)
+	state, _ := global.GVA_REDIS.Get(context.Background(), cacheKey).Result()
+
+	switch state {
+	case waitAdContentState:
+		return AdRcvContentCmd
+	}
+	return ""
+}
+
+func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error {
+	chatID := cb.Message.Chat.ID
+	userID := cb.From.ID
+	data := cb.Data
+
+	parts := strings.Split(data, ":")
+	if len(parts) != 2 {
+		return nil
+	}
+
+	cmd := parts[0]
+	updateID, _ := strconv.Atoi(parts[1])
+
+	switch cmd {
+	case "AdConfirm":
+		return HandleAdConfirm(chatID, userID, updateID, token, botID)
+
+	case "AdCancel":
+		return HandleAdCancel(chatID, userID, updateID, token, botID, cb.Message.MessageID)
+	}
+
+	return nil
+}
+
+func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
+	ctx := context.Background()
+
+	draftKey := fmt.Sprintf("bot:%d:user:%d:ad_draft:%d", botID, userID, updateID)
+
+	global.GVA_REDIS.Del(ctx, draftKey)
+
+	bot, _ := tgbotapi.NewBotAPI(token)
+
+	del := tgbotapi.NewDeleteMessage(chatID, msgID)
+	bot.Send(del)
+
+	bot.Send(tgbotapi.NewMessage(chatID, "❌ 已取消发布。"))
+
+	return nil
+}
+
+func HandleAdConfirm(chatID int64, userID int64, updateID int, token string, botID int64) error {
+	ctx := context.Background()
+	draftKey := fmt.Sprintf("bot:%d:user:%d:ad_draft:%d", botID, userID, updateID)
+
+	val, err := global.GVA_REDIS.Get(ctx, draftKey).Result()
+	if err != nil || val == "" {
+		bot_handler.SendTextMessage(chatID, token, "❌ 此发布请求已过期，请重新发送内容。")
+		return nil
+	}
+
+	// 写入订单
+	rec := recharge.UserRechargeRecord{
+		BotID:           botID,
+		PublishTimes:    1,
+		StartTime:       time.Now(),
+		PublishInterval: 30,
+		PublishContent:  val,
+		Status:          1, // 创建
+	}
+	global.GVA_DB.Create(&rec)
+
+	global.GVA_REDIS.Del(ctx, draftKey)
+
+	bot_handler.SendTextMessage(chatID, token, "✅ 广告订单创建成功，请前往后台完成支付。")
+	return nil
 }

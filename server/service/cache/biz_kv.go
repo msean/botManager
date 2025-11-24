@@ -37,16 +37,19 @@ type (
 		ChannelID   int    `json:"channelID"`
 		ChannelName string `json:"channelName"`
 	}
-
 	BotCmdCache struct {
 		BotID      int64  `json:"botID"`
 		Cmd        string `json:"cmd"`
 		Content    string `json:"content"`
 		CmdButtons string `json:"cmdButtons"`
 	}
+	BotCmdCacheWithNoContent struct {
+		Cmd        string `json:"cmd"`
+		CmdButtons string `json:"cmdButtons"`
+	}
 	BotCmdCacheList struct {
-		BotID   int           `json:"botID"`
-		Objects []BotCmdCache `json:"objects"`
+		BotID   int                        `json:"botID"`
+		Objects []BotCmdCacheWithNoContent `json:"objects"`
 	}
 )
 
@@ -77,10 +80,10 @@ func NewBotChannelCache(object bot.BotChannel) *BotChannelCache {
 	}
 }
 
-func NewBotCmdCache(object bot.BotCmdConfig) *BotCmdCache {
+func NewBotCmdCache(botID int64, cmd string) *BotCmdCache {
 	return &BotCmdCache{
-		BotID: object.BotID,
-		Cmd:   object.Cmd,
+		BotID: botID,
+		Cmd:   cmd,
 	}
 }
 

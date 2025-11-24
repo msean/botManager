@@ -98,3 +98,9 @@ func (b *Bot) DeleteMsg(chatID int64, msgID int) (err error) {
 	_, err = botAPI.Request(cfg)
 	return
 }
+
+func SendTextMessage(chatID int64, token string, text string) {
+	bot, _ := tgbotapi.NewBotAPI(token) // 你可以传 token
+	msg := tgbotapi.NewMessage(chatID, text)
+	bot.Send(msg)
+}
