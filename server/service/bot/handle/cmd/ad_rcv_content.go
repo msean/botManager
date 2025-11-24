@@ -7,6 +7,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/service/cache"
 )
 
 type MediaItem struct {
@@ -28,18 +29,15 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) {
 
 	ctx := context.Background()
 	updateID := update.UpdateID // 每条内容唯一 ID
-
-	// Redis 独立存储
-	draftKey := fmt.Sprintf("bot:%d:user:%d:ad_draft:%d", botID, msg.From.ID, updateID)
+	userID := getChatUserID(update)
 
 	data, _ := json.Marshal(medias)
 
 	// 设置 30 分钟过期（自动处理超时）
-	global.GVA_REDIS.Set(ctx, draftKey, string(data), confirmAdExpire)
+	global.GVA_REDIS.Set(ctx, cache.AdDraftCacheKey(botID, userID, int64(update.UpdateID)), string(data), confirmAdExpire)
 
 	// 清除等待状态
-	stateKey := fmt.Sprintf("bot:%d:user:%d:state", botID, msg.From.ID)
-	global.GVA_REDIS.Del(ctx, stateKey)
+	global.GVA_REDIS.Del(ctx, cache.AdWaitCacheKey(botID, userID))
 
 	// 一次性发送预览 + 按 updateID 绑定按钮
 	SendPreviewWithButtons(msg.Chat.ID, token, medias, updateID)
@@ -99,29 +97,4 @@ func SendPreviewWithButtons(chatID int64, token string, medias []MediaItem, upda
 	msg := tgbotapi.NewMessage(chatID, "请确认是否发布此广告：")
 	msg.ReplyMarkup = buttons
 	bot.Send(msg)
-}
-
-func sendMedia(bot *tgbotapi.BotAPI, chatID int64, m MediaItem, markup *tgbotapi.InlineKeyboardMarkup) {
-	switch m.Type {
-	case "photo":
-		msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(m.FileID))
-		if markup != nil {
-			msg.ReplyMarkup = markup
-		}
-		bot.Send(msg)
-
-	case "video":
-		msg := tgbotapi.NewVideo(chatID, tgbotapi.FileID(m.FileID))
-		if markup != nil {
-			msg.ReplyMarkup = markup
-		}
-		bot.Send(msg)
-
-	case "text":
-		msg := tgbotapi.NewMessage(chatID, m.Text)
-		if markup != nil {
-			msg.ReplyMarkup = markup
-		}
-		bot.Send(msg)
-	}
 }

@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +31,21 @@ var (
 	waitAdContentExpire = 30 * time.Minute // 等待用户输入广告超时时间
 	confirmAdExpire     = 30 * time.Minute // 确认广告超时有效时间
 )
+
+func getChatUserID(update tgbotapi.Update) (userId int64) {
+	switch {
+	case update.Message != nil:
+		// 如果是用户发送的消息
+		userId = int64(update.Message.From.ID)
+	case update.CallbackQuery != nil:
+		// 如果是用户点击了按钮
+		userId = int64(update.CallbackQuery.From.ID)
+	default:
+		// 其他情况
+		userId = 0
+	}
+	return
+}
 
 func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	var text string
@@ -192,10 +206,7 @@ func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache,
 
 func WaitCmd(update tgbotapi.Update, botID int64) string {
 
-	var userID int64
-
-	cacheKey := fmt.Sprintf("bot:%d:user:%d:state", botID, userID)
-	state, _ := global.GVA_REDIS.Get(context.Background(), cacheKey).Result()
+	state, _ := global.GVA_REDIS.Get(context.Background(), cache.AdWaitCacheKey(botID, getChatUserID(update))).Result()
 
 	switch state {
 	case waitAdContentState:
@@ -231,7 +242,7 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error
 func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
 	ctx := context.Background()
 
-	draftKey := fmt.Sprintf("bot:%d:user:%d:ad_draft:%d", botID, userID, updateID)
+	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
 
 	global.GVA_REDIS.Del(ctx, draftKey)
 
@@ -247,7 +258,8 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 
 func HandleAdConfirm(chatID int64, userID int64, updateID int, token string, botID int64) error {
 	ctx := context.Background()
-	draftKey := fmt.Sprintf("bot:%d:user:%d:ad_draft:%d", botID, userID, updateID)
+
+	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
 
 	val, err := global.GVA_REDIS.Get(ctx, draftKey).Result()
 	if err != nil || val == "" {
