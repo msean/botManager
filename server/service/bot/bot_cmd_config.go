@@ -100,7 +100,11 @@ func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.C
 // GetBotCmdConfig 根据ID获取机器人命令配置记录
 // Author [yourname](https://github.com/yourname)
 func (botCmdConfigService *BotCmdConfigService) GetBotCmdConfig(ctx context.Context, ID string) (botCmdConfig bot.BotCmdConfig, err error) {
-	err = global.GVA_DB.Where("id = ?", ID).First(&botCmdConfig).Error
+	if err = global.GVA_DB.Where("id = ?", ID).First(&botCmdConfig).Error; err != nil {
+		return
+	}
+	botModel, _, _ := dao.BotDao.FromBotID(global.GVA_DB, int(botCmdConfig.BotID))
+	botCmdConfig.BotName = botModel.Name
 	return
 }
 

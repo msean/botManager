@@ -52,12 +52,11 @@
           <template #default>[富文本内容]</template>
         </el-table-column>
 
-        <el-table-column label="按钮" width="300">
+        <el-table-column label="按钮" width="480">
           <template #default="scope">
-            <div v-if="scope.row.cmdButtons">
-              <!-- 尝试解析 JSON -->
+            <div v-if="scope.row.cmdButtons && scope.row.cmdButtons.length">
               <div
-                v-for="(row, rowIndex) in parseButtons(scope.row.cmdButtons)"
+                v-for="(row, rowIndex) in scope.row.cmdButtons"
                 :key="rowIndex"
                 style="margin-bottom: 4px;"
               >
@@ -66,7 +65,13 @@
                   :key="btnIndex"
                   style="margin-right: 6px;"
                 >
-                  {{ btn.name }} ({{ btn.bindCmd }})
+                  {{ btn.name }}
+                  <span v-if="isUrl(btn.bindCmd)">
+                    (链接)
+                  </span>
+                  <span v-else>
+                    ({{ btn.bindCmd }})
+                  </span>
                 </span>
               </div>
             </div>
@@ -163,10 +168,10 @@
           </div>
 
           <!-- 编辑按钮弹窗 -->
-          <el-dialog v-model="dialogVisible" title="编辑按钮" width="400px">
-            <el-form :model="editForm" label-width="90px">
+          <el-dialog v-model="dialogVisible" title="编辑按钮" width="600px">
+            <el-form :model="editForm" label-width="120px">
               <el-form-item label="名称"><el-input v-model="editForm.name" /></el-form-item>
-              <el-form-item label="绑定命令"><el-input v-model="editForm.bindCmd" /></el-form-item>
+              <el-form-item label="绑定命令/链接"><el-input v-model="editForm.bindCmd" /></el-form-item>
             </el-form>
 
             <template #footer>
@@ -313,6 +318,9 @@ const handleSelectionChange = (val) => {
     multipleSelection.value = val
 }
 
+
+const isUrl = (cmd) => /^https?:\/\//.test(cmd)
+
 // 删除行
 const deleteRow = (row) => {
     ElMessageBox.confirm('确定要删除吗?', '提示', {
@@ -358,10 +366,16 @@ const onDelete = async() => {
     }
 
 const parseButtons = (buttons) => {
+  if (!buttons) return [];
+
+  if (Array.isArray(buttons)) {
+    return buttons;
+  }
+
   try {
-    return JSON.parse(buttons || '[]')
-  } catch (e) {
-    return []
+    return JSON.parse(buttons);
+  } catch {
+    return [];
   }
 }
 
@@ -482,6 +496,7 @@ const getDetails = async (row) => {
     openDetailShow()
   }
 }
+
 
 
 // 关闭详情弹窗
