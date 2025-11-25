@@ -41,7 +41,10 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.C
 		return
 	}
 	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
-		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
+		global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID))
+	}
+	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd).Release(); deleteErr != nil {
+		global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID), zap.String("cmd", object.Cmd))
 	}
 	return err
 }
@@ -64,6 +67,9 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfigByIds(ctx cont
 		if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
 		}
+		if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd).Release(); deleteErr != nil {
+			global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID), zap.String("cmd", object.Cmd))
+		}
 	}
 	return err
 }
@@ -84,6 +90,9 @@ func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.C
 	}
 	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
+	}
+	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd).Release(); deleteErr != nil {
+		global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID), zap.String("cmd", object.Cmd))
 	}
 	return err
 }
