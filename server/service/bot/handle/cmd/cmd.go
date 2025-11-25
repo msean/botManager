@@ -185,7 +185,14 @@ func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache,
 		for _, row := range rows {
 			btnRow := make([]tgbotapi.InlineKeyboardButton, 0)
 			for _, b := range row {
-				btnRow = append(btnRow, tgbotapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd))
+				var btn tgbotapi.InlineKeyboardButton
+				if strings.HasPrefix(b.BindCmd, "http://") || strings.HasPrefix(b.BindCmd, "https://") {
+					btn = tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.BindCmd)
+				} else {
+					btn = tgbotapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd)
+				}
+
+				btnRow = append(btnRow, btn)
 			}
 			inlineRows = append(inlineRows, btnRow)
 		}
