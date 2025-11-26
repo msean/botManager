@@ -22,8 +22,6 @@
             end-placeholder="结束时间"
           />
        </el-form-item>
-      
-
         <template v-if="showAllQuery">
           <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
         </template>
@@ -52,8 +50,8 @@
         >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column sortable align="left" label="日期" prop="CreatedAt" width="180">
-            <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
+        <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
+            <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
         
             <el-table-column align="left" label="机器人ID" prop="botID" width="120" />

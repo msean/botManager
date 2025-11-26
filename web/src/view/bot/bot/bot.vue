@@ -23,20 +23,20 @@
           />
        </el-form-item>
       
-            <el-form-item label="机器人名称" prop="name">
-  <el-input v-model="searchInfo.name" placeholder="搜索条件" />
-</el-form-item>
-            
-            <el-form-item label="机器人token" prop="token">
-  <el-input v-model="searchInfo.token" placeholder="搜索条件" />
-</el-form-item>
+      <el-form-item label="机器人名称" prop="name">
+        <el-input v-model="searchInfo.name" placeholder="搜索条件" />
+      </el-form-item>
+      
+      <el-form-item label="机器人token" prop="token">
+        <el-input v-model="searchInfo.token" placeholder="搜索条件" />
+      </el-form-item>
             
 
-        <template v-if="showAllQuery">
-          <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
-        </template>
+      <template v-if="showAllQuery">
+        <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
+      </template>
 
-        <el-form-item>
+       <el-form-item>
           <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
           <el-button icon="refresh" @click="onReset">重置</el-button>
           <el-button link type="primary" icon="arrow-down" @click="showAllQuery=true" v-if="!showAllQuery">展开</el-button>

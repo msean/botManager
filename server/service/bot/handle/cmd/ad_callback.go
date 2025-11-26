@@ -11,6 +11,7 @@ import (
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	"go.uber.org/zap"
 )
 
 func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
@@ -89,11 +90,18 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	var channels []bot.BotChannel
 	global.GVA_DB.Where("bot_id = ?", botID).Find(&channels)
 
-	// 群发
 	var medias []MediaItem
 	json.Unmarshal([]byte(val), &medias)
+
+	cmdCfg := cache.NewBotCmdCache(botID, global.BotReplyCnfPublish2Channel, global.BotReplyCnfType)
+	if _, err = cache.CacheGetItem(cmdCfg); err != nil {
+		global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
+		return err
+	}
+
+	// 不管了，都发吧
 	for _, ch := range channels {
-		AdSend(token, ch.ChannelID, medias, nil)
+		AdSend(token, ch.ChannelID, medias, ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline))
 	}
 	return nil
 }

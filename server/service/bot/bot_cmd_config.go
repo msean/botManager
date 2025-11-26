@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -43,7 +42,7 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.C
 	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID))
 	}
-	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd, object.Type).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID), zap.String("cmd", object.Cmd))
 	}
 	return err
@@ -67,7 +66,7 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfigByIds(ctx cont
 		if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
 		}
-		if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd).Release(); deleteErr != nil {
+		if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd, object.Type).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID), zap.String("cmd", object.Cmd))
 		}
 	}
@@ -83,7 +82,6 @@ func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.C
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.ID), zap.Error(err))
 		return
 	}
-	spew.Dump(botCmdConfig)
 	if err = global.GVA_DB.Model(&bot.BotCmdConfig{}).Where("id = ?", botCmdConfig.ID).Updates(&botCmdConfig).Error; err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.BotID))
 		return
@@ -91,7 +89,7 @@ func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.C
 	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
 	}
-	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd, object.Type).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID), zap.String("cmd", object.Cmd))
 	}
 	return err

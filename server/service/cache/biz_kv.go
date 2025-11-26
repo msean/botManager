@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 )
 
@@ -40,6 +41,7 @@ type (
 	BotCmdCache struct {
 		BotID      int64  `json:"botID"`
 		Cmd        string `json:"cmd"`
+		Type       int    `json:"type"`
 		Content    string `json:"content"`
 		CmdButtons string `json:"cmdButtons"`
 	}
@@ -47,6 +49,7 @@ type (
 		Cmd        string `json:"cmd"`
 		CmdButtons string `json:"cmdButtons"`
 	}
+	// 获取
 	BotCmdCacheList struct {
 		BotID   int                        `json:"botID"`
 		Objects []BotCmdCacheWithNoContent `json:"objects"`
@@ -80,10 +83,11 @@ func NewBotChannelCache(object bot.BotChannel) *BotChannelCache {
 	}
 }
 
-func NewBotCmdCache(botID int64, cmd string) *BotCmdCache {
+func NewBotCmdCache(botID int64, cmd string, _type int) *BotCmdCache {
 	return &BotCmdCache{
 		BotID: botID,
 		Cmd:   cmd,
+		Type:  _type,
 	}
 }
 
@@ -99,7 +103,7 @@ func NewBotChatGroupBanMemCListCache(botID int) *BotChatGroupBanMemCListCache {
 	}
 }
 
-func (BotChatGroupBanMemCListCache) TableName() string { return bot.BotChatGroup{}.TableName() }
+func (BotChatGroupBanMemCListCache) TableName() string { return bot.BotBanGroupMem{}.TableName() }
 func (BotChatGroupCache) TableName() string            { return bot.BotChatGroup{}.TableName() }
 func (BotBanContentListCache) TableName() string       { return bot.BotBanContent{}.TableName() }
 func (BotChannelCache) TableName() string              { return bot.BotChannel{}.TableName() }
@@ -134,12 +138,14 @@ func (c BotCmdCache) Pairs() []KvPkPair {
 	return []KvPkPair{
 		{"bot_id", c.BotID},
 		{"cmd", c.Cmd},
+		{"type", c.Type},
 	}
 }
 
 func (c BotCmdCacheList) Pairs() []KvPkPair {
 	return []KvPkPair{
 		{"bot_id", c.BotID},
+		{"type", global.BotReplyCmdType},
 	}
 }
 

@@ -57,7 +57,6 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	}
 
 	if update.CallbackQuery != nil {
-		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery")
 		return HandleCallback(update.CallbackQuery, token, botID)
 	}
 
@@ -113,7 +112,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		}
 	}
 
-	cmdCfg := cache.NewBotCmdCache(botID, cmd)
+	cmdCfg := cache.NewBotCmdCache(botID, cmd, global.BotReplyCmdType)
 	if _, err = cache.CacheGetItem(cmdCfg); err != nil {
 		global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
 		return
@@ -125,7 +124,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		StartHandlerfunc(update, token, *cmdCfg)
 	default:
 		if inCfg {
-			SendCfgMessage(update, token, *cmdCfg, 2)
+			SendCfgMessage(update, token, *cmdCfg, global.ButtonTypeInline)
 		}
 	}
 	global.GVA_LOG.Debug("BotMsgHandlerSvc ProcessBindCommand", zap.Any("cmd", cmd))
@@ -143,11 +142,9 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd s
 	}
 }
 
-func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache, buttonType int) error {
-	var markup any // 最终传给 HandleTexWithMarup
-
+func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 	switch buttonType {
-	case 1: // 普通键盘（ReplyKeyboard）
+	case global.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
 		var keyboard [][]tgbotapi.KeyboardButton
 
 		if len(cfg.CmdButtons) > 0 {
@@ -174,7 +171,7 @@ func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache,
 			markup = replyKeyboard
 		}
 
-	case 2: // 内联键盘（InlineKeyboard）
+	case global.ButtonTypeInline: // 内联键盘（InlineKeyboard）
 		var rows [][]struct {
 			Name    string `json:"name"`
 			BindCmd string `json:"bindCmd"`
@@ -198,9 +195,12 @@ func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache,
 		}
 		markup = tgbotapi.NewInlineKeyboardMarkup(inlineRows...)
 	}
+	return
+}
 
+func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache, buttonType int) error {
+	markup := ParseContentFromCfg(cfg, buttonType)
 	chatID := update.Message.Chat.ID // 获取聊天 ID
-
 	global.GVA_LOG.Debug("BotMsgHandlerSvc send", zap.Any("any", cfg.Content), zap.Any("markup", markup))
 	return bot_handler.HandleTexWithMarup(chatID, token, cfg.Content, markup)
 }

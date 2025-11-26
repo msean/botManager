@@ -3,23 +3,21 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
-        <el-form-item label="创建日期" prop="createdAtRange">
-          <template #label>
-            <span>
-              创建日期
-              <el-tooltip content="搜索范围是开始日期（包含）至结束日期（不包含）">
-                <el-icon><QuestionFilled /></el-icon>
-              </el-tooltip>
-            </span>
-          </template>
-          <el-date-picker
-            v-model="searchInfo.createdAtRange"
-            class="!w-380px"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-          />
+        <el-form-item label="机器人" prop="botID">
+          <el-select
+            v-model="searchInfo.botID"
+            filterable
+            clearable
+            placeholder="请选择机器人"
+            style="width: 220px"
+          >
+            <el-option
+              v-for="item in botOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
@@ -27,7 +25,6 @@
         </el-form-item>
       </el-form>
     </div>
-
     <div class="gva-table-box">
       <div class="gva-btn-list">
         <el-button type="primary" icon="plus" @click="openDialog()">新增</el-button>
@@ -42,12 +39,18 @@
         row-key="ID"
         @selection-change="handleSelectionChange"
       >
+       
         <el-table-column type="selection" width="55" />
-
-
         <el-table-column align="left" label="机器人" prop="botName" width="240" />
-        <el-table-column align="left" label="命令" prop="cmd" width="150" />
-
+        <el-table-column align="left" label="类型" width="120">
+            <template #default="scope">
+              <span v-if="scope.row.type === 1">命令/按钮</span>
+              <span v-else-if="scope.row.type === 2">特定功能配置</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+        <el-table-column align="left" label="绑定值" prop="cmd" width="150" />
+        <el-table-column align="left" label="标题" prop="title" width="180" />
         <el-table-column label="设置内容" prop="startContent" width="200">
           <template #default>[富文本内容]</template>
         </el-table-column>
@@ -118,7 +121,7 @@
         </div>
       </template>
 
-      <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule">
+      <el-form :model="formData" ref="elFormRef" :rules="rule" label-width="80px">
         <el-form-item label="机器人:" prop="botID">
           <el-select
             v-model="formData.botID"
@@ -136,19 +139,23 @@
             />
           </el-select>
         </el-form-item>
-
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="formData.title" clearable placeholder="请输入标题" />
+        </el-form-item>
         <el-form-item label="命令" prop="cmd">
           <el-input v-model="formData.cmd" clearable placeholder="请输入命令" />
         </el-form-item>
-
+        <el-form-item label="类型" prop="type">
+          <el-select v-model="formData.type" placeholder="请选择类型" clearable>
+            <el-option label="命令/按钮" :value="1" />
+            <el-option label="特定功能配置" :value="2" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="开始设置内容:" prop="content">
           <RichEdit v-model="formData.content" />
         </el-form-item>
-
         <el-form-item label="配置按钮">
           <div class="btn-group-wrapper">
-
-            <!-- 每一行按钮 -->
             <div v-for="(row, rowIndex) in formData.cmdButtons" :key="rowIndex" class="btn-row">
               <div
                 v-for="(btn, btnIndex) in row"
@@ -188,6 +195,10 @@
     <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" title="查看">
       <el-descriptions :column="1" border>
         <el-descriptions-item label="机器人">{{ detailForm.botName }}</el-descriptions-item>
+        <el-descriptions-item label="标题">{{ detailForm.title }}</el-descriptions-item>
+        <el-descriptions-item label="类型">
+          {{ detailForm.type === 1 ? '命令/按钮' : detailForm.type === 2 ? '特定功能配置' : '-' }}
+        </el-descriptions-item>
         <el-descriptions-item label="回复内容"><RichView v-model="detailForm.content" /></el-descriptions-item>
         <el-descriptions-item label="命令按钮配置">
           <div v-if="parseButtons(detailForm.cmdButtons).length">
@@ -228,7 +239,7 @@ import RichEdit from '@/components/richtext/rich-edit.vue'
 import RichView from '@/components/richtext/rich-view.vue'
 
 // 全量引入格式化工具 请按需保留
-import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
+import { formatDate} from '@/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, onMounted, reactive } from 'vue'
 import { useAppStore } from "@/pinia"
@@ -246,12 +257,24 @@ const formData = ref({
   botID: undefined,
   startContent: '',
   cmdButtons: [],          // ⭐ array，而不是字符串
+  type: 1,
 })
 
 // 验证规则
 const rule = reactive({
 })
 
+const botOptions = ref([])
+const setOptions = async () => {
+  const res = await getBotChoice()
+  if (res.code === 0) {
+    botOptions.value = res.data.map(item => ({
+      label: item.name,
+      value: item.botID
+    }))
+  }
+}
+setOptions()
 const elFormRef = ref()
 const elSearchFormRef = ref()
 
@@ -300,16 +323,6 @@ const getTableData = async() => {
 }
 
 getTableData()
-
-// ============== 表格控制部分结束 ===============
-
-// 获取需要的字典 可能为空 按需保留
-const setOptions = async () =>{
-}
-
-// 获取需要的字典 可能为空 按需保留
-setOptions()
-
 
 // 多选数据
 const multipleSelection = ref([])
@@ -406,7 +419,6 @@ const updateBotCmdConfigFunc = async (row) => {
 }
 
 
-
 // 删除行
 const deleteBotCmdConfigFunc = async (row) => {
     const res = await deleteBotCmdConfig({ ID: row.ID })
@@ -438,6 +450,7 @@ const closeDialog = () => {
     botID: undefined,
     startContent: '',
     cmdButtons: [],        // ⭐ 这里也要是数组
+    type: 1,
   }
 }
 
@@ -495,14 +508,6 @@ const getDetails = async (row) => {
     detailForm.value = res.data
     openDetailShow()
   }
-}
-
-
-
-// 关闭详情弹窗
-const closeDetailShow = () => {
-  detailShow.value = false
-  detailForm.value = {}
 }
 
 
@@ -586,6 +591,4 @@ onMounted(() => {
 .delete-row-btn {
   flex-shrink: 0;        /* 按钮保持原大小 */
 }
-
-
 </style>
