@@ -37,6 +37,9 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return
 	}
 
+	global.GVA_LOG.Debug("BotMsgHandlerSvc",
+		zap.Any("botModel", botModel), zap.Any("tgMsg", tgMsg)) // 修复后的取文本函数
+
 	var chatType string
 	if tgMsg.Message != nil {
 		chatType = tgMsg.Message.Chat.Type
@@ -46,9 +49,12 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return nil
 	}
 
+	global.GVA_LOG.Debug("BotMsgHandlerSvc",
+		zap.Any("type", chatType), zap.Any("msg", tgMsg.MyChatMember)) // 修复后的取文本函数
+
 	switch chatType {
 	case "private":
-		global.GVA_LOG.Debug("BotMsgHandlerSvc received msg",
+		global.GVA_LOG.Info("BotMsgHandlerSvc received msg",
 			zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
 
 		cmd.Handle(tgMsg, botModel.Token, int64(botModel.BotID))
@@ -60,8 +66,12 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		}
 
 		if tgMsg.ChannelPost != nil {
+			global.GVA_LOG.Debug("BotMsgHandlerSvc  ChannelPost",
+				zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
 			svc.HandelChannel(botModel, tgMsg)
 		} else {
+			global.GVA_LOG.Debug("BotMsgHandlerSvc ChatGroup",
+				zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
 			svc.HandelChatGroup(botModel, tgMsg)
 		}
 	}

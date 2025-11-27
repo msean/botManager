@@ -70,5 +70,4 @@ func ParseIncomingMedia(msg *tgbotapi.Message) []bot_handler.MediaItem {
 
 func SendPreviewWithButtons(chatID int64, token string, medias []bot_handler.MediaItem, updateID int) {
 	// 创建按钮
-
 }

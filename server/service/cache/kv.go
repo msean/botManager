@@ -33,7 +33,6 @@ type (
 
 	LoadType string
 
-	// CacheItem 可扩展，目前工具函数中不强制使用
 	CacheItem interface {
 		TableName() string
 		Pairs() []KvPkPair
@@ -43,16 +42,10 @@ type (
 
 var cachePrefix = "bot_manager"
 
-// ---------------------------------------------------------------------------
-// KvCacheObject 工具方法
-// ---------------------------------------------------------------------------
-
-// 创建 CacheObject
 func NewKvCacheObject(table string, pairs []KvPkPair) *KvCacheObject {
 	return &KvCacheObject{table: table, pairs: pairs}
 }
 
-// 类别前缀 key:  zk:{table}
 func (c *KvCacheObject) categoryKey() string {
 	return fmt.Sprintf("%s:%s", cachePrefix, c.table)
 }
@@ -69,7 +62,6 @@ func (c *KvCacheObject) individualKey() string {
 	return key
 }
 
-// 完整 Redis key
 func (c *KvCacheObject) Key() string {
 	return fmt.Sprintf("%s:%s", c.categoryKey(), c.individualKey())
 }
