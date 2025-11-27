@@ -103,7 +103,9 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
 	// 不管了，都发吧
 	for _, ch := range channels {
-		bot_handler.TgSend(token, ch.ChannelID, medias, buttons)
+		if _, err = bot_handler.TgSend(token, ch.ChannelID, medias, buttons); err != nil {
+			global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
+		}
 	}
 	return nil
 }
