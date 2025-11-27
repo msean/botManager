@@ -37,20 +37,17 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		return
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc",
-		zap.Any("botModel", botModel), zap.Any("tgMsg", tgMsg)) // 修复后的取文本函数
-
 	var chatType string
 	if tgMsg.Message != nil {
 		chatType = tgMsg.Message.Chat.Type
 	} else if tgMsg.CallbackQuery != nil {
 		chatType = tgMsg.CallbackQuery.Message.Chat.Type
+	} else if tgMsg.ChannelPost != nil {
+		chatType = tgMsg.ChannelPost.Chat.Type
 	} else {
-		return nil
+		global.GVA_LOG.Info("BotMsgHandlerSvc", zap.Any("tgMsg", tgMsg)) // 修复后的取文本函数
+		chatType = "unknow"
 	}
-
-	global.GVA_LOG.Debug("BotMsgHandlerSvc",
-		zap.Any("type", chatType), zap.Any("msg", tgMsg.MyChatMember)) // 修复后的取文本函数
 
 	switch chatType {
 	case "private":
