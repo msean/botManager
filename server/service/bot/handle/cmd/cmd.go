@@ -15,11 +15,11 @@ import (
 )
 
 var (
-	startCmd        = "/start"           // 开始按钮
-	AdPublishCmd    = "/publishAd"       // 广告发布
-	AdCancelCmd     = "/cancelPublishAd" // 取消广告发布
-	AdRcvContentCmd = "/AdRcvContent"    // 收到广告内容
-	AdConfirmCmd    = "/AdConfirm"       // 确认发布
+	startCmd        = "/start"        // 开始按钮
+	AdPublishCmd    = "/publishAd"    // 广告发布
+	AdCancelCmd     = "/AdCancel"     // 取消广告发布
+	AdRcvContentCmd = "/AdRcvContent" // 收到广告内容
+	AdConfirmCmd    = "/AdConfirm"    // 确认发布
 )
 
 var (
@@ -234,10 +234,10 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("updateID", updateID), zap.Any("cmd", cmd))
 
 	switch cmd {
-	case "AdConfirm":
+	case AdConfirmCmd:
 		return HandleAdConfirm(chatID, userID, int64(updateID), token, botID, cb.Message.MessageID)
 
-	case "AdCancel":
+	case AdCancelCmd:
 		return HandleAdCancel(chatID, userID, updateID, token, botID, cb.Message.MessageID)
 	}
 

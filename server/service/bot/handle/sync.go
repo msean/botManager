@@ -141,7 +141,7 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 			)
 		}
 
-		if err = cache.CacheDelete(cacheObject); err != nil {
+		if err = cacheObject.Release(); err != nil {
 			global.GVA_LOG.Error("failed to update chat group name",
 				zap.Int64("chatID", channelChatID),
 				zap.String("newName", channelChatName),

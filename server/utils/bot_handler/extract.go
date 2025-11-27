@@ -10,6 +10,12 @@ import (
 	"golang.org/x/net/html"
 )
 
+type MediaItem struct {
+	Type   string `json:"type"`
+	Text   string `json:"text,omitempty"`
+	FileID string `json:"file_id,omitempty"`
+}
+
 func ExtractImgsAndText(htmlStr string) (imgs []string, textWithoutImgs string) {
 	// 找所有 <img ... src="..."> 并取 src
 	imgRe := regexp.MustCompile(`(?i)<img[^>]+src=["']([^"']+)["'][^>]*>`)
@@ -181,4 +187,63 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 	}
 
 	return err
+}
+
+// SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
+// 如果 replyMarkup != nil，则用作按钮，否则不带按钮
+func TgSend(token string, chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg tgbotapi.Message, err error) {
+	var caption string
+	var photoID string
+	var videoID string
+
+	var botApi *tgbotapi.BotAPI
+	botApi, err = tgbotapi.NewBotAPI(token)
+	if err != nil {
+		return
+	}
+
+	// 整理用户发送的数据
+	for _, m := range medias {
+		switch m.Type {
+		case "text":
+			caption = m.Text
+		case "photo":
+			photoID = m.FileID
+		case "video":
+			videoID = m.FileID
+		}
+	}
+
+	// PHOTO
+	if photoID != "" {
+		msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(photoID))
+		msg.Caption = caption
+
+		if replyMarkup != nil {
+			msg.ReplyMarkup = replyMarkup
+		}
+
+		return botApi.Send(msg)
+	}
+
+	// VIDEO
+	if videoID != "" {
+		msg := tgbotapi.NewVideo(chatID, tgbotapi.FileID(videoID))
+		msg.Caption = caption
+
+		if replyMarkup != nil {
+			msg.ReplyMarkup = replyMarkup
+		}
+
+		return botApi.Send(msg)
+	}
+
+	// ONLY TEXT
+	msg := tgbotapi.NewMessage(chatID, caption)
+
+	if replyMarkup != nil {
+		msg.ReplyMarkup = replyMarkup
+	}
+
+	return botApi.Send(msg)
 }

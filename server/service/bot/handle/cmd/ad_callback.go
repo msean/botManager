@@ -90,7 +90,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	var channels []bot.BotChannel
 	global.GVA_DB.Where("bot_id = ?", botID).Find(&channels)
 
-	var medias []MediaItem
+	var medias []bot_handler.MediaItem
 	json.Unmarshal([]byte(val), &medias)
 
 	cmdCfg := cache.NewBotCmdCache(botID, global.BotReplyCnfPublish2Channel, global.BotReplyCnfType)
@@ -103,7 +103,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
 	// 不管了，都发吧
 	for _, ch := range channels {
-		AdSend(token, ch.ChannelID, medias, buttons)
+		bot_handler.TgSend(token, ch.ChannelID, medias, buttons)
 	}
 	return nil
 }
