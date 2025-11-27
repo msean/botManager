@@ -95,13 +95,15 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 
 	cmdCfg := cache.NewBotCmdCache(botID, global.BotReplyCnfPublish2Channel, global.BotReplyCnfType)
 	if _, err = cache.CacheGetItem(cmdCfg); err != nil {
-		global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
+		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Error(err))
 		return err
 	}
 
+	buttons := ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline)
+	global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
 	// 不管了，都发吧
 	for _, ch := range channels {
-		AdSend(token, ch.ChannelID, medias, ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline))
+		AdSend(token, ch.ChannelID, medias, buttons)
 	}
 	return nil
 }
