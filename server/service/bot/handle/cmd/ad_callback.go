@@ -2,13 +2,11 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	rechargeSrv "github.com/msean/botmanager/server/service/recharge"
@@ -120,31 +118,20 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	botHandler.SendTextMessage(chatID, token, sendTex)
 
 	// 查询所有频道
-	var channels []bot.BotChannel
-	if err = global.GVA_DB.Where("bot_id = ?", botID).Find(&channels).Error; err != nil {
-		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Error(err))
-		return
-	}
 
-	var medias []bot_handler.MediaItem
-	if err = json.Unmarshal([]byte(val), &medias); err != nil {
-		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("val", val), zap.Error(err))
-		return
-	}
-
-	cmdCfg := cache.NewBotCmdCache(botID, global.BotReplyCnfPublish2Channel, global.BotReplyCnfType)
-	if _, err = cache.CacheGetItem(cmdCfg); err != nil {
-		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Error(err))
-		return
-	}
-
-	buttons := ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline)
-	global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
-	// 不管了，都发吧
-	// for _, ch := range channels {
-	// 	if _, err = botHandler.TgSend(token, ch.ChannelID, medias, buttons); err != nil {
-	// 		global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
-	// 	}
+	// var medias []bot_handler.MediaItem
+	// if err = json.Unmarshal([]byte(val), &medias); err != nil {
+	// 	global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("val", val), zap.Error(err))
+	// 	return
 	// }
+
+	// cmdCfg := cache.NewBotCmdCache(botID, global.BotReplyCnfPublish2Channel, global.BotReplyCnfType)
+	// if _, err = cache.CacheGetItem(cmdCfg); err != nil {
+	// 	global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Error(err))
+	// 	return
+	// }
+
+	// buttons := ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline)
+	// global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
 	return nil
 }

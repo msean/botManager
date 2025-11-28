@@ -252,9 +252,7 @@ func InitBotTaskManager() {
 	BotTaskManager = &TaskManager{
 		tasks: make(map[uint]*TaskRunner),
 	}
-
 	var tasks []bot.BotTask
-	// 只加载未结束且 status=1 的任务
 	err := global.GVA_DB.
 		Where("status = ? AND (stop_time IS NULL OR stop_time > ?)", 1, time.Now()).
 		Find(&tasks).Error

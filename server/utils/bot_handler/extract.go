@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/service/cache"
 	"golang.org/x/net/html"
 )
 
@@ -187,4 +189,60 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 	}
 
 	return err
+}
+
+func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
+	switch buttonType {
+	case global.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
+		var keyboard [][]tgbotapi.KeyboardButton
+
+		if len(cfg.CmdButtons) > 0 {
+			var buttons [][]struct {
+				Name    string `json:"name"`
+				BindCmd string `json:"bindCmd"`
+			}
+			_ = json.Unmarshal([]byte(cfg.CmdButtons), &buttons)
+
+			for _, row := range buttons {
+				kbRow := []tgbotapi.KeyboardButton{}
+				for _, btn := range row {
+					kbRow = append(kbRow, tgbotapi.NewKeyboardButton(btn.Name))
+				}
+				keyboard = append(keyboard, kbRow)
+			}
+
+			// 创建 ReplyKeyboardMarkup
+			replyKeyboard := tgbotapi.ReplyKeyboardMarkup{
+				Keyboard:        keyboard,
+				ResizeKeyboard:  true,
+				OneTimeKeyboard: false,
+			}
+			markup = replyKeyboard
+		}
+
+	case global.ButtonTypeInline: // 内联键盘（InlineKeyboard）
+		var rows [][]struct {
+			Name    string `json:"name"`
+			BindCmd string `json:"bindCmd"`
+		}
+		_ = json.Unmarshal([]byte(cfg.CmdButtons), &rows)
+
+		inlineRows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		for _, row := range rows {
+			btnRow := make([]tgbotapi.InlineKeyboardButton, 0)
+			for _, b := range row {
+				var btn tgbotapi.InlineKeyboardButton
+				if strings.HasPrefix(b.BindCmd, "http://") || strings.HasPrefix(b.BindCmd, "https://") {
+					btn = tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.BindCmd)
+				} else {
+					btn = tgbotapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd)
+				}
+
+				btnRow = append(btnRow, btn)
+			}
+			inlineRows = append(inlineRows, btnRow)
+		}
+		markup = tgbotapi.NewInlineKeyboardMarkup(inlineRows...)
+	}
+	return
 }
