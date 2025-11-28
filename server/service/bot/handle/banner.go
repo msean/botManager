@@ -99,7 +99,11 @@ func BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
 	chatID := tgMsg.Message.Chat.ID
 	messageID := tgMsg.Message.MessageID
 
-	botHandler := bot_handler.NewBot(botModel.Token)
+	var botHandler *bot_handler.Bot
+	if botHandler, err = bot_handler.NewBot(botModel.Token); err != nil {
+		global.GVA_LOG.Error("BanUser NewBot", zap.Any("bot", botModel), zap.Error(err))
+		return
+	}
 	var banErr error
 	until := time.Now().Add(time.Duration(durationMinutes) * time.Minute).Unix()
 	if banErr = botHandler.BanUser(tgMsg.Message.Chat.ID, tgMsg.Message.From.ID, until); banErr != nil {

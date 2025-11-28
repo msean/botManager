@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -10,6 +11,7 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
+	rechargeSrv "github.com/msean/botmanager/server/service/recharge"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 )
@@ -55,55 +57,83 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 	return nil
 }
 
-func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, botID int64, msgID int) error {
+func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, botID int64, msgID int, publishTimes int) (err error) {
 	ctx := context.Background()
 
 	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
+	var botHandler *bot_handler.Bot
+	if botHandler, err = bot_handler.NewBot(token); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+		return
+	}
 
 	val, err := global.GVA_REDIS.Get(ctx, draftKey).Result()
 	if err != nil || val == "" {
-		del := tgbotapi.NewDeleteMessage(chatID, msgID)
-		bot, _ := tgbotapi.NewBotAPI(token)
-		bot.Send(del)
-		bot_handler.SendTextMessage(chatID, token, "❌ 此发布请求已过期，请重新发送内容。")
+
+		if err = botHandler.DeleteMsg(chatID, msgID); err != nil {
+			global.GVA_LOG.Error("HandleAdConfirm DeleteMsg", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+		}
+		if err = botHandler.SendTextMessage(chatID, token, "❌ 此发布请求已过期，请重新发送内容。"); err != nil {
+			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+		}
 		return nil
 	}
 
+	var price float64
+	pay := rechargeSrv.NewPay(botID, publishTimes)
+	if price, err = pay.RandomPrice(); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("publishTimes", int64(publishTimes)), zap.Error(err))
+		return
+	}
 	// 写入订单
 	rec := recharge.UserRechargeRecord{
 		BotID:           botID,
-		PublishTimes:    1,
+		PublishTimes:    publishTimes,
 		StartTime:       time.Now(),
 		PublishInterval: 30,
 		PublishContent:  val,
-		Status:          1, // 创建
+		Status:          global.AdRechargeCreate, // 创建
 		UserID:          userID,
 		UpdateID:        updateID,
+		Price:           price,
 	}
-	global.GVA_DB.Create(&rec)
+	if err = global.GVA_DB.Create(&rec).Error; err != nil {
+		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("rec", rec), zap.Error(err))
+		return
+	}
 
-	global.GVA_REDIS.Del(ctx, draftKey)
+	if err = global.GVA_REDIS.Del(ctx, draftKey).Err(); err != nil {
+		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.String("draftKey", draftKey), zap.Error(err))
+		return
+	}
 
-	bot_handler.SendTextMessage(chatID, token, "✅ 广告订单创建成功，请前往后台完成支付。")
+	sendTex := fmt.Sprintf("✅ 广告订单创建成功，请前往后台完成支付, 支付价格为: %f", price)
+	botHandler.SendTextMessage(chatID, token, sendTex)
 
 	// 查询所有频道
 	var channels []bot.BotChannel
-	global.GVA_DB.Where("bot_id = ?", botID).Find(&channels)
+	if err = global.GVA_DB.Where("bot_id = ?", botID).Find(&channels).Error; err != nil {
+		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Error(err))
+		return
+	}
 
 	var medias []bot_handler.MediaItem
-	json.Unmarshal([]byte(val), &medias)
+	if err = json.Unmarshal([]byte(val), &medias); err != nil {
+		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("val", val), zap.Error(err))
+		return
+	}
 
 	cmdCfg := cache.NewBotCmdCache(botID, global.BotReplyCnfPublish2Channel, global.BotReplyCnfType)
 	if _, err = cache.CacheGetItem(cmdCfg); err != nil {
 		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Error(err))
-		return err
+		return
 	}
 
 	buttons := ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline)
 	global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
 	// 不管了，都发吧
 	for _, ch := range channels {
-		if _, err = bot_handler.TgSend(token, ch.ChannelID, medias, buttons); err != nil {
+		if _, err = botHandler.TgSend(token, ch.ChannelID, medias, buttons); err != nil {
 			global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
 		}
 	}

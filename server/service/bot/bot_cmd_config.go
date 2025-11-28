@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
@@ -32,7 +33,10 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.C
 	var object bot.BotCmdConfig
 	var has bool
 	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(id)); !has || err != nil {
-		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", id), zap.Error(err))
+		if !has {
+			err = fmt.Errorf("Record Not Found")
+		}
+		global.GVA_LOG.Error("BotCmdConfigService", zap.Any("id", id), zap.Error(err))
 		return
 	}
 

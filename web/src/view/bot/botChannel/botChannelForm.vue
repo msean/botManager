@@ -3,12 +3,15 @@
   <div>
     <div class="gva-form-box">
       <el-form :model="formData" ref="elFormRef" label-position="right" :rules="rule" label-width="80px">
-        <el-form-item label="机器人:" prop="botName">
-            <el-input v-model.number="formData.botName" :clearable="true" placeholder="请输入机器人id" />
-        </el-form-item>
+        <el-form-item label="机器人id:" prop="botID">
+    <el-input v-model.number="formData.botID" :clearable="true" placeholder="请输入机器人id" />
+</el-form-item>
+        <el-form-item label="频道ID:" prop="channelID">
+    <el-input v-model.number="formData.channelID" :clearable="true" placeholder="请输入频道ID" />
+</el-form-item>
         <el-form-item label="渠道名称:" prop="channelName">
-            <el-input v-model="formData.channelName" :clearable="true" placeholder="请输入渠道名称" />
-        </el-form-item>
+    <el-input v-model="formData.channelName" :clearable="true" placeholder="请输入渠道名称" />
+</el-form-item>
         <el-form-item>
           <el-button :loading="btnLoading" type="primary" @click="save">保存</el-button>
           <el-button type="primary" @click="back">返回</el-button>

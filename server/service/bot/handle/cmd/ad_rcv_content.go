@@ -9,9 +9,10 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	"go.uber.org/zap"
 )
 
-func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) {
+func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (err error) {
 	msg := update.Message
 	if msg == nil {
 		return
@@ -19,6 +20,12 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) {
 
 	medias := ParseIncomingMedia(msg)
 	if len(medias) == 0 {
+		return
+	}
+
+	var botHandler *bot_handler.Bot
+	if botHandler, err = bot_handler.NewBot(token); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
 
@@ -43,7 +50,10 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) {
 		},
 	)
 	// 一次性发送预览 + 按 updateID 绑定按钮
-	bot_handler.TgSend(token, msg.Chat.ID, medias, buttons)
+	if _, err = botHandler.TgSend(token, msg.Chat.ID, medias, buttons); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Any("medias", medias), zap.Any("buttons", buttons), zap.Error(err))
+	}
+	return
 }
 
 func ParseIncomingMedia(msg *tgbotapi.Message) []bot_handler.MediaItem {
@@ -66,8 +76,4 @@ func ParseIncomingMedia(msg *tgbotapi.Message) []bot_handler.MediaItem {
 	}
 
 	return items
-}
-
-func SendPreviewWithButtons(chatID int64, token string, medias []bot_handler.MediaItem, updateID int) {
-	// 创建按钮
 }

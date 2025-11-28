@@ -42,6 +42,7 @@
        
         <el-table-column type="selection" width="55" />
         <el-table-column align="left" label="机器人" prop="botName" width="240" />
+         <el-table-column align="left" label="标题" prop="title" width="180" />
         <el-table-column align="left" label="类型" width="120">
             <template #default="scope">
               <span v-if="scope.row.type === 1">命令/按钮</span>
@@ -50,11 +51,9 @@
             </template>
           </el-table-column>
         <el-table-column align="left" label="绑定值" prop="cmd" width="150" />
-        <el-table-column align="left" label="标题" prop="title" width="180" />
-        <el-table-column label="设置内容" prop="startContent" width="200">
+        <!-- <el-table-column label="设置内容" prop="startContent" width="200">
           <template #default>[富文本内容]</template>
-        </el-table-column>
-
+        </el-table-column> -->
         <el-table-column label="按钮" width="480">
           <template #default="scope">
             <div v-if="scope.row.cmdButtons && scope.row.cmdButtons.length">

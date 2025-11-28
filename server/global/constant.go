@@ -29,3 +29,8 @@ const (
 
 	BotReplyCnfPublish2Channel = "publish_to_channel"
 )
+
+const (
+	AdRechargeCreate = 1 // 创建支付
+	AdRechargePaid   = 2 // 完成支付
+)

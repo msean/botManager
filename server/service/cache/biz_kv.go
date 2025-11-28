@@ -1,8 +1,13 @@
 package cache
 
 import (
+	"fmt"
+
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/model/recharge"
+	"github.com/msean/botmanager/server/utils"
+	"go.uber.org/zap"
 )
 
 type (
@@ -54,6 +59,15 @@ type (
 		BotID   int                        `json:"botID"`
 		Objects []BotCmdCacheWithNoContent `json:"objects"`
 	}
+	RechargeCnfObj struct {
+		PublishTimes int     `json:"publishTimes"` //发布次数
+		Price        float64 `json:"price"`        //价格
+	}
+	// 获取
+	RechargeCnfCacheList struct {
+		BotID   int64            `json:"botID"`
+		Objects []RechargeCnfObj `json:"objects"`
+	}
 )
 
 func NewBotChatGroupBanMemCache(object bot.BotBanGroupMem) *BotChatGroupBanMemCache {
@@ -103,12 +117,19 @@ func NewBotChatGroupBanMemCListCache(botID int) *BotChatGroupBanMemCListCache {
 	}
 }
 
+func NewRechargeCnfListCache(botID int64) *RechargeCnfCacheList {
+	return &RechargeCnfCacheList{
+		BotID: botID,
+	}
+}
+
 func (BotChatGroupBanMemCListCache) TableName() string { return bot.BotBanGroupMem{}.TableName() }
 func (BotChatGroupCache) TableName() string            { return bot.BotChatGroup{}.TableName() }
 func (BotBanContentListCache) TableName() string       { return bot.BotBanContent{}.TableName() }
 func (BotChannelCache) TableName() string              { return bot.BotChannel{}.TableName() }
 func (BotCmdCache) TableName() string                  { return bot.BotCmdConfig{}.TableName() }
 func (BotCmdCacheList) TableName() string              { return bot.BotCmdConfig{}.TableName() }
+func (RechargeCnfCacheList) TableName() string         { return recharge.RechargeConfig{}.TableName() }
 
 func (c BotChatGroupBanMemCListCache) Pairs() []KvPkPair {
 	return []KvPkPair{{"bot_id", c.BotID}}
@@ -149,12 +170,19 @@ func (c BotCmdCacheList) Pairs() []KvPkPair {
 	}
 }
 
+func (c RechargeCnfCacheList) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+	}
+}
+
 func (BotChatGroupBanMemCListCache) LoadType() LoadType { return LoadFromDBList }
 func (BotChatGroupCache) LoadType() LoadType            { return LoadFromDBGet }
 func (BotBanContentListCache) LoadType() LoadType       { return LoadFromDBList }
 func (BotChannelCache) LoadType() LoadType              { return LoadFromDBGet }
 func (BotCmdCache) LoadType() LoadType                  { return LoadFromDBGet }
 func (BotCmdCacheList) LoadType() LoadType              { return LoadFromDBList }
+func (RechargeCnfCacheList) LoadType() LoadType         { return LoadFromDBList }
 
 func (c BotChatGroupBanMemCListCache) Release() error { return CacheDelete(c) }
 func (c BotChatGroupCache) Release() error            { return CacheDelete(c) }
@@ -162,3 +190,21 @@ func (c BotBanContentListCache) Release() error       { return CacheDelete(c) }
 func (c BotChannelCache) Release() error              { return CacheDelete(c) }
 func (c BotCmdCache) Release() error                  { return CacheDelete(c) }
 func (c BotCmdCacheList) Release() error              { return CacheDelete(c) }
+func (c RechargeCnfCacheList) Release() error         { return CacheDelete(c) }
+
+func ReleaseRechargeCnf(modelID int) (err error) {
+	var object recharge.RechargeConfig
+	var has bool
+	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(modelID)); !has || err != nil {
+		if !has {
+			err = fmt.Errorf("record not found")
+		}
+		global.GVA_LOG.Error("ReleaseRechargeCnf", zap.Any("id", modelID), zap.Error(err))
+		return
+	}
+
+	if err = NewRechargeCnfListCache(object.BotID).Release(); err != nil {
+		global.GVA_LOG.Error("ReleaseRechargeCnf", zap.Any("id", modelID), zap.Error(err))
+	}
+	return
+}

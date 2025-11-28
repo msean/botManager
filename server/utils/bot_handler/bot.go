@@ -5,21 +5,21 @@ import (
 )
 
 type Bot struct {
-	token string
+	token  string
+	botApi *tgbotapi.BotAPI
 }
 
-func NewBot(token string) *Bot {
-	return &Bot{
+func NewBot(token string) (bot *Bot, err error) {
+	bot = &Bot{
 		token: token,
 	}
+	if bot.botApi, err = tgbotapi.NewBotAPI(token); err != nil {
+		return
+	}
+	return
 }
 
-func (b *Bot) BanUser(chatID, userID int64, until int64) error {
-	botAPI, err := tgbotapi.NewBotAPI(b.token)
-	if err != nil {
-		return err
-	}
-
+func (b *Bot) BanUser(chatID, userID int64, until int64) (err error) {
 	// until := time.Now().Add(duration).Unix()
 	// global.GVA_LOG.Info("util", zap.Int("util", int(until)))
 
@@ -40,8 +40,7 @@ func (b *Bot) BanUser(chatID, userID int64, until int64) error {
 		},
 		UntilDate: until,
 	}
-
-	_, err = botAPI.Request(cfg)
+	_, err = b.botApi.Request(cfg)
 	return err
 }
 
@@ -86,21 +85,69 @@ func UnRegisterWebhook(botToken string, dropPending bool) error {
 }
 
 func (b *Bot) DeleteMsg(chatID int64, msgID int) (err error) {
-	botAPI, err := tgbotapi.NewBotAPI(b.token)
-	if err != nil {
-		return err
-	}
-
 	cfg := tgbotapi.DeleteMessageConfig{
 		ChatID:    chatID,
 		MessageID: msgID,
 	}
-	_, err = botAPI.Request(cfg)
+	_, err = b.botApi.Request(cfg)
 	return
 }
 
-func SendTextMessage(chatID int64, token string, text string) {
-	bot, _ := tgbotapi.NewBotAPI(token) // 你可以传 token
+func (b *Bot) SendTextMessage(chatID int64, token string, text string) (err error) {
 	msg := tgbotapi.NewMessage(chatID, text)
-	bot.Send(msg)
+	_, err = b.botApi.Send(msg)
+	return
+}
+
+// SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
+// 如果 replyMarkup != nil，则用作按钮，否则不带按钮
+func (b *Bot) TgSend(token string, chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg tgbotapi.Message, err error) {
+	var caption string
+	var photoID string
+	var videoID string
+
+	// 整理用户发送的数据
+	for _, m := range medias {
+		switch m.Type {
+		case "text":
+			caption = m.Text
+		case "photo":
+			photoID = m.FileID
+		case "video":
+			videoID = m.FileID
+		}
+	}
+
+	// PHOTO
+	if photoID != "" {
+		msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(photoID))
+		msg.Caption = caption
+
+		if replyMarkup != nil {
+			msg.ReplyMarkup = replyMarkup
+		}
+
+		return b.botApi.Send(msg)
+	}
+
+	// VIDEO
+	if videoID != "" {
+		msg := tgbotapi.NewVideo(chatID, tgbotapi.FileID(videoID))
+		msg.Caption = caption
+
+		if replyMarkup != nil {
+			msg.ReplyMarkup = replyMarkup
+		}
+
+		return b.botApi.Send(msg)
+	}
+
+	// ONLY TEXT
+	msg := tgbotapi.NewMessage(chatID, caption)
+
+	if replyMarkup != nil {
+		msg.ReplyMarkup = replyMarkup
+	}
+
+	return b.botApi.Send(msg)
 }

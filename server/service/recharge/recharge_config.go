@@ -3,12 +3,14 @@ package recharge
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	rechargeReq "github.com/msean/botmanager/server/model/recharge/request"
+	"github.com/msean/botmanager/server/service/cache"
 )
 
 type RechargeConfigService struct{}
@@ -31,13 +33,27 @@ func (rechargeConfigService *RechargeConfigService) CreateRechargeConfig(ctx con
 // DeleteRechargeConfig 删除充值配置记录
 // Author [yourname](https://github.com/yourname)
 func (rechargeConfigService *RechargeConfigService) DeleteRechargeConfig(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&recharge.RechargeConfig{}, "id = ?", ID).Error
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	cache.ReleaseRechargeCnf(id)
+	if err = global.GVA_DB.Delete(&recharge.RechargeConfig{}, "id = ?", ID).Error; err != nil {
+		return
+	}
 	return err
 }
 
 // DeleteRechargeConfigByIds 批量删除充值配置记录
 // Author [yourname](https://github.com/yourname)
 func (rechargeConfigService *RechargeConfigService) DeleteRechargeConfigByIds(ctx context.Context, IDs []string) (err error) {
+	for _, _id := range IDs {
+		var id int
+		if id, err = strconv.Atoi(_id); err != nil {
+			return
+		}
+		cache.ReleaseRechargeCnf(id)
+	}
 	err = global.GVA_DB.Delete(&[]recharge.RechargeConfig{}, "id in ?", IDs).Error
 	return err
 }
@@ -45,6 +61,7 @@ func (rechargeConfigService *RechargeConfigService) DeleteRechargeConfigByIds(ct
 // UpdateRechargeConfig 更新充值配置记录
 // Author [yourname](https://github.com/yourname)
 func (rechargeConfigService *RechargeConfigService) UpdateRechargeConfig(ctx context.Context, rechargeConfig recharge.RechargeConfig) (err error) {
+	cache.ReleaseRechargeCnf(int(rechargeConfig.ID))
 	err = global.GVA_DB.Model(&recharge.RechargeConfig{}).Where("id = ?", rechargeConfig.ID).Updates(&rechargeConfig).Error
 	return err
 }

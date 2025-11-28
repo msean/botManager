@@ -45,8 +45,8 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 	} else if tgMsg.ChannelPost != nil {
 		chatType = tgMsg.ChannelPost.Chat.Type
 	} else {
-		global.GVA_LOG.Info("BotMsgHandlerSvc", zap.Any("tgMsg", tgMsg)) // 修复后的取文本函数
 		chatType = "unknow"
+		global.GVA_LOG.Info("BotMsgHandlerSvc unkown chatType", zap.Any("tgMsg", tgMsg)) // 修复后的取文本函数
 	}
 
 	switch chatType {
