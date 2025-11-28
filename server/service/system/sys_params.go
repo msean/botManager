@@ -1,9 +1,12 @@
 package system
 
 import (
+	"strconv"
+
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/system"
 	systemReq "github.com/msean/botmanager/server/model/system/request"
+	cacheSrv "github.com/msean/botmanager/server/service/cache"
 )
 
 type SysParamsService struct{}
@@ -18,13 +21,28 @@ func (sysParamsService *SysParamsService) CreateSysParams(sysParams *system.SysP
 // DeleteSysParams 删除参数记录
 // Author [Mr.奇淼](https://github.com/pixelmaxQm)
 func (sysParamsService *SysParamsService) DeleteSysParams(ID string) (err error) {
-	err = global.GVA_DB.Delete(&system.SysParams{}, "id = ?", ID).Error
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	if err = cacheSrv.ReleaseSysCnf(id); err != nil {
+		return
+	}
+	err = global.GVA_DB.Delete(&system.SysParams{}, "id = ?", id).Error
 	return err
 }
 
 // DeleteSysParamsByIds 批量删除参数记录
 // Author [Mr.奇淼](https://github.com/pixelmaxQm)
 func (sysParamsService *SysParamsService) DeleteSysParamsByIds(IDs []string) (err error) {
+	for _, _id := range IDs {
+		var id int
+		if id, err = strconv.Atoi(_id); err == nil {
+			if err = cacheSrv.ReleaseSysCnf(id); err != nil {
+				return
+			}
+		}
+	}
 	err = global.GVA_DB.Delete(&[]system.SysParams{}, "id in ?", IDs).Error
 	return err
 }
@@ -32,6 +50,9 @@ func (sysParamsService *SysParamsService) DeleteSysParamsByIds(IDs []string) (er
 // UpdateSysParams 更新参数记录
 // Author [Mr.奇淼](https://github.com/pixelmaxQm)
 func (sysParamsService *SysParamsService) UpdateSysParams(sysParams system.SysParams) (err error) {
+	if err = cacheSrv.ReleaseSysCnf(int(sysParams.ID)); err != nil {
+		return
+	}
 	err = global.GVA_DB.Model(&system.SysParams{}).Where("id = ?", sysParams.ID).Updates(&sysParams).Error
 	return err
 }

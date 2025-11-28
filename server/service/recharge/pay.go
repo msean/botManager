@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils"
 )
 
 type (
@@ -44,5 +46,26 @@ func (pay *Pay) RandomPrice() (float64, error) {
 
 	randomDecimal := float64(second*10+third) / 1000.0
 
-	return base + randomDecimal, nil
+	return utils.FloatReserve(float64(base+randomDecimal), 3), nil
+}
+
+func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {
+	// 获取支付方式
+	var paymentWaySysCnf *cache.SysCnfCache
+	if paymentWaySysCnf, err = cache.LoadSyscnf(global.SysCnfUserBanDuritonKey, true, global.DefaultUserBanDuriton); err != nil {
+		return
+	}
+
+	switch paymentWaySysCnf.Value {
+	case global.DefaultSysCnfPaymentWay:
+		key := fmt.Sprintf("payment:%d", pay.botID)
+		var paymentSysCnf *cache.SysCnfCache
+		if paymentSysCnf, err = cache.LoadSyscnf(key, false, ""); err != nil {
+			return
+		}
+		paymentAddr = paymentSysCnf.Value
+	default:
+		err = fmt.Errorf("支付方式暂未开通")
+	}
+	return
 }

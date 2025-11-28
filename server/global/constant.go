@@ -1,11 +1,13 @@
 package global
 
 const (
-	UserBanDuritonKey = "userBanDuriton"
+	SysCnfUserBanDuritonKey = "userBanDuriton"
+	SysCnfPaymentWayKey     = "paymentWay"
 )
 
 const (
-	DefaultUserBanDuriton = "360"
+	DefaultUserBanDuriton   = "360"
+	DefaultSysCnfPaymentWay = "1"
 )
 
 const (

@@ -7,10 +7,8 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
-	"github.com/msean/botmanager/server/model/system"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
@@ -87,13 +85,11 @@ func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err e
 }
 
 func BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
-	var param system.SysParams
-	param, err = dao.SysParamsDao.FromKey(global.GVA_DB, global.UserBanDuritonKey, global.DefaultUserBanDuriton)
-	if err != nil {
-		global.GVA_LOG.Error("get ban duration failed", zap.Error(err))
+	var sysCnf *cache.SysCnfCache
+	if sysCnf, err = cache.LoadSyscnf(global.SysCnfUserBanDuritonKey, true, global.DefaultUserBanDuriton); err != nil {
 		return
 	}
-	durationMinutes, _ := strconv.Atoi(param.Value)
+	durationMinutes, _ := strconv.Atoi(sysCnf.Value)
 
 	// 发送api 封禁用户
 	chatID := tgMsg.Message.Chat.ID

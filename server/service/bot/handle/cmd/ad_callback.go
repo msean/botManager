@@ -79,12 +79,20 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		return nil
 	}
 
+	// 获取价格
 	var price float64
 	pay := rechargeSrv.NewPay(botID, publishTimes)
 	if price, err = pay.RandomPrice(); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("publishTimes", int64(publishTimes)), zap.Error(err))
+		global.GVA_LOG.Error("HandleAdConfirm RandomPrice", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("publishTimes", int64(publishTimes)), zap.Error(err))
 		return
 	}
+	// 获取收款地址
+	var paymentAddr string
+	if paymentAddr, err = pay.GetPaymentAddr(); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm paymentAddr", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Error(err))
+		return
+	}
+
 	// 写入订单
 	rec := recharge.UserRechargeRecord{
 		BotID:           botID,
@@ -96,6 +104,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		UserID:          userID,
 		UpdateID:        updateID,
 		Price:           price,
+		PaymentAddr:     paymentAddr,
 	}
 	if err = global.GVA_DB.Create(&rec).Error; err != nil {
 		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("rec", rec), zap.Error(err))
@@ -107,7 +116,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		return
 	}
 
-	sendTex := fmt.Sprintf("✅ 广告订单创建成功，请前往后台完成支付, 支付价格为: %f", price)
+	sendTex := fmt.Sprintf("✅ 广告订单创建成功，请前往后台完成支付, 支付地址为:%s 支付价格为: %f", paymentAddr, price)
 	botHandler.SendTextMessage(chatID, token, sendTex)
 
 	// 查询所有频道
@@ -132,10 +141,10 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	buttons := ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline)
 	global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
 	// 不管了，都发吧
-	for _, ch := range channels {
-		if _, err = botHandler.TgSend(token, ch.ChannelID, medias, buttons); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
-		}
-	}
+	// for _, ch := range channels {
+	// 	if _, err = botHandler.TgSend(token, ch.ChannelID, medias, buttons); err != nil {
+	// 		global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
+	// 	}
+	// }
 	return nil
 }

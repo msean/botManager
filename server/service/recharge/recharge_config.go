@@ -49,13 +49,11 @@ func (rechargeConfigService *RechargeConfigService) DeleteRechargeConfig(ctx con
 func (rechargeConfigService *RechargeConfigService) DeleteRechargeConfigByIds(ctx context.Context, IDs []string) (err error) {
 	for _, _id := range IDs {
 		var id int
-		if id, err = strconv.Atoi(_id); err != nil {
-			return
+		if id, err = strconv.Atoi(_id); err == nil {
+			cache.ReleaseRechargeCnf(id)
 		}
-		cache.ReleaseRechargeCnf(id)
 	}
-	err = global.GVA_DB.Delete(&[]recharge.RechargeConfig{}, "id in ?", IDs).Error
-	return err
+	return global.GVA_DB.Delete(&[]recharge.RechargeConfig{}, "id in ?", IDs).Error
 }
 
 // UpdateRechargeConfig 更新充值配置记录

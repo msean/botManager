@@ -183,6 +183,7 @@ func (BotChannelCache) LoadType() LoadType              { return LoadFromDBGet }
 func (BotCmdCache) LoadType() LoadType                  { return LoadFromDBGet }
 func (BotCmdCacheList) LoadType() LoadType              { return LoadFromDBList }
 func (RechargeCnfCacheList) LoadType() LoadType         { return LoadFromDBList }
+func (SysCnfCache) LoadType() LoadType                  { return LoadFromDBGet }
 
 func (c BotChatGroupBanMemCListCache) Release() error { return CacheDelete(c) }
 func (c BotChatGroupCache) Release() error            { return CacheDelete(c) }
