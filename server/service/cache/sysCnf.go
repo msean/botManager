@@ -30,7 +30,7 @@ func (c SysCnfCache) Release() error  { return CacheDelete(c) }
 
 func (c SysCnfCache) Pairs() []KvPkPair {
 	return []KvPkPair{
-		{"key", c.Key},
+		{"`key`", c.Key},
 	}
 }
 

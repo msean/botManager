@@ -18,10 +18,21 @@ type ServiceGroup struct {
 
 func Init() {
 	bot.InitBotTaskManager()
+	// 每一分钟去检查过期订单
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for range ticker.C {
 			recharge.CheckExpiredOrders()
 		}
+	}()
+
+	// 每25s 检查收款记录
+	go func() {
+		ticker := time.NewTicker(25 * time.Second)
+		go func() {
+			for range ticker.C {
+				recharge.ReconcileAccounts()
+			}
+		}()
 	}()
 }
