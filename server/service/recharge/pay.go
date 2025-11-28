@@ -60,7 +60,7 @@ func (pay *Pay) RandomPrice() (float64, error) {
 func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {
 	// 获取支付方式
 	var paymentWaySysCnf *cache.SysCnfCache
-	if paymentWaySysCnf, err = cache.LoadSyscnf(global.SysCnfPaymentWayKey, true, global.DefaultUserBanDuriton); err != nil {
+	if paymentWaySysCnf, err = cache.LoadSyscnf(global.SysCnfPaymentWayKey, true, global.DefaultSysCnfPaymentWay); err != nil {
 		return
 	}
 
