@@ -52,3 +52,10 @@ func (dao *rechargeDao) UserHasRecentOrder(db *gorm.DB, botID int64, userID int6
 	}
 	return false, nil
 }
+
+func (dao *rechargeDao) CancelOrder(db *gorm.DB, botID int64, userID int64, updateID int64) error {
+	return db.Model(&recharge.UserRechargeRecord{}).
+		Where("bot_id = ? AND user_id = ? AND update_id = ?", botID, userID, updateID).
+		Update("status", global.AdRechargeCancel).Error
+
+}

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/msean/botmanager/server/service/bot"
@@ -22,17 +23,29 @@ func Init() {
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for range ticker.C {
-			recharge.CheckExpiredOrders()
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						fmt.Println("ReconcileAccounts panic:", r)
+					}
+					recharge.CheckExpiredOrders()
+				}()
+			}()
 		}
 	}()
 
 	// 每25s 检查收款记录
 	go func() {
-		ticker := time.NewTicker(25 * time.Second)
-		go func() {
-			for range ticker.C {
+		for {
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						fmt.Println("ReconcileAccounts panic:", r)
+					}
+				}()
 				recharge.ReconcileAccounts()
-			}
-		}()
+			}()
+			time.Sleep(20 * time.Second)
+		}
 	}()
 }

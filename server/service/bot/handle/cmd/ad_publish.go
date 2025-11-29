@@ -20,6 +20,19 @@ func PublishAdHandle(update tgbotapi.Update, token string, botID int64) {
 		userID = int64(update.Message.From.ID)
 
 	}
+	// 设置用户状态：等待输入内容
+	global.GVA_REDIS.Set(context.Background(), cache.AdWaitCacheKey(botID, userID), waitAdContentState, waitAdContentExpire)
+}
+
+func PublishAdCheckHandle(update tgbotapi.Update, token string, botID int64) (canPublic bool) {
+	var userID int64
+	if update.CallbackQuery != nil {
+		userID = int64(update.CallbackQuery.From.ID)
+
+	} else if update.Message != nil {
+		userID = int64(update.Message.From.ID)
+
+	}
 
 	// 检查用户是否最近重复下单
 	var has bool
@@ -34,9 +47,8 @@ func PublishAdHandle(update tgbotapi.Update, token string, botID int64) {
 			global.GVA_LOG.Error("PublishAdHandle NewBot", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Error(err))
 			return
 		}
-		botApi.SendTextMessage(update.Message.Chat.ID, token, "当前有未支付订单，若想重新下单，请联系管理员")
+		botApi.SendTextMessage(update.Message.Chat.ID, token, "当前有未支付订单，若想重新下单，请先取消订单")
 		return
 	}
-	// 设置用户状态：等待输入内容
-	global.GVA_REDIS.Set(context.Background(), cache.AdWaitCacheKey(botID, userID), waitAdContentState, waitAdContentExpire)
+	return !has
 }

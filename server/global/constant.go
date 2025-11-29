@@ -39,4 +39,5 @@ const (
 	AdRechargePaid        = 2 // 完成支付
 	AdRechargeTimeout     = 3 // 超时
 	AdRechargePaidTimeout = 4 // 超时但完成
+	AdRechargeCancel      = 5 // 取消订单
 )

@@ -124,7 +124,15 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		StartHandlerfunc(update, token, *cmdCfg)
 	default:
 		if inCfg {
-			SendCfgMessage(update, token, *cmdCfg, global.ButtonTypeInline)
+			switch cmd {
+			case AdPublishCmd:
+				if canPublich := PublishAdCheckHandle(update, token, botID); canPublich {
+					SendCfgMessage(update, token, *cmdCfg, global.ButtonTypeInline)
+				}
+			default:
+				SendCfgMessage(update, token, *cmdCfg, global.ButtonTypeInline)
+			}
+
 		}
 	}
 	global.GVA_LOG.Debug("BotMsgHandlerSvc ProcessBindCommand", zap.Any("cmd", cmd))

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
@@ -14,24 +15,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) error {
+func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) (err error) {
 	ctx := context.Background()
 	bot, _ := tgbotapi.NewBotAPI(token)
-
-	// 1. 先判断是否已经创建订单（最关键！！！）
-	var count int64
-	global.GVA_DB.
-		Model(&recharge.UserRechargeRecord{}).
-		Where("bot_id = ? AND user_id = ? AND update_id = ?", botID, userID, updateID).
-		Count(&count)
-
-	if count > 0 {
-		bot.Send(tgbotapi.NewMessage(chatID,
-			"⚠️ 订单已经创建，如需更改发布，请重新下单。"))
-		del := tgbotapi.NewDeleteMessage(chatID, msgID)
-		bot.Send(del)
-		return nil
-	}
 
 	// 2. 判断草稿是否存在
 	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
@@ -42,6 +28,11 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 		bot.Send(tgbotapi.NewMessage(chatID,
 			"⏱️ 发布请求已超时，请重新提交内容。"))
 		return nil
+	}
+
+	if err = dao.RechargeDao.CancelOrder(global.GVA_DB, botID, userID, int64(updateID)); err != nil {
+		global.GVA_LOG.Error("HandleAdCancel CancelOrder", zap.Error(err))
+		return
 	}
 
 	// 3. 正常取消
