@@ -2,9 +2,8 @@ package dao
 
 import (
 	"strconv"
-	"time"
 
-	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils"
@@ -29,20 +28,19 @@ func (dao *rechargeDao) ExistConfig(db *gorm.DB, botID int64, publishTimes int) 
 // 用户最近是否有创建的订单
 func (dao *rechargeDao) UserHasRecentOrder(db *gorm.DB, botID int64, userID int64) (bool, error) {
 
-	sysCnf, loadSysErr := cache.LoadSyscnf(global.SysRepeatOrderIntervalKey, true, global.DefaultRepeatOrderInterval)
+	sysCnf, loadSysErr := cache.LoadSyscnf(constant.SysRepeatOrderIntervalKey, true, constant.DefaultRepeatOrderInterval)
 	if loadSysErr != nil {
 		return false, loadSysErr
 	}
 	interval, _ := strconv.Atoi(sysCnf.Value)
 
 	if interval > 0 {
-		deadline := time.Now().Add(-15 * time.Minute)
 		var count int64
 		err := db.Model(&recharge.UserRechargeRecord{}).
 			Where("bot_id = ?", botID).
 			Where("user_id = ?", userID).
-			Where("status = ?", global.AdRechargeCreate).
-			Where("created_at >= ?", deadline).
+			Where("status = ?", constant.AdRechargeCreate).
+			Where("created_at >= ?", constant.OrderLeftPaid).
 			Count(&count).Error
 		if err != nil {
 			return false, err
@@ -56,6 +54,6 @@ func (dao *rechargeDao) UserHasRecentOrder(db *gorm.DB, botID int64, userID int6
 func (dao *rechargeDao) CancelOrder(db *gorm.DB, botID int64, userID int64, updateID int64) error {
 	return db.Model(&recharge.UserRechargeRecord{}).
 		Where("bot_id = ? AND user_id = ? AND update_id = ?", botID, userID, updateID).
-		Update("status", global.AdRechargeCancel).Error
+		Update("status", constant.AdRechargeCancel).Error
 
 }

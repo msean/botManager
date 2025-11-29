@@ -9,6 +9,7 @@ import (
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
@@ -60,12 +61,12 @@ func (pay *Pay) RandomPrice() (float64, error) {
 func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {
 	// 获取支付方式
 	var paymentWaySysCnf *cache.SysCnfCache
-	if paymentWaySysCnf, err = cache.LoadSyscnf(global.SysCnfPaymentWayKey, true, global.DefaultSysCnfPaymentWay); err != nil {
+	if paymentWaySysCnf, err = cache.LoadSyscnf(constant.SysCnfPaymentWayKey, true, constant.DefaultSysCnfPaymentWay); err != nil {
 		return
 	}
 
 	switch paymentWaySysCnf.Value {
-	case global.DefaultSysCnfPaymentWay:
+	case constant.DefaultSysCnfPaymentWay:
 		key := fmt.Sprintf("payment:%d", pay.botID)
 		var paymentSysCnf *cache.SysCnfCache
 		if paymentSysCnf, err = cache.LoadSyscnf(key, false, ""); err != nil {
@@ -79,14 +80,14 @@ func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {
 }
 
 func CheckExpiredOrders() {
-	deadline := time.Now().Add(-20 * time.Minute)
+	deadline := time.Now().Add(constant.OrderMatchAgo * time.Minute)
 
 	// 批量更新
 	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
-		Where("status = ?", 1).
+		Where("status = ?", constant.AdRechargeCreate).
 		Where("start_time <= ?", deadline).
 		Updates(map[string]any{
-			"status":     3,
+			"status":     constant.AdRechargeTimeout,
 			"updated_at": time.Now(),
 		}).Error
 
@@ -135,14 +136,14 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 
 	var buttons any
 	var hasPublishCfg bool
-	cmdCfg := cache.NewBotCmdCache(int64(botID), global.BotReplyCnfPublish2Channel, global.BotReplyCnfType)
+	cmdCfg := cache.NewBotCmdCache(int64(botID), constant.BotReplyCnfPublish2Channel, constant.BotReplyCnfType)
 	if hasPublishCfg, err = cache.CacheGetItem(cmdCfg); err != nil {
 		global.GVA_LOG.Error("handleBot", zap.Int("botID", int(botID)), zap.Error(err))
 		return
 	}
 
 	if hasPublishCfg {
-		buttons = bot_handler.ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline)
+		buttons = bot_handler.ParseContentFromCfg(*cmdCfg, constant.ButtonTypeInline)
 		global.GVA_LOG.Debug("handleBot", zap.Any("buttons", buttons))
 	}
 
@@ -173,7 +174,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 				if err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
 					Where("id = ? AND status = 1", order.ID).
 					Updates(map[string]interface{}{
-						"status":     global.AdRechargePaid,
+						"status":     constant.AdRechargePaid,
 						"tx_id":      trx.TransactionID,
 						"updated_at": time.Now(),
 					}).Error; err != nil {
@@ -205,7 +206,7 @@ func matchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx
 	}
 
 	trxTime := time.UnixMilli(trx.BlockTimestamp)
-	if trxTime.After(order.CreatedAt.Add(20 * time.Minute)) {
+	if trxTime.After(order.CreatedAt.Add(constant.OrderMatchAgo)) {
 		return
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
@@ -36,7 +37,7 @@ func BanChatGroupContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, er
 				zap.String("msg", messageText),
 			)
 
-			BanUser(botModel, tgMsg, global.BanTypeWord)
+			BanUser(botModel, tgMsg, constant.BanTypeWord)
 
 			find = true
 			return
@@ -78,7 +79,7 @@ func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err e
 				zap.Int64("chatID", chatID),
 			)
 
-			BanUser(botModel, tgMsg, global.BanTypeMem)
+			BanUser(botModel, tgMsg, constant.BanTypeMem)
 
 			found = true
 			return
@@ -89,7 +90,7 @@ func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err e
 
 func BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
 	var sysCnf *cache.SysCnfCache
-	if sysCnf, err = cache.LoadSyscnf(global.SysCnfUserBanDuritonKey, true, global.DefaultUserBanDuriton); err != nil {
+	if sysCnf, err = cache.LoadSyscnf(constant.SysCnfUserBanDuritonKey, true, constant.DefaultUserBanDuriton); err != nil {
 		return
 	}
 	durationMinutes, _ := strconv.Atoi(sysCnf.Value)
@@ -131,7 +132,7 @@ func BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
 		remark = banErr.Error()
 	}
 	msg := ""
-	if _type == global.BanTypeWord {
+	if _type == constant.BanTypeWord {
 		msg = tgMsg.Message.Text
 	}
 	record := bot.BanRecord{

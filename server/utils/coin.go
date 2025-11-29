@@ -80,7 +80,7 @@ func FetchTransactions(account string, limit int) (*TronResponse, error) {
 		resp, err := client.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("http error: %v (attempt %d/3)", err, attempt)
-			time.Sleep(time.Duration(attempt) * 300 * time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 			continue
 		}
 
@@ -89,7 +89,7 @@ func FetchTransactions(account string, limit int) (*TronResponse, error) {
 
 		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
 			lastErr = fmt.Errorf("status %d from API (attempt %d/3)", resp.StatusCode, attempt)
-			time.Sleep(time.Duration(attempt) * 300 * time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 			continue
 		}
 
@@ -101,7 +101,7 @@ func FetchTransactions(account string, limit int) (*TronResponse, error) {
 
 		if !result.Success {
 			lastErr = fmt.Errorf("api returned success=false (attempt %d/3)", attempt)
-			time.Sleep(time.Duration(attempt) * 300 * time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 			continue
 		}
 

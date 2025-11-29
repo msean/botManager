@@ -8,6 +8,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	rechargeSrv "github.com/msean/botmanager/server/service/recharge"
@@ -88,7 +89,7 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 		StartTime:       time.Now(),
 		PublishInterval: 30,
 		PublishContent:  val,
-		Status:          global.AdRechargeCreate, // 创建
+		Status:          constant.AdRechargeCreate, // 创建
 		UserID:          userID,
 		UpdateID:        updateID,
 		Price:           price,
@@ -108,13 +109,14 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 			"充值时间：%s\n\n"+
 			"⚠️注意：\n"+
 			"▫️注意小数点 %s 转错金额不能到账\n"+
-			"▫️请在10分钟完成付款，转错金额不能到账。\n\n"+
+			"▫️请在%s分钟完成付款，转错金额不能到账。\n\n"+
 			"转账10分钟后没到账及时联系",
 		rec.ID,
 		bot_handler.EscapeMarkdownV2(amount),
 		bot_handler.EscapeMarkdownV2(paymentAddr),
 		rec.CreatedAt.Format("2006/01/02 15:04:05"),
 		bot_handler.EscapeMarkdownV2(amount),
+		constant.OrderLeftPaid,
 	)
 
 	if err = botHandler.SendMarkDownMessage(chatID, token, sendTex); err != nil {

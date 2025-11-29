@@ -7,6 +7,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/bot/handle/cmd"
 	"go.uber.org/zap"
@@ -87,7 +88,7 @@ func (svc *BotMsgHandlerSvc) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Up
 
 	// 只要消息是转发的都需要禁止
 	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
-		BanUser(botModel, tgMsg, global.BanTypeForword)
+		BanUser(botModel, tgMsg, constant.BanTypeForword)
 		return nil
 	}
 

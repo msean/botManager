@@ -8,6 +8,7 @@ import (
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
 	"github.com/msean/botmanager/server/utils"
@@ -118,7 +119,7 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 	task.BotName = botModel.Name
 
 	switch task.GroupType {
-	case global.GroupTypeChat:
+	case constant.GroupTypeChat:
 		var botChatGroupModel bot.BotChatGroup
 		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_DB, int(task.GroupID)); !has || err != nil {
 			if !has {
@@ -128,7 +129,7 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 			return
 		}
 		task.GroupName = botChatGroupModel.ChatGroupName
-	case global.GroupTypeChannel:
+	case constant.GroupTypeChannel:
 		var botChannel bot.BotChannel
 		if botChannel, has, err = dao.BotChannelDao.FromBotID(global.GVA_DB, int(task.GroupID)); !has || err != nil {
 			if !has {
@@ -175,7 +176,7 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 	var channelList []int64
 	for _, object := range tasks {
 		botList = append(botList, object.BotID)
-		if object.GroupType == global.GroupTypeChat {
+		if object.GroupType == constant.GroupTypeChat {
 			chatGroupList = append(chatGroupList, object.GroupID)
 		} else {
 			channelList = append(channelList, object.GroupID)
@@ -201,7 +202,7 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 
 	for _, object := range tasks {
 		object.BotName = botMapper[object.BotID].Name
-		if object.GroupType == global.GroupTypeChat {
+		if object.GroupType == constant.GroupTypeChat {
 			object.GroupName = chatGroupMapper[object.GroupID].ChatGroupName
 		} else {
 			object.GroupName = channelMapper[object.GroupID].ChannelName

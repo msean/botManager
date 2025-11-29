@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/utils"
@@ -138,7 +139,7 @@ func (c BotCmdCache) Pairs() []KvPkPair {
 func (c BotCmdCacheList) Pairs() []KvPkPair {
 	return []KvPkPair{
 		{"bot_id", c.BotID},
-		{"type", global.BotReplyCmdType},
+		{"type", constant.BotReplyCmdType},
 	}
 }
 

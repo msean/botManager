@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"golang.org/x/net/html"
@@ -193,7 +193,7 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 
 func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 	switch buttonType {
-	case global.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
+	case constant.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
 		var keyboard [][]tgbotapi.KeyboardButton
 
 		if len(cfg.CmdButtons) > 0 {
@@ -220,7 +220,7 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 			markup = replyKeyboard
 		}
 
-	case global.ButtonTypeInline: // 内联键盘（InlineKeyboard）
+	case constant.ButtonTypeInline: // 内联键盘（InlineKeyboard）
 		var rows [][]struct {
 			Name    string `json:"name"`
 			BindCmd string `json:"bindCmd"`

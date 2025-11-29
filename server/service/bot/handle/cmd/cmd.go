@@ -9,6 +9,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
@@ -115,7 +116,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		}
 	}
 
-	cmdCfg := cache.NewBotCmdCache(botID, cmd, global.BotReplyCmdType)
+	cmdCfg := cache.NewBotCmdCache(botID, cmd, constant.BotReplyCmdType)
 	if _, err = cache.CacheGetItem(cmdCfg); err != nil {
 		global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
 		return
@@ -130,10 +131,10 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 			switch cmd {
 			case AdPublishCmd:
 				if canPublich := PublishAdCheckHandle(update, token, botID); canPublich {
-					SendCfgMessage(update, token, *cmdCfg, global.ButtonTypeInline)
+					SendCfgMessage(update, token, *cmdCfg, constant.ButtonTypeInline)
 				}
 			default:
-				SendCfgMessage(update, token, *cmdCfg, global.ButtonTypeInline)
+				SendCfgMessage(update, token, *cmdCfg, constant.ButtonTypeInline)
 			}
 
 		}
@@ -155,7 +156,7 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd s
 
 func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 	switch buttonType {
-	case global.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
+	case constant.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
 		var keyboard [][]tgbotapi.KeyboardButton
 
 		if len(cfg.CmdButtons) > 0 {
@@ -182,7 +183,7 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 			markup = replyKeyboard
 		}
 
-	case global.ButtonTypeInline: // 内联键盘（InlineKeyboard）
+	case constant.ButtonTypeInline: // 内联键盘（InlineKeyboard）
 		var rows [][]struct {
 			Name    string `json:"name"`
 			BindCmd string `json:"bindCmd"`
