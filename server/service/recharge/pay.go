@@ -80,12 +80,12 @@ func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {
 }
 
 func CheckExpiredOrders() {
-	deadline := time.Now().Add(constant.OrderMatchAgo * time.Minute)
+	deadline := time.Now().Add(-constant.OrderMatchAgo * time.Minute)
 
 	// 批量更新
 	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
 		Where("status = ?", constant.AdRechargeCreate).
-		Where("created_at >= ?", deadline).
+		Where("created_at <= ?", deadline).
 		Updates(map[string]any{
 			"status":     constant.AdRechargeTimeout,
 			"updated_at": time.Now(),
