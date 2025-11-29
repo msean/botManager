@@ -19,10 +19,7 @@ func SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) {
 		return
 	}
 
-	cacheObject := cache.NewBotChatGroupCache(bot.BotChatGroup{
-		BotID:       botModel.BotID,
-		ChatGroupID: chatID,
-	})
+	cacheObject := cache.NewBotChatGroupCache(botModel.BotID, chatID)
 	has, err := cache.CacheGetItem(cacheObject)
 	if err != nil {
 		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", chatID), zap.Error(err))
