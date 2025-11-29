@@ -27,7 +27,6 @@ func BanChatGroupContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, er
 	}
 
 	messageText := tgMsg.Message.Text
-	global.GVA_LOG.Info("msg", zap.String("bot", botModel.Name), zap.String("msg", tgMsg.Message.Text))
 
 	for _, rule := range cacheObjects.Objects {
 		if strings.Contains(messageText, rule.BanContent) {
@@ -56,6 +55,10 @@ func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err e
 
 	cacheObjects := cache.NewBotChatGroupBanMemCListCache(botModel.BotID, chatID)
 	_, err = cache.CacheGetItem(cacheObjects)
+	global.GVA_LOG.Info("BanChatGroupMem",
+		zap.Any("cacheObjects", cacheObjects),
+		zap.Error(err),
+	)
 	if err != nil {
 		global.GVA_LOG.Error("fetch ban content failed", zap.Int64("botID", botModel.BotID), zap.Error(err))
 		return

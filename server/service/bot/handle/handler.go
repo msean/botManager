@@ -65,7 +65,7 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		if tgMsg.ChannelPost != nil {
 			global.GVA_LOG.Debug("BotMsgHandlerSvc  ChannelPost",
 				zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
-			svc.HandelChannel(botModel, tgMsg)
+			svc.HandleChannel(botModel, tgMsg)
 		} else {
 			global.GVA_LOG.Debug("BotMsgHandlerSvc ChatGroup",
 				zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
@@ -77,7 +77,7 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 }
 
 // HandelChatGroup 处理群频道
-func (svc *BotMsgHandlerSvc) HandelChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
+func (svc *BotMsgHandlerSvc) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 	SyncChannel(botModel, tgMsg)
 }
 
@@ -103,30 +103,8 @@ func (svc *BotMsgHandlerSvc) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Up
 		}
 	}
 
-	_, err = BanChatGroupMem(botModel, tgMsg)
-	return
-}
-
-func (svc *BotMsgHandlerSvc) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
-	SyncChatGroup(botModel, tgMsg)
-
-	// 只要消息是转发的都需要禁止
-	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
-		BanUser(botModel, tgMsg, global.BanTypeForword)
-		return nil
-	}
-
-	// 普通消息
-	if tgMsg.Message == nil {
-		return nil
-	}
-
-	var find bool
-	if tgMsg.Message.Text != "" {
-		if find, err = BanChatGroupContent(botModel, tgMsg); err != nil || find {
-			return
-		}
-	}
+	global.GVA_LOG.Debug("HandelChatGroup",
+		zap.Bool("find", find))
 
 	_, err = BanChatGroupMem(botModel, tgMsg)
 	return
