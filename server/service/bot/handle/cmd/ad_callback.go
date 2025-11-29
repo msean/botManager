@@ -104,9 +104,22 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		return
 	}
 
-	sendTex := fmt.Sprintf("✅ 广告订单创建成功，请前往后台完成支付\n支付地址为:%s\n支付价格为: %.3f\n⚠️请在15分钟之内完成支付", paymentAddr, price)
+	sendTex := fmt.Sprintf(
+		"订单号：`%d`\n"+
+			"转账金额：`%.3f USDT`\n"+
+			"转账地址：`%s`\n"+
+			"充值时间：`%s`\n\n"+
+			"⚠️注意：\n"+
+			"▫️注意小数点 `%.3f USDT` 转错金额不能到账\n"+
+			"▫️请在10分钟完成付款，转错金额不能到账。\n\n"+
+			"转账10分钟后没到账及时联系",
+		rec.ID,
+		rec.Price,
+		rec.PaymentAddr,
+		rec.CreatedAt.Format("2006/01/02 15:04:05"),
+		rec.Price,
+	)
 	botHandler.SendTextMessage(chatID, token, sendTex)
-
 	// 查询所有频道
 	// var medias []bot_handler.MediaItem
 	// if err = json.Unmarshal([]byte(val), &medias); err != nil {
