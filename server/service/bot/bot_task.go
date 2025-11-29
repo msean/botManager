@@ -134,7 +134,7 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 			if !has {
 				err = fmt.Errorf("没有找到改渠道")
 			}
-			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("groupID", task.GroupID), zap.Bool("has", has), zap.Error(err))
+			global.GVA_LOG.Error("taskService GetBotTask", zap.Any("", task.GroupID), zap.Bool("has", has), zap.Error(err))
 			return
 		}
 		task.GroupName = botChannel.ChannelName
@@ -170,24 +170,24 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 	if err = db.Find(&tasks).Error; err != nil {
 		return
 	}
-	var botList []int
-	var chatGroupList []int
-	var channelList []int
+	var botList []int64
+	var chatGroupList []int64
+	var channelList []int64
 	for _, object := range tasks {
-		botList = append(botList, int(object.BotID))
+		botList = append(botList, object.BotID)
 		if object.GroupType == global.GroupTypeChat {
-			chatGroupList = append(chatGroupList, int(object.GroupID))
+			chatGroupList = append(chatGroupList, object.GroupID)
 		} else {
-			channelList = append(channelList, int(object.GroupID))
+			channelList = append(channelList, object.GroupID)
 		}
 	}
 
-	var botMapper map[int]bot.Bot
-	var chatGroupMapper map[int]bot.BotChatGroup
+	var botMapper map[int64]bot.Bot
+	var chatGroupMapper map[int64]bot.BotChatGroup
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
-	var channelMapper map[int]bot.BotChannel
+	var channelMapper map[int64]bot.BotChannel
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
@@ -200,11 +200,11 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 	}
 
 	for _, object := range tasks {
-		object.BotName = botMapper[int(object.BotID)].Name
+		object.BotName = botMapper[object.BotID].Name
 		if object.GroupType == global.GroupTypeChat {
-			object.GroupName = chatGroupMapper[int(object.GroupID)].ChatGroupName
+			object.GroupName = chatGroupMapper[object.GroupID].ChatGroupName
 		} else {
-			object.GroupName = channelMapper[int(object.GroupID)].ChannelName
+			object.GroupName = channelMapper[object.GroupID].ChannelName
 		}
 	}
 

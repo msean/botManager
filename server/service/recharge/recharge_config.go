@@ -103,18 +103,18 @@ func (rechargeConfigService *RechargeConfigService) GetRechargeConfigInfoList(ct
 		return
 	}
 
-	var botList []int
+	var botList []int64
 	for _, object := range rechargeConfigs {
-		botList = append(botList, int(object.BotID))
+		botList = append(botList, object.BotID)
 	}
 
-	var botMapper map[int]bot.Bot
+	var botMapper map[int64]bot.Bot
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
 
 	for _, object := range rechargeConfigs {
-		object.BotName = botMapper[int(object.BotID)].Name
+		object.BotName = botMapper[object.BotID].Name
 	}
 	return rechargeConfigs, total, err
 }

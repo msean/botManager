@@ -35,6 +35,7 @@ func PublishAdHandle(update tgbotapi.Update, token string, botID int64) {
 			return
 		}
 		botApi.SendTextMessage(update.Message.Chat.ID, token, "当前有未支付订单，若想重新下单，请联系管理员")
+		return
 	}
 	// 设置用户状态：等待输入内容
 	global.GVA_REDIS.Set(context.Background(), cache.AdWaitCacheKey(botID, userID), waitAdContentState, waitAdContentExpire)

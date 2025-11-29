@@ -8,7 +8,7 @@ import (
 // 封禁记录 结构体  BanRecord
 type BanRecord struct {
 	global.GVA_MODEL
-	BotID       int    `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;"`                  //机器人ID
+	BotID       int64  `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;"`                  //机器人ID
 	BotName     string `json:"botName" form:"botName" gorm:"-"`                                         //机器人ID
 	UserID      int64  `json:"userID" form:"userID" gorm:"comment:用户ID;column:user_id;"`                //用户ID
 	UserName    string `json:"userName" form:"userName" gorm:"comment:用户名;column:user_name;size:128;"`  //userName

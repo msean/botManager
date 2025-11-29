@@ -16,7 +16,7 @@ type BotTask struct {
 	BotName         string          `json:"botName" form:"botName" gorm:"-"`                        //机器人ID
 	ChatGroupID     int64           `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群ID;column:chat_group_id;"`
 	GroupType       int             `json:"sendGroupType" form:"sendGroupType" gorm:"comment:组类型(1、群聊 2、频道);column:send_group_type;default:1"` //机器人ID
-	GroupID         int             `json:"groupID" form:"groupID" gorm:"comment:groupID;column:group_id"`                                     //机器人ID
+	GroupID         int64           `json:"groupID" form:"groupID" gorm:"comment:groupID;column:group_id"`                                     //机器人ID
 	GroupName       string          `json:"groupName" form:"groupName" gorm:"-"`                                                               //机器人ID
 	TaskSendType    int64           `json:"taskSendType" form:"taskSendType" gorm:"comment:发送类型;column:task_send_type;"`                       //发送类型
 	Content         string          `json:"content" form:"content" gorm:"column:content;type:text;"`                                           //发送内容

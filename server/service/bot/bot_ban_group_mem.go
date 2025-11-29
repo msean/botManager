@@ -43,7 +43,7 @@ func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMem(ctx con
 		return
 	}
 
-	if deleteErr := cache.NewBotChatGroupBanMemCListCache(int(object.BotID)).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotChatGroupBanMemCListCache(object.BotID, object.ChatGroupID).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", object.BotID), zap.Int64("ChatGroupID", object.ChatGroupID))
 	}
 	return err
@@ -64,7 +64,7 @@ func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMemByIds(ct
 		return
 	}
 	for _, object := range objects {
-		if deleteErr := cache.NewBotChatGroupBanMemCListCache(int(object.BotID)).Release(); deleteErr != nil {
+		if deleteErr := cache.NewBotChatGroupBanMemCListCache(object.BotID, object.ChatGroupID).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("botBanGroupMemService", zap.Any("BotID", object.BotID))
 		}
 	}
@@ -78,7 +78,7 @@ func (botBanGroupMemService *BotBanGroupMemService) UpdateBotBanGroupMem(ctx con
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", botBanGroupMem.ID))
 		return
 	}
-	if deleteErr := cache.NewBotChatGroupBanMemCListCache(int(botBanGroupMem.BotID)).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotChatGroupBanMemCListCache(botBanGroupMem.BotID, botBanGroupMem.ChatGroupID).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("botBanGroupMem", botBanGroupMem))
 	}
 	return err
@@ -122,15 +122,15 @@ func (botBanGroupMemService *BotBanGroupMemService) GetBotBanGroupMemInfoList(ct
 		return
 	}
 
-	var botList []int
-	var chatGroupList []int
+	var botList []int64
+	var chatGroupList []int64
 	for _, object := range botBanGroupMems {
-		botList = append(botList, int(object.BotID))
-		chatGroupList = append(chatGroupList, int(object.ChatGroupID))
+		botList = append(botList, object.BotID)
+		chatGroupList = append(chatGroupList, object.ChatGroupID)
 	}
 
-	var botMapper map[int]bot.Bot
-	var chatGroupMapper map[int]bot.BotChatGroup
+	var botMapper map[int64]bot.Bot
+	var chatGroupMapper map[int64]bot.BotChatGroup
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
@@ -140,8 +140,8 @@ func (botBanGroupMemService *BotBanGroupMemService) GetBotBanGroupMemInfoList(ct
 	}
 
 	for _, object := range botBanGroupMems {
-		object.BotName = botMapper[int(object.BotID)].Name
-		object.ChatGroupName = chatGroupMapper[int(object.ChatGroupID)].ChatGroupName
+		object.BotName = botMapper[object.BotID].Name
+		object.ChatGroupName = chatGroupMapper[object.ChatGroupID].ChatGroupName
 	}
 
 	return botBanGroupMems, total, err

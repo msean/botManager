@@ -115,20 +115,20 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 	// 获取机器人所有的channel
 	var channels []bot.BotChannel
 	if err = global.GVA_DB.Where("bot_id = ?", botID).Find(&channels).Error; err != nil {
-		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", botID), zap.Error(err))
+		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
 
 	var botHandler *bot_handler.Bot
 	if botHandler, err = bot_handler.NewBot(token); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int("botID", botID), zap.Error(err))
+		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
 	// 1. 读取收款地址
 	key := fmt.Sprintf("payment:%d", botID)
 	paymentSysCnf, err := cache.LoadSyscnf(key, false, "")
 	if err != nil || paymentSysCnf.Value == "" {
-		global.GVA_LOG.Warn("机器人未设置收款地址", zap.Int("BotID", botID))
+		global.GVA_LOG.Warn("机器人未设置收款地址", zap.Int64("BotID", botID))
 		return
 	}
 	paymentAddr := paymentSysCnf.Value

@@ -12,35 +12,29 @@ import (
 
 type (
 	BotChatGroupBanMemCache struct {
-		BotID         int    `json:"botID"`
-		ChatGroupID   int    `json:"chatGroupID"`
 		BanMemContent string `json:"banMemContent"`
 	}
-
 	BotChatGroupBanMemCListCache struct {
-		BotID   int                       `json:"botID"`
-		Objects []BotChatGroupBanMemCache `json:"objects"`
+		BotID       int64                     `json:"botID"`
+		ChatGroupID int64                     `json:"chatGroupID"`
+		Objects     []BotChatGroupBanMemCache `json:"objects"`
 	}
-
 	BotChatGroupCache struct {
-		BotID         int    `json:"botID"`
-		ChatGroupID   int    `json:"chatGroupID"`
+		BotID         int64  `json:"botID"`
+		ChatGroupID   int64  `json:"chatGroupID"`
 		ChatGroupName string `json:"chatGroupName"`
 	}
-
 	BotBanContentCache struct {
-		BotID      int    `json:"botID"`
+		BotID      int64  `json:"botID"`
 		BanContent string `json:"banContent"`
 	}
-
 	BotBanContentListCache struct {
-		BotID   int                  `json:"botID"`
+		BotID   int64                `json:"botID"`
 		Objects []BotBanContentCache `json:"objects"`
 	}
-
 	BotChannelCache struct {
-		BotID       int    `json:"botID"`
-		ChannelID   int    `json:"channelID"`
+		BotID       int64  `json:"botID"`
+		ChannelID   int64  `json:"channelID"`
 		ChannelName string `json:"channelName"`
 	}
 	BotCmdCache struct {
@@ -56,7 +50,7 @@ type (
 	}
 	// 获取
 	BotCmdCacheList struct {
-		BotID   int                        `json:"botID"`
+		BotID   int64                      `json:"botID"`
 		Objects []BotCmdCacheWithNoContent `json:"objects"`
 	}
 	RechargeCnfObj struct {
@@ -70,21 +64,14 @@ type (
 	}
 )
 
-func NewBotChatGroupBanMemCache(object bot.BotBanGroupMem) *BotChatGroupBanMemCache {
-	return &BotChatGroupBanMemCache{
-		BotID:       int(object.BotID),
-		ChatGroupID: int(object.ChatGroupID),
-	}
-}
-
 func NewBotChatGroupCache(object bot.BotChatGroup) *BotChatGroupCache {
 	return &BotChatGroupCache{
-		BotID:       int(object.BotID),
-		ChatGroupID: int(object.ChatGroupID),
+		BotID:       object.BotID,
+		ChatGroupID: object.ChatGroupID,
 	}
 }
 
-func NewBotBanContentListCache(botID int) *BotBanContentListCache {
+func NewBotBanContentListCache(botID int64) *BotBanContentListCache {
 	return &BotBanContentListCache{
 		BotID: botID,
 	}
@@ -92,8 +79,8 @@ func NewBotBanContentListCache(botID int) *BotBanContentListCache {
 
 func NewBotChannelCache(object bot.BotChannel) *BotChannelCache {
 	return &BotChannelCache{
-		BotID:     int(object.BotID),
-		ChannelID: int(object.ChannelID),
+		BotID:     object.BotID,
+		ChannelID: object.ChannelID,
 	}
 }
 
@@ -105,15 +92,16 @@ func NewBotCmdCache(botID int64, cmd string, _type int) *BotCmdCache {
 	}
 }
 
-func NewBotCmdCacheList(botID int) *BotCmdCacheList {
+func NewBotCmdCacheList(botID int64) *BotCmdCacheList {
 	return &BotCmdCacheList{
 		BotID: botID,
 	}
 }
 
-func NewBotChatGroupBanMemCListCache(botID int) *BotChatGroupBanMemCListCache {
+func NewBotChatGroupBanMemCListCache(botID int64, chatGroupID int64) *BotChatGroupBanMemCListCache {
 	return &BotChatGroupBanMemCListCache{
-		BotID: botID,
+		BotID:       botID,
+		ChatGroupID: chatGroupID,
 	}
 }
 
@@ -132,7 +120,10 @@ func (BotCmdCacheList) TableName() string              { return bot.BotCmdConfig
 func (RechargeCnfCacheList) TableName() string         { return recharge.RechargeConfig{}.TableName() }
 
 func (c BotChatGroupBanMemCListCache) Pairs() []KvPkPair {
-	return []KvPkPair{{"bot_id", c.BotID}}
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+		{"chat_group_id", c.ChatGroupID},
+	}
 }
 
 func (c BotChatGroupCache) Pairs() []KvPkPair {

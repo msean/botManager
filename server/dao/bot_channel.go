@@ -25,14 +25,14 @@ func (dao *botChannelDao) FromBotID(db *gorm.DB, channelID int) (_model bot.BotC
 	return
 }
 
-func (dao *botChannelDao) MappByChannelIDList(db *gorm.DB, channelIDList []int) (mapper map[int]bot.BotChannel, err error) {
+func (dao *botChannelDao) MappByChannelIDList(db *gorm.DB, channelIDList []int64) (mapper map[int64]bot.BotChannel, err error) {
 	var models []bot.BotChannel
-	mapper = make(map[int]bot.BotChannel)
+	mapper = make(map[int64]bot.BotChannel)
 	if err = db.Find(&models, "channel_id in (?)", channelIDList).Error; err != nil {
 		return
 	}
 	for _, model := range models {
-		mapper[int(model.ChannelID)] = model
+		mapper[model.ChannelID] = model
 	}
 	return
 }

@@ -43,7 +43,7 @@ func (svc *BotBanContentService) DeleteBotBanContent(ctx context.Context, ID str
 		return
 	}
 
-	if deleteErr := cache.NewBotBanContentListCache(int(botContent.BotID)).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotBanContentListCache(botContent.BotID).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", botContent.BotID))
 	}
 	return err
@@ -65,7 +65,7 @@ func (svc *BotBanContentService) DeleteBotBanContentByIds(ctx context.Context, I
 	}
 
 	for _, object := range objects {
-		if deleteErr := cache.NewBotBanContentListCache(int(object.BotID)).Release(); deleteErr != nil {
+		if deleteErr := cache.NewBotBanContentListCache(object.BotID).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
 		}
 	}
@@ -79,7 +79,7 @@ func (svc *BotBanContentService) UpdateBotBanContent(ctx context.Context, botBan
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.BotID))
 		return
 	}
-	if deleteErr := cache.NewBotBanContentListCache(int(botBanContent.BotID)).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotBanContentListCache(botBanContent.BotID).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", botBanContent.BotID))
 	}
 	return err
@@ -125,18 +125,18 @@ func (svc *BotBanContentService) GetBotBanContentInfoList(ctx context.Context, i
 	if err = db.Find(&botBanContents).Error; err != nil {
 		return
 	}
-	var botList []int
+	var botList []int64
 	for _, botBanContent := range botBanContents {
-		botList = append(botList, int(botBanContent.BotID))
+		botList = append(botList, botBanContent.BotID)
 	}
 
-	var botMapper map[int]bot.Bot
+	var botMapper map[int64]bot.Bot
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
 
 	for _, botBanContent := range botBanContents {
-		botBanContent.BotName = botMapper[int(botBanContent.BotID)].Name
+		botBanContent.BotName = botMapper[botBanContent.BotID].Name
 	}
 	return botBanContents, total, err
 }

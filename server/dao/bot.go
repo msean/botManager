@@ -25,14 +25,14 @@ func (dao *botDao) FromBotID(db *gorm.DB, botID int) (botModel bot.Bot, has bool
 	return
 }
 
-func (dao *botDao) ListBotBannerContentByID(db *gorm.DB, botID int) (banContents []bot.BotBanContent, err error) {
+func (dao *botDao) ListBotBannerContentByID(db *gorm.DB, botID int64) (banContents []bot.BotBanContent, err error) {
 	err = db.Find(&banContents, "bot_id = ?", botID).Error
 	return
 }
 
-func (dao *botDao) MappByIDList(db *gorm.DB, botIDList []int) (mapper map[int]bot.Bot, err error) {
+func (dao *botDao) MappByIDList(db *gorm.DB, botIDList []int64) (mapper map[int64]bot.Bot, err error) {
 	var bots []bot.Bot
-	mapper = make(map[int]bot.Bot)
+	mapper = make(map[int64]bot.Bot)
 	if err = db.Find(&bots, "bot_id in (?)", botIDList).Error; err != nil {
 		return
 	}

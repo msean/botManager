@@ -43,7 +43,7 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.C
 	if err = global.GVA_DB.Delete(&bot.BotCmdConfig{}, "id = ?", ID).Error; err != nil {
 		return
 	}
-	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotCmdCacheList(object.BotID).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("botCmdConfigService", zap.Any("BotID", object.BotID))
 	}
 	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd, object.Type).Release(); deleteErr != nil {
@@ -67,7 +67,7 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfigByIds(ctx cont
 	}
 
 	for _, object := range objects {
-		if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
+		if deleteErr := cache.NewBotCmdCacheList(object.BotID).Release(); deleteErr != nil {
 			global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
 		}
 		if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd, object.Type).Release(); deleteErr != nil {
@@ -90,7 +90,7 @@ func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.C
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.BotID))
 		return
 	}
-	if deleteErr := cache.NewBotCmdCacheList(int(object.BotID)).Release(); deleteErr != nil {
+	if deleteErr := cache.NewBotCmdCacheList(object.BotID).Release(); deleteErr != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("BotID", object.BotID))
 	}
 	if deleteErr := cache.NewBotCmdCache(object.BotID, object.Cmd, object.Type).Release(); deleteErr != nil {
@@ -136,18 +136,18 @@ func (botCmdConfigService *BotCmdConfigService) GetBotCmdConfigInfoList(ctx cont
 		return
 	}
 
-	var botList []int
+	var botList []int64
 	for _, botBanContent := range botCmdConfigs {
-		botList = append(botList, int(botBanContent.BotID))
+		botList = append(botList, botBanContent.BotID)
 	}
 
-	var botMapper map[int]bot.Bot
+	var botMapper map[int64]bot.Bot
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
 
 	for _, botBanContent := range botCmdConfigs {
-		botBanContent.BotName = botMapper[int(botBanContent.BotID)].Name
+		botBanContent.BotName = botMapper[botBanContent.BotID].Name
 	}
 	return botCmdConfigs, total, err
 }

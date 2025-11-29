@@ -22,7 +22,7 @@ func BanChatGroupContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, er
 	cacheObjects := cache.NewBotBanContentListCache(botModel.BotID)
 	_, err = cache.CacheGetItem(cacheObjects)
 	if err != nil {
-		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
+		global.GVA_LOG.Error("fetch ban content failed", zap.Int64("botID", botModel.BotID), zap.Error(err))
 		return
 	}
 
@@ -54,10 +54,10 @@ func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err e
 	chatID := tgMsg.Message.Chat.ID
 	user := tgMsg.Message.From
 
-	cacheObjects := cache.NewBotChatGroupBanMemCListCache(botModel.BotID)
+	cacheObjects := cache.NewBotChatGroupBanMemCListCache(botModel.BotID, chatID)
 	_, err = cache.CacheGetItem(cacheObjects)
 	if err != nil {
-		global.GVA_LOG.Error("fetch ban content failed", zap.Int("botID", botModel.BotID), zap.Error(err))
+		global.GVA_LOG.Error("fetch ban content failed", zap.Int64("botID", botModel.BotID), zap.Error(err))
 		return
 	}
 	fullName := fmt.Sprintf("%s%s", user.FirstName, user.LastName)

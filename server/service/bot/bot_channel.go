@@ -72,17 +72,17 @@ func (botChannelService *BotChannelService) GetBotChannelInfoList(ctx context.Co
 		return
 	}
 
-	var botList []int
+	var botList []int64
 	for _, object := range botChannels {
-		botList = append(botList, int(object.BotID))
+		botList = append(botList, object.BotID)
 	}
 
-	var botMapper map[int]bot.Bot
+	var botMapper map[int64]bot.Bot
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
 	for _, object := range botChannels {
-		object.BotName = botMapper[int(object.BotID)].Name
+		object.BotName = botMapper[object.BotID].Name
 	}
 	return botChannels, total, err
 }

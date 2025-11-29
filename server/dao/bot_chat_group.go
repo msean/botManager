@@ -13,14 +13,14 @@ func newbotChatGroupDao() *botChatGroupDao {
 	return &botChatGroupDao{}
 }
 
-func (dao *botChatGroupDao) MappByChatGroupIDList(db *gorm.DB, chatGroupIDList []int) (mapper map[int]bot.BotChatGroup, err error) {
+func (dao *botChatGroupDao) MappByChatGroupIDList(db *gorm.DB, chatGroupIDList []int64) (mapper map[int64]bot.BotChatGroup, err error) {
 	var models []bot.BotChatGroup
-	mapper = make(map[int]bot.BotChatGroup)
+	mapper = make(map[int64]bot.BotChatGroup)
 	if err = db.Find(&models, "chat_group_id in (?)", chatGroupIDList).Error; err != nil {
 		return
 	}
 	for _, model := range models {
-		mapper[int(model.ChatGroupID)] = model
+		mapper[model.ChatGroupID] = model
 	}
 	return
 }

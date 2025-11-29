@@ -73,15 +73,15 @@ func (banRecordService *BanRecordService) GetBanRecordInfoList(ctx context.Conte
 	if err = db.Find(&banRecords).Error; err != nil {
 		return
 	}
-	var botList []int
-	var chatGroupList []int
+	var botList []int64
+	var chatGroupList []int64
 	for _, object := range banRecords {
-		botList = append(botList, int(object.BotID))
-		chatGroupList = append(chatGroupList, int(object.ChatID))
+		botList = append(botList, object.BotID)
+		chatGroupList = append(chatGroupList, object.ChatID)
 	}
 
-	var botMapper map[int]bot.Bot
-	var chatGroupMapper map[int]bot.BotChatGroup
+	var botMapper map[int64]bot.Bot
+	var chatGroupMapper map[int64]bot.BotChatGroup
 	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
 		return
 	}
@@ -91,8 +91,8 @@ func (banRecordService *BanRecordService) GetBanRecordInfoList(ctx context.Conte
 	}
 
 	for _, object := range banRecords {
-		object.BotName = botMapper[int(object.BotID)].Name
-		object.ChatName = chatGroupMapper[int(object.ChatID)].ChatGroupName
+		object.BotName = botMapper[object.BotID].Name
+		object.ChatName = chatGroupMapper[object.ChatID].ChatGroupName
 	}
 	return banRecords, total, err
 }

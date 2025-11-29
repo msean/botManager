@@ -30,7 +30,7 @@ func (svc *BotService) CreateBot(ctx context.Context, botModel *bot.Bot) (err er
 	if err != nil {
 		return errors.New("输入的token不合法")
 	}
-	botModel.BotID = int(botID)
+	botModel.BotID = botID
 
 	// 检查是否存在
 	if _, exist, err := dao.BotDao.FromBotID(global.GVA_DB, int(botID)); err != nil {
@@ -154,6 +154,7 @@ func (svc *BotService) GetBotInfoList(ctx context.Context, info botReq.BotSearch
 	err = db.Find(&bot_mgrs).Error
 	return bot_mgrs, total, err
 }
+
 func (svc *BotService) GetBotPublic(ctx context.Context) {
 	// 此方法为获取数据源定义的数据
 	// 请自行实现
