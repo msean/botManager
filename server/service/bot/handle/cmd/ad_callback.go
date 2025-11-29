@@ -104,7 +104,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		return
 	}
 
-	sendTex := fmt.Sprintf("✅ 广告订单创建成功，请前往后台完成支付, 支付地址为:%s 支付价格为: %.3f", paymentAddr, price)
+	sendTex := fmt.Sprintf("✅ 广告订单创建成功，请前往后台完成支付\n支付地址为:%s\n支付价格为: %.3f\n⚠️请在15分钟之内完成支付", paymentAddr, price)
 	botHandler.SendTextMessage(chatID, token, sendTex)
 
 	// 查询所有频道
