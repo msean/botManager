@@ -207,11 +207,9 @@ func matchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx
 	}
 
 	trxTime := time.UnixMilli(trx.BlockTimestamp)
-	global.GVA_LOG.Info("reconcileAccount matchTransaction", zap.Any("trxTime", trxTime), zap.Any("amount", trxTime.After(order.CreatedAt.Add(constant.OrderMatchAgo))))
-	if trxTime.After(order.CreatedAt.Add(constant.OrderMatchAgo)) {
+	if trxTime.After(order.CreatedAt.Add(constant.OrderMatchAgo * time.Minute)) {
 		return
 	}
-
 	match = true
 	return
 }

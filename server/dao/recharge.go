@@ -2,6 +2,7 @@ package dao
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/recharge"
@@ -40,7 +41,7 @@ func (dao *rechargeDao) UserHasRecentOrder(db *gorm.DB, botID int64, userID int6
 			Where("bot_id = ?", botID).
 			Where("user_id = ?", userID).
 			Where("status = ?", constant.AdRechargeCreate).
-			Where("created_at >= ?", constant.OrderLeftPaid).
+			Where("created_at >= ?", time.Now().Add(-constant.OrderLeftPaid*time.Minute)).
 			Count(&count).Error
 		if err != nil {
 			return false, err

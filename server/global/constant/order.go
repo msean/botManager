@@ -10,5 +10,5 @@ const (
 
 const (
 	OrderLeftPaid = 10 // 留给用户付款的剩余时间
-	OrderMatchAgo = 20 // 匹配交易当前之前的时间
+	OrderMatchAgo = 30 // 匹配交易当前之前的时间
 )
