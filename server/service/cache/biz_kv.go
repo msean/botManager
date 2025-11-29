@@ -12,7 +12,7 @@ import (
 
 type (
 	BotChatGroupBanMemCache struct {
-		BanMemContent string `json:"banMemContent" gorm:"column:banMemContent"`
+		BanMemContent string `json:"banMemContent"`
 	}
 	BotChatGroupBanMemCListCache struct {
 		BotID       int64                     `json:"botID"`
