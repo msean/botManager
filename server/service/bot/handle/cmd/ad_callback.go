@@ -109,11 +109,11 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 			"充值时间：%s\n\n"+
 			"⚠️注意：\n"+
 			"▫️注意小数点 %s 转错金额不能到账\n"+
-			"▫️请在%s分钟完成付款，转错金额不能到账。\n\n"+
+			"▫️请在%d分钟完成付款，转错金额不能到账。\n\n"+
 			"转账10分钟后没到账及时联系",
 		rec.ID,
-		bot_handler.EscapeMarkdownV2(amount),
-		bot_handler.EscapeMarkdownV2(paymentAddr),
+		bot_handler.EscapeMarkdownV2CodeBlock(amount),
+		bot_handler.EscapeMarkdownV2CodeBlock(paymentAddr),
 		rec.CreatedAt.Format("2006/01/02 15:04:05"),
 		bot_handler.EscapeMarkdownV2(amount),
 		constant.OrderLeftPaid,

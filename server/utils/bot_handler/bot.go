@@ -108,10 +108,23 @@ func (b *Bot) SendMarkDownMessage(chatID int64, token string, text string) (err 
 	return
 }
 
+// EscapeMarkdownV2CodeBlock 用于代码块里的内容，不转义 . 或 !
+func EscapeMarkdownV2CodeBlock(text string) string {
+	// 只对 MarkdownV2 会干扰代码块的字符转义
+	specialChars := []string{
+		"`", "\\",
+	}
+	for _, ch := range specialChars {
+		text = strings.ReplaceAll(text, ch, "\\"+ch)
+	}
+	return text
+}
+
 // EscapeMarkdownV2 对 MarkdownV2 保留字符进行转义
 func EscapeMarkdownV2(text string) string {
 	specialChars := []string{
-		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!",
+		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}",
+		// "." 和 "!" 不在这里
 	}
 	for _, ch := range specialChars {
 		text = strings.ReplaceAll(text, ch, "\\"+ch)
