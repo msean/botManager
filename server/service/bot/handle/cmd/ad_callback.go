@@ -99,10 +99,10 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		return
 	}
 
-	amount := fmt.Sprintf("%.3f USDT", price)
+	amount := fmt.Sprintf("%.3f", price)
 	sendTex := fmt.Sprintf(
 		"订单号：%d\n"+
-			"转账金额：`%s` （点击即可复制）\n"+
+			"转账金额：`%s`USDT （点击即可复制）\n"+
 			"转账地址：`%s` （点击即可复制）\n"+
 			"充值时间：%s\n\n"+
 			"⚠️注意：\n"+
