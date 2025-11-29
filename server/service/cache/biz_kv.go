@@ -19,11 +19,7 @@ type (
 		ChatGroupID int64                     `json:"chatGroupID"`
 		Objects     []BotChatGroupBanMemCache `json:"objects"`
 	}
-	BotChatGroupCache struct {
-		BotID         int64  `json:"botID"`
-		ChatGroupID   int64  `json:"chatGroupID"`
-		ChatGroupName string `json:"chatGroupName"`
-	}
+
 	BotBanContentCache struct {
 		BotID      int64  `json:"botID"`
 		BanContent string `json:"banContent"`
@@ -63,13 +59,6 @@ type (
 		Objects []RechargeCnfObj `json:"objects"`
 	}
 )
-
-func NewBotChatGroupCache(object bot.BotChatGroup) *BotChatGroupCache {
-	return &BotChatGroupCache{
-		BotID:       object.BotID,
-		ChatGroupID: object.ChatGroupID,
-	}
-}
 
 func NewBotBanContentListCache(botID int64) *BotBanContentListCache {
 	return &BotBanContentListCache{
@@ -112,7 +101,6 @@ func NewRechargeCnfListCache(botID int64) *RechargeCnfCacheList {
 }
 
 func (BotChatGroupBanMemCListCache) TableName() string { return bot.BotBanGroupMem{}.TableName() }
-func (BotChatGroupCache) TableName() string            { return bot.BotChatGroup{}.TableName() }
 func (BotBanContentListCache) TableName() string       { return bot.BotBanContent{}.TableName() }
 func (BotChannelCache) TableName() string              { return bot.BotChannel{}.TableName() }
 func (BotCmdCache) TableName() string                  { return bot.BotCmdConfig{}.TableName() }
@@ -120,13 +108,6 @@ func (BotCmdCacheList) TableName() string              { return bot.BotCmdConfig
 func (RechargeCnfCacheList) TableName() string         { return recharge.RechargeConfig{}.TableName() }
 
 func (c BotChatGroupBanMemCListCache) Pairs() []KvPkPair {
-	return []KvPkPair{
-		{"bot_id", c.BotID},
-		{"chat_group_id", c.ChatGroupID},
-	}
-}
-
-func (c BotChatGroupCache) Pairs() []KvPkPair {
 	return []KvPkPair{
 		{"bot_id", c.BotID},
 		{"chat_group_id", c.ChatGroupID},
@@ -168,7 +149,6 @@ func (c RechargeCnfCacheList) Pairs() []KvPkPair {
 }
 
 func (BotChatGroupBanMemCListCache) LoadType() LoadType { return LoadFromDBList }
-func (BotChatGroupCache) LoadType() LoadType            { return LoadFromDBGet }
 func (BotBanContentListCache) LoadType() LoadType       { return LoadFromDBList }
 func (BotChannelCache) LoadType() LoadType              { return LoadFromDBGet }
 func (BotCmdCache) LoadType() LoadType                  { return LoadFromDBGet }
@@ -177,7 +157,6 @@ func (RechargeCnfCacheList) LoadType() LoadType         { return LoadFromDBList 
 func (SysCnfCache) LoadType() LoadType                  { return LoadFromDBGet }
 
 func (c BotChatGroupBanMemCListCache) Release() error { return CacheDelete(c) }
-func (c BotChatGroupCache) Release() error            { return CacheDelete(c) }
 func (c BotBanContentListCache) Release() error       { return CacheDelete(c) }
 func (c BotChannelCache) Release() error              { return CacheDelete(c) }
 func (c BotCmdCache) Release() error                  { return CacheDelete(c) }

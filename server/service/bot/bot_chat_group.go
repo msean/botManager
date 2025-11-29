@@ -10,7 +10,6 @@ import (
 	botReq "github.com/msean/botmanager/server/model/bot/request"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils"
-	"go.uber.org/zap"
 )
 
 type BotChatGroupService struct{}
@@ -29,17 +28,11 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroup(ctx context.C
 	if id, err = strconv.Atoi(ID); err != nil {
 		return
 	}
-	var object bot.BotChatGroup
-	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(ID)); !has || err != nil {
-		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id), zap.Error(err))
+	if err = cache.ReleaseBotChatGroup(id); err != nil {
 		return
 	}
 	if err = global.GVA_DB.Delete(&bot.BotChatGroup{}, "id = ?", id).Error; err != nil {
 		return
-	}
-	if deleteErr := cache.NewBotChatGroupCache(object).Release(); deleteErr != nil {
-		global.GVA_LOG.Error("ReleaseBotChatGroup", zap.Any("BotID", object.BotID), zap.Int64("ChatGroupID", object.ChatGroupID))
 	}
 	return err
 }
@@ -48,20 +41,13 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroup(ctx context.C
 // Author [yourname](https://github.com/yourname)
 func (botChatGroupService *BotChatGroupService) DeleteBotChatGroupByIds(ctx context.Context, IDs []string) (err error) {
 	ids := utils.StringsToIntsIgnoreError(IDs)
-	var objects []bot.BotChatGroup
-	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
-		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("ids", IDs), zap.Error(err))
-		return
+	for _, id := range ids {
+		cache.ReleaseBotChatGroup(id)
 	}
-
 	if err = global.GVA_DB.Delete(&[]bot.BotChatGroup{}, "id in ?", IDs).Error; err != nil {
 		return
 	}
-	for _, object := range objects {
-		if deleteErr := cache.NewBotChatGroupCache(object).Release(); deleteErr != nil {
-			global.GVA_LOG.Error("ReleaseBotChatGroup", zap.Any("BotID", object.BotID))
-		}
-	}
+
 	return err
 }
 
