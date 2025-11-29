@@ -44,7 +44,7 @@ func Init() {
 						fmt.Println("ReconcileAccounts panic:", r)
 					}
 				}()
-				if global.GVA_CONFIG.System.UnMatchPayment {
+				if !global.GVA_CONFIG.System.UnMatchPayment {
 					recharge.ReconcileAccounts()
 				}
 			}()
