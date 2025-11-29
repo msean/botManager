@@ -97,7 +97,7 @@
           :formatter="statusFormatter"
         />
         <el-table-column align="left" label="收款地址" prop="paymentAddr" width="400" />
-        <el-table-column align="left" label="交易ID" prop="txID" width="120" />
+        <el-table-column align="left" label="交易ID" prop="txID" width="400" />
         <el-table-column label="发布内容" width="120">
           <template #default="scope">
             <el-button type="primary" size="mini" @click="showContent(scope.row.publishContent)">

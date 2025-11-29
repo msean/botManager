@@ -116,8 +116,8 @@
           prop="name"
           width="160"
         />
-        <el-table-column align="left" label="参数键" prop="key" width="160" />
-        <el-table-column align="left" label="参数值" prop="value" width="160" />
+        <el-table-column align="left" label="参数键" prop="key" width="200" />
+        <el-table-column align="left" label="参数值" prop="value" width="400" />
         <el-table-column
           align="left"
           label="参数说明"
