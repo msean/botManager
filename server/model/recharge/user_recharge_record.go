@@ -15,13 +15,14 @@ type UserRechargeRecord struct {
 	StartTime       time.Time `json:"startTime" form:"startTime" gorm:"comment:发布开始时间;column:start_time;"`                        //发布开始时间
 	PublishInterval int64     `json:"publishInterval" form:"publishInterval" gorm:"comment:发布间隔;column:publish_interval;"`        //发布间隔
 	PublishContent  string    `json:"publishContent" form:"publishContent" gorm:"comment:发布内容;column:publish_content;type:text;"` //发布内容
-	Status          int64     `json:"status" form:"status" gorm:"comment:状态(1、创建 2、支付成功 3、支付超时失败);column:status;"`                //状态
+	Status          int64     `json:"status" form:"status" gorm:"comment:状态(1、创建 2、支付成功 3、支付超时失败);column:status;index"`           //状态
 	UpdateID        int64     `json:"updateID" form:"updateID" gorm:"column:update_id;"`                                          //状态
 	ChannelID       int64     `json:"channelID" form:"channelID" gorm:"column:channel_id"`                                        //状态
 	BotName         string    `json:"botName" form:"botName" gorm:"-;"`
+	UserName        string    `json:"userName" form:"userName" gorm:"column:user_name;index"`
 	UserID          int64     `json:"userID" form:"userID" gorm:"column:user_id"`
 	Price           float64   `json:"price" form:"price" gorm:"type:decimal(10,3);column:price"`
-	TxID            string    `json:"txID" form:"txID" gorm:"size:256"`                                    // 交易ID
+	TxID            string    `json:"txID" form:"txID" gorm:"size:256;column:tx_id"`                       // 交易ID
 	PaymentAddr     string    `json:"paymentAddr" form:"paymentAddr" gorm:"size:256; column:payment_addr"` // 收款地址
 }
 

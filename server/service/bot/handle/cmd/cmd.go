@@ -246,7 +246,11 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error
 
 	switch cmd {
 	case AdConfirmCmd:
-		return HandleAdConfirm(chatID, userID, int64(updateID), token, botID, cb.Message.MessageID, 1)
+		userName := cb.From.UserName
+		if userName == "" {
+			userName = cb.From.FirstName + " " + cb.From.LastName
+		}
+		return HandleAdConfirm(chatID, userID, userName, int64(updateID), token, botID, cb.Message.MessageID, 1)
 
 	case AdCancelCmd:
 		return HandleAdCancel(chatID, userID, updateID, token, botID, cb.Message.MessageID)

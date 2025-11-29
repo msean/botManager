@@ -13,4 +13,5 @@ type System struct {
 	DisableAutoMigrate bool   `mapstructure:"disable-auto-migrate" json:"disable-auto-migrate" yaml:"disable-auto-migrate"` // 自动迁移数据库表结构，生产环境建议设为false，手动迁移
 	BotWeebhookPrefix  string `mapstructure:"bot-webhook-prefix" json:"bot-webhook-prefix" yaml:"bot-webhook-prefix"`       // 自动迁移数据库表结构，生产环境建议设为false，手动迁移
 	Domain             string `mapstructure:"domain" json:"domain" yaml:"domain"`                                           // 自动迁移数据库表结构，生产环境建议设为false，手动迁移
+	UnMatchPayment     bool   `mapstructure:"un-match-payment" json:"un-match-payment" yaml:"un-match-payment"`             // 自动迁移数据库表结构，生产环境建议设为false，手动迁移
 }

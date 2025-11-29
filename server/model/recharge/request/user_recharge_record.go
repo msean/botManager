@@ -1,12 +1,14 @@
-
 package request
 
 import (
-	"github.com/msean/botmanager/server/model/common/request"
 	"time"
+
+	"github.com/msean/botmanager/server/model/common/request"
 )
 
-type UserRechargeRecordSearch struct{
-    CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
-    request.PageInfo
+type UserRechargeRecordSearch struct {
+	CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
+	BotID          int64       `json:"botID" form:"botID"`
+	Status         int64       `json:"status" form:"status"`
+	request.PageInfo
 }

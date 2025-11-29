@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/service/bot"
 	"github.com/msean/botmanager/server/service/recharge"
 	"github.com/msean/botmanager/server/service/system"
@@ -43,7 +44,9 @@ func Init() {
 						fmt.Println("ReconcileAccounts panic:", r)
 					}
 				}()
-				recharge.ReconcileAccounts()
+				if global.GVA_CONFIG.System.UnMatchPayment {
+					recharge.ReconcileAccounts()
+				}
 			}()
 			time.Sleep(20 * time.Second)
 		}

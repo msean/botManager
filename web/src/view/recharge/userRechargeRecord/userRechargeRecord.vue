@@ -1,19 +1,24 @@
-
 <template>
   <div>
+    <!-- 搜索区域 -->
     <div class="gva-search-box">
-      <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
-      <el-form-item label="创建日期" prop="createdAtRange">
-      <template #label>
-        <span>
-          创建日期
-          <el-tooltip content="搜索范围是开始日期（包含）至结束日期（不包含）">
-            <el-icon><QuestionFilled /></el-icon>
-          </el-tooltip>
-        </span>
-      </template>
-
-      <el-date-picker
+      <el-form
+        ref="elSearchFormRef"
+        :inline="true"
+        :model="searchInfo"
+        class="demo-form-inline"
+        @keyup.enter="onSubmit"
+      >
+        <el-form-item label="创建日期" prop="createdAtRange">
+          <template #label>
+            <span>
+              创建日期
+              <el-tooltip content="搜索范围是开始日期（包含）至结束日期（不包含）">
+                <el-icon><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </span>
+          </template>
+          <el-date-picker
             v-model="searchInfo.createdAtRange"
             class="!w-380px"
             type="datetimerange"
@@ -21,404 +26,256 @@
             start-placeholder="开始时间"
             end-placeholder="结束时间"
           />
-       </el-form-item>
+        </el-form-item>
+
+        <el-form-item label="机器人" prop="botID">
+          <el-select
+            v-model="searchInfo.botID"
+            filterable
+            clearable
+            placeholder="请选择机器人"
+            style="width: 220px"
+          >
+            <el-option
+              v-for="item in botList"
+              :key="item.value"
+              :label="item.name"
+              :value="item.botID"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="状态" prop="status">
+          <el-select
+            v-model="searchInfo.status"
+            clearable
+            placeholder="请选择状态"
+            style="width: 160px"
+          >
+            <el-option label="创建" :value="1" />
+            <el-option label="完成" :value="2" />
+            <el-option label="超时" :value="3" />
+            <el-option label="取消" :value="5" />
+          </el-select>
+        </el-form-item>
+
         <template v-if="showAllQuery">
-          <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
+          <!-- 可控显示的更多查询条件 -->
         </template>
 
         <el-form-item>
-          <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
-          <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button link type="primary" icon="arrow-down" @click="showAllQuery=true" v-if="!showAllQuery">展开</el-button>
-          <el-button link type="primary" icon="arrow-up" @click="showAllQuery=false" v-else>收起</el-button>
+          <el-button type="primary" icon="search" size="medium" @click="onSubmit">
+            查询
+          </el-button>
+          <el-button icon="refresh" size="medium" @click="onReset">
+            重置
+          </el-button>
         </el-form-item>
       </el-form>
     </div>
+
+    <!-- 表格操作区 -->
     <div class="gva-table-box">
-        <div class="gva-btn-list">
-            <el-button  type="primary" icon="plus" @click="openDialog()">新增</el-button>
-            <el-button  icon="delete" style="margin-left: 10px;" :disabled="!multipleSelection.length" @click="onDelete">删除</el-button>
-            
-        </div>
-        <el-table
+      <!-- 数据表格 -->
+      <el-table
         ref="multipleTable"
         style="width: 100%"
         tooltip-effect="dark"
         :data="tableData"
         row-key="ID"
         @selection-change="handleSelectionChange"
-        >
+      >
         <el-table-column type="selection" width="55" />
-        
+        <el-table-column align="left" label="机器人" prop="botName" width="180" />
+        <el-table-column align="left" label="用户名称" prop="userName" width="180" />
+        <el-table-column align="left" label="用户ID" prop="userID" width="120" />
+        <el-table-column align="left" label="价格" prop="price" width="120" />
+        <el-table-column
+          align="left"
+          label="状态"
+          prop="status"
+          width="120"
+          :formatter="statusFormatter"
+        />
+        <el-table-column align="left" label="收款地址" prop="paymentAddr" width="400" />
+        <el-table-column align="left" label="交易ID" prop="txID" width="120" />
+        <el-table-column label="发布内容" width="120">
+          <template #default="scope">
+            <el-button type="primary" size="mini" @click="showContent(scope.row.publishContent)">
+              查看
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
-            <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
+          <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
-        
-            <el-table-column align="left" label="机器人ID" prop="botID" width="120" />
+      </el-table>
 
-            <el-table-column align="left" label="发布次数" prop="publishTimes" width="120" />
-
-            <el-table-column align="left" label="发布开始时间" prop="startTime" width="180">
-   <template #default="scope">{{ formatDate(scope.row.startTime) }}</template>
-</el-table-column>
-            <el-table-column align="left" label="发布间隔" prop="publishInterval" width="120" />
-
-            <el-table-column label="发布内容" prop="publishContent" width="200">
-   <template #default="scope">
-      [富文本内容]
-   </template>
-</el-table-column>
-            <el-table-column align="left" label="状态" prop="status" width="120" />
-
-        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
-            <template #default="scope">
-            <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
-            <el-button  type="primary" link icon="edit" class="table-button" @click="updateUserRechargeRecordFunc(scope.row)">编辑</el-button>
-            <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
-            </template>
-        </el-table-column>
-        </el-table>
-        <div class="gva-pagination">
-            <el-pagination
-            layout="total, sizes, prev, pager, next, jumper"
-            :current-page="page"
-            :page-size="pageSize"
-            :page-sizes="[10, 30, 50, 100]"
-            :total="total"
-            @current-change="handleCurrentChange"
-            @size-change="handleSizeChange"
-            />
-        </div>
+      <!-- 分页 -->
+      <div class="gva-pagination">
+        <el-pagination
+          layout="total, sizes, prev, pager, next, jumper"
+          :current-page="page"
+          :page-size="pageSize"
+          :page-sizes="[10, 30, 50, 100]"
+          :total="total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
     </div>
-    <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="dialogFormVisible" :show-close="false" :before-close="closeDialog">
-       <template #header>
-              <div class="flex justify-between items-center">
-                <span class="text-lg">{{type==='create'?'新增':'编辑'}}</span>
-                <div>
-                  <el-button :loading="btnLoading" type="primary" @click="enterDialog">确 定</el-button>
-                  <el-button @click="closeDialog">取 消</el-button>
-                </div>
-              </div>
-            </template>
 
-          <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
-            <el-form-item label="机器人ID:" prop="botID">
-    <el-input v-model.number="formData.botID" :clearable="true" placeholder="请输入机器人ID" />
-</el-form-item>
-            <el-form-item label="发布次数:" prop="publishTimes">
-    <el-input v-model.number="formData.publishTimes" :clearable="true" placeholder="请输入发布次数" />
-</el-form-item>
-            <el-form-item label="发布开始时间:" prop="startTime">
-    <el-date-picker v-model="formData.startTime" type="date" style="width:100%" placeholder="选择日期" :clearable="true" />
-</el-form-item>
-            <el-form-item label="发布间隔:" prop="publishInterval">
-    <el-input v-model.number="formData.publishInterval" :clearable="true" placeholder="请输入发布间隔" />
-</el-form-item>
-            <el-form-item label="发布内容:" prop="publishContent">
-    <RichEdit v-model="formData.publishContent"/>
-</el-form-item>
-            <el-form-item label="状态:" prop="status">
-    <el-input v-model.number="formData.status" :clearable="true" placeholder="请输入状态" />
-</el-form-item>
-          </el-form>
-    </el-drawer>
-
-    <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
-            <el-descriptions :column="1" border>
-                    <el-descriptions-item label="机器人ID">
-    {{ detailForm.botID }}
-</el-descriptions-item>
-                    <el-descriptions-item label="发布次数">
-    {{ detailForm.publishTimes }}
-</el-descriptions-item>
-                    <el-descriptions-item label="发布开始时间">
-    {{ detailForm.startTime }}
-</el-descriptions-item>
-                    <el-descriptions-item label="发布间隔">
-    {{ detailForm.publishInterval }}
-</el-descriptions-item>
-                    <el-descriptions-item label="发布内容">
-    <RichView v-model="detailForm.publishContent" />
-</el-descriptions-item>
-                    <el-descriptions-item label="状态">
-    {{ detailForm.status }}
-</el-descriptions-item>
-            </el-descriptions>
-        </el-drawer>
-
+    <!-- 查看弹窗 -->
+    <el-dialog v-model="dialogVisible" title="发布内容" width="50%">
+      <div v-for="(item, index) in dialogContent" :key="index" style="margin-bottom: 10px;">
+        <div v-if="item.type === 'text'" style="white-space: pre-wrap;">{{ item.text }}</div>
+        <div v-else-if="item.type === 'photo'">
+          <img :src="item.file_id" alt="" style="max-width: 100%;" />
+        </div>
+        <div v-else-if="item.type === 'video'">
+          <video controls :src="item.file_id" style="max-width: 100%;"></video>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="dialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import {
-  createUserRechargeRecord,
-  deleteUserRechargeRecord,
-  deleteUserRechargeRecordByIds,
-  updateUserRechargeRecord,
-  findUserRechargeRecord,
-  getUserRechargeRecordList
-} from '@/api/recharge/userRechargeRecord'
-// 富文本组件
-import RichEdit from '@/components/richtext/rich-edit.vue'
-import RichView from '@/components/richtext/rich-view.vue'
-
-// 全量引入格式化工具 请按需保留
-import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ref, reactive } from 'vue'
-import { useAppStore } from "@/pinia"
+import { QuestionFilled } from '@element-plus/icons-vue'
+import { getUserRechargeRecordList, deleteUserRechargeRecordByIds } from '@/api/recharge/userRechargeRecord'
+import { formatDate as formatDateUtil } from '@/utils/format'
+import { getBotChoice } from '@/api/bot/bot'
 
 
+const tableData = ref([])
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
-
-defineOptions({
-    name: 'UserRechargeRecord'
-})
-
-// 提交按钮loading
-const btnLoading = ref(false)
-const appStore = useAppStore()
-
-// 控制更多查询条件显示/隐藏状态
+const searchInfo = ref({})
 const showAllQuery = ref(false)
+const multipleSelection = ref([])
 
-// 自动化生成的字典（可能为空）以及字段
-const formData = ref({
-            botID: undefined,
-            publishTimes: undefined,
-            startTime: new Date(),
-            publishInterval: undefined,
-            publishContent: '',
-            status: undefined,
-        })
+const dialogVisible = ref(false)
+const dialogContent = ref([])
 
+const statusMap = { 1: '创建', 2: '完成', 3: '超时', 5: '取消' }
 
-
-// 验证规则
-const rule = reactive({
-})
-
-const elFormRef = ref()
 const elSearchFormRef = ref()
 
-// =========== 表格控制部分 ===========
-const page = ref(1)
-const total = ref(0)
-const pageSize = ref(10)
-const tableData = ref([])
-const searchInfo = ref({})
-// 重置
-const onReset = () => {
-  searchInfo.value = {}
-  getTableData()
+function formatDate(dateStr) {
+  return formatDateUtil(dateStr)
 }
 
-// 搜索
-const onSubmit = () => {
-  elSearchFormRef.value?.validate(async(valid) => {
+function statusFormatter(row, column, cellValue) {
+  return statusMap[cellValue] || '未知'
+}
+
+function showContent(content) {
+  if (!content) {
+    ElMessage.warning('没有发布内容')
+    return
+  }
+
+  let data = []
+  try {
+    data = Array.isArray(content) ? content : JSON.parse(content)
+  } catch (e) {
+    console.error('解析失败', e)
+    data = [{ type: 'text', text: String(content) }]
+  }
+  dialogContent.value = data
+  dialogVisible.value = true
+}
+
+async function getTableData() {
+  const res = await getUserRechargeRecordList({
+    page: page.value,
+    pageSize: pageSize.value,
+    ...searchInfo.value
+  })
+  if (res.code === 0) {
+    tableData.value = res.data.list
+    total.value = res.data.total
+    page.value = res.data.page
+    pageSize.value = res.data.pageSize
+  }
+}
+
+const botList = ref([])
+
+// ======= 获取机器人列表 =======
+const getBotList = async () => {
+  const res = await getBotChoice()
+  if (res.code === 0) {
+    botList.value = res.data || []
+  }
+}
+
+function onSubmit() {
+  elSearchFormRef.value?.validate(valid => {
     if (!valid) return
     page.value = 1
     getTableData()
   })
 }
 
-// 分页
-const handleSizeChange = (val) => {
+function onReset() {
+  searchInfo.value = {}
+  getTableData()
+}
+
+function handleSizeChange(val) {
   pageSize.value = val
   getTableData()
 }
 
-// 修改页面容量
-const handleCurrentChange = (val) => {
+function handleCurrentChange(val) {
   page.value = val
   getTableData()
 }
 
-// 查询
-const getTableData = async() => {
-  const table = await getUserRechargeRecordList({ page: page.value, pageSize: pageSize.value, ...searchInfo.value })
-  if (table.code === 0) {
-    tableData.value = table.data.list
-    total.value = table.data.total
-    page.value = table.data.page
-    pageSize.value = table.data.pageSize
-  }
+function handleSelectionChange(val) {
+  multipleSelection.value = val
 }
 
-getTableData()
-
-// ============== 表格控制部分结束 ===============
-
-// 获取需要的字典 可能为空 按需保留
-const setOptions = async () =>{
-}
-
-// 获取需要的字典 可能为空 按需保留
-setOptions()
-
-
-// 多选数据
-const multipleSelection = ref([])
-// 多选
-const handleSelectionChange = (val) => {
-    multipleSelection.value = val
-}
-
-// 删除行
-const deleteRow = (row) => {
-    ElMessageBox.confirm('确定要删除吗?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-    }).then(() => {
-            deleteUserRechargeRecordFunc(row)
-        })
-    }
-
-// 多选删除
-const onDelete = async() => {
+async function onDelete() {
+  if (!multipleSelection.value.length) return
   ElMessageBox.confirm('确定要删除吗?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(async() => {
-      const IDs = []
-      if (multipleSelection.value.length === 0) {
-        ElMessage({
-          type: 'warning',
-          message: '请选择要删除的数据'
-        })
-        return
-      }
-      multipleSelection.value &&
-        multipleSelection.value.map(item => {
-          IDs.push(item.ID)
-        })
-      const res = await deleteUserRechargeRecordByIds({ IDs })
-      if (res.code === 0) {
-        ElMessage({
-          type: 'success',
-          message: '删除成功'
-        })
-        if (tableData.value.length === IDs.length && page.value > 1) {
-          page.value--
-        }
-        getTableData()
-      }
-      })
-    }
-
-// 行为控制标记（弹窗内部需要增还是改）
-const type = ref('')
-
-// 更新行
-const updateUserRechargeRecordFunc = async(row) => {
-    const res = await findUserRechargeRecord({ ID: row.ID })
-    type.value = 'update'
+  }).then(async () => {
+    const IDs = multipleSelection.value.map(i => i.ID)
+    const res = await deleteUserRechargeRecordByIds({ IDs })
     if (res.code === 0) {
-        formData.value = res.data
-        dialogFormVisible.value = true
+      ElMessage({ type: 'success', message: '删除成功' })
+      if (tableData.value.length === IDs.length && page.value > 1) page.value--
+      getTableData()
     }
+  })
 }
 
-
-// 删除行
-const deleteUserRechargeRecordFunc = async (row) => {
-    const res = await deleteUserRechargeRecord({ ID: row.ID })
-    if (res.code === 0) {
-        ElMessage({
-                type: 'success',
-                message: '删除成功'
-            })
-            if (tableData.value.length === 1 && page.value > 1) {
-            page.value--
-        }
-        getTableData()
-    }
-}
-
-// 弹窗控制标记
-const dialogFormVisible = ref(false)
-
-// 打开弹窗
-const openDialog = () => {
-    type.value = 'create'
-    dialogFormVisible.value = true
-}
-
-// 关闭弹窗
-const closeDialog = () => {
-    dialogFormVisible.value = false
-    formData.value = {
-        botID: undefined,
-        publishTimes: undefined,
-        startTime: new Date(),
-        publishInterval: undefined,
-        publishContent: '',
-        status: undefined,
-        }
-}
-// 弹窗确定
-const enterDialog = async () => {
-     btnLoading.value = true
-     elFormRef.value?.validate( async (valid) => {
-             if (!valid) return btnLoading.value = false
-              let res
-              switch (type.value) {
-                case 'create':
-                  res = await createUserRechargeRecord(formData.value)
-                  break
-                case 'update':
-                  res = await updateUserRechargeRecord(formData.value)
-                  break
-                default:
-                  res = await createUserRechargeRecord(formData.value)
-                  break
-              }
-              btnLoading.value = false
-              if (res.code === 0) {
-                ElMessage({
-                  type: 'success',
-                  message: '创建/更改成功'
-                })
-                closeDialog()
-                getTableData()
-              }
-      })
-}
-
-const detailForm = ref({})
-
-// 查看详情控制标记
-const detailShow = ref(false)
+onMounted(() => {
+  getBotList()
+})
 
 
-// 打开详情弹窗
-const openDetailShow = () => {
-  detailShow.value = true
-}
-
-
-// 打开详情
-const getDetails = async (row) => {
-  // 打开弹窗
-  const res = await findUserRechargeRecord({ ID: row.ID })
-  if (res.code === 0) {
-    detailForm.value = res.data
-    openDetailShow()
-  }
-}
-
-
-// 关闭详情弹窗
-const closeDetailShow = () => {
-  detailShow.value = false
-  detailForm.value = {}
-}
-
-
+// 初始化数据
+getTableData()
 </script>
 
 <style>
-
+.gva-search-box {
+  margin-bottom: 20px;
+}
+.gva-pagination {
+  margin-top: 10px;
+  text-align: right;
+}
 </style>

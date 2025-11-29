@@ -46,7 +46,7 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 	return nil
 }
 
-func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, botID int64, msgID int, publishTimes int) (err error) {
+func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64, token string, botID int64, msgID int, publishTimes int) (err error) {
 	ctx := context.Background()
 
 	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
@@ -93,6 +93,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		UpdateID:        updateID,
 		Price:           price,
 		PaymentAddr:     paymentAddr,
+		UserName:        userName,
 	}
 	if err = global.GVA_DB.Create(&rec).Error; err != nil {
 		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("rec", rec), zap.Error(err))
