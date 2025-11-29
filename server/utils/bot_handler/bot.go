@@ -133,8 +133,8 @@ func EscapeMarkdownV2(text string) string {
 func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {
 	return fmt.Sprintf(
 		"订单号：%d\n"+
-			"转账金额：\n`%s` USDT （点击即可复制）\n"+
-			"转账地址：\n`%s` （点击即可复制）\n"+
+			"转账金额：`%s` USDT （点击即可复制）\n"+
+			"转账地址：`%s` （点击即可复制）\n"+
 			"充值时间：%s\n\n"+
 			"⚠️注意：\n"+
 			"▫️注意小数点 %s 转错金额不能到账\n"+
