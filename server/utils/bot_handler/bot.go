@@ -1,6 +1,7 @@
 package bot_handler
 
 import (
+	"fmt"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -108,11 +109,19 @@ func (b *Bot) SendMarkDownMessage(chatID int64, token string, text string) (err 
 	return
 }
 
-// EscapeMarkdownV2CodeBlock 用于代码块里的内容，不转义 . 或 !
 func EscapeMarkdownV2CodeBlock(text string) string {
-	// 只对 MarkdownV2 会干扰代码块的字符转义
+	specialChars := []string{"`", "\\"}
+	for _, ch := range specialChars {
+		text = strings.ReplaceAll(text, ch, "\\"+ch)
+	}
+	return text
+}
+
+// EscapeMarkdownV2 用于普通文本，转义 MarkdownV2 保留字符
+func EscapeMarkdownV2(text string) string {
 	specialChars := []string{
-		"`", "\\",
+		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}",
+		".", "!", // 普通文本里 . 和 ! 需要转义
 	}
 	for _, ch := range specialChars {
 		text = strings.ReplaceAll(text, ch, "\\"+ch)
@@ -120,16 +129,25 @@ func EscapeMarkdownV2CodeBlock(text string) string {
 	return text
 }
 
-// EscapeMarkdownV2 对 MarkdownV2 保留字符进行转义
-func EscapeMarkdownV2(text string) string {
-	specialChars := []string{
-		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}",
-		// "." 和 "!" 不在这里
-	}
-	for _, ch := range specialChars {
-		text = strings.ReplaceAll(text, ch, "\\"+ch)
-	}
-	return text
+// FormatRechargeMessage 生成安全的充值提示 MarkdownV2 消息
+func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {
+	return fmt.Sprintf(
+		"订单号：%d\n"+
+			"转账金额：\n`%s` USDT （点击即可复制）\n"+
+			"转账地址：\n`%s` （点击即可复制）\n"+
+			"充值时间：%s\n\n"+
+			"⚠️注意：\n"+
+			"▫️注意小数点 %s 转错金额不能到账\n"+
+			"▫️请在%d分钟完成付款，转错金额不能到账。\n\n"+
+			"转账%d分钟后没到账及时联系",
+		orderID,
+		EscapeMarkdownV2CodeBlock(amount),
+		EscapeMarkdownV2CodeBlock(paymentAddr),
+		createdAt,
+		EscapeMarkdownV2(amount),
+		leftPaidMinutes,
+		leftPaidMinutes,
+	)
 }
 
 // SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）

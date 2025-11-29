@@ -101,22 +101,12 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 		return
 	}
 
-	amount := fmt.Sprintf("%.3f", price)
-	sendText := fmt.Sprintf(
-		"订单号：%d\n"+
-			"转账金额：`%s`USDT （点击即可复制）\n"+
-			"转账地址：`%s` （点击即可复制）\n"+
-			"充值时间：%s\n\n"+
-			"⚠️注意：\n"+
-			"▫️注意小数点 %s 转错金额不能到账\n"+
-			"▫️请在%d分钟完成付款，转错金额不能到账。\n\n"+
-			"转账%d分钟后没到账及时联系",
+	// amount := fmt.Sprintf("%.3f", price)
+	sendText := bot_handler.FormatRechargeMessage(
 		rec.ID,
-		bot_handler.EscapeMarkdownV2CodeBlock(amount),      // 代码块只转义 ` 和 \
-		bot_handler.EscapeMarkdownV2CodeBlock(paymentAddr), // 代码块只转义 ` 和 \
+		fmt.Sprintf("%.3f", price),
+		paymentAddr,
 		rec.CreatedAt.Format("2006/01/02 15:04:05"),
-		bot_handler.EscapeMarkdownV2(amount), // 普通文本里转义所有特殊字符
-		constant.OrderLeftPaid,
 		constant.OrderLeftPaid,
 	)
 
