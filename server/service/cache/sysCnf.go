@@ -34,6 +34,8 @@ func (c SysCnfCache) Pairs() []KvPkPair {
 	}
 }
 
+func (SysCnfCache) LoadType() LoadType { return LoadFromDBGet }
+
 func LoadSyscnf(key string, createIfNotExist bool, defaultVal string) (sysCache *SysCnfCache, err error) {
 	sysCache = NewSysCnfCache(key)
 	var has bool

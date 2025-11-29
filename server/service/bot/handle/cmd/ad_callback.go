@@ -108,7 +108,6 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 	botHandler.SendTextMessage(chatID, token, sendTex)
 
 	// 查询所有频道
-
 	// var medias []bot_handler.MediaItem
 	// if err = json.Unmarshal([]byte(val), &medias); err != nil {
 	// 	global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("val", val), zap.Error(err))

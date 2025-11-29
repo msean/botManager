@@ -6,6 +6,7 @@ import (
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/initialize"
+	"github.com/msean/botmanager/server/service"
 	"github.com/msean/botmanager/server/service/system"
 )
 
@@ -20,6 +21,8 @@ func RunServer() {
 	if global.GVA_DB != nil {
 		system.LoadAll()
 	}
+
+	service.Init()
 
 	Router := initialize.Routers()
 

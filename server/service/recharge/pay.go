@@ -128,7 +128,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 	key := fmt.Sprintf("payment:%d", botID)
 	paymentSysCnf, err := cache.LoadSyscnf(key, false, "")
 	if err != nil || paymentSysCnf.Value == "" {
-		global.GVA_LOG.Warn("机器人未设置收款地址", zap.Int64("BotID", botID))
+		global.GVA_LOG.Error("机器人未设置收款地址", zap.Int64("BotID", botID))
 		return
 	}
 	paymentAddr := paymentSysCnf.Value
@@ -205,7 +205,7 @@ func matchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx
 	}
 
 	trxTime := time.UnixMilli(trx.BlockTimestamp)
-	if trxTime.Before(order.CreatedAt) || trxTime.After(order.CreatedAt.Add(20*time.Minute)) {
+	if trxTime.After(order.CreatedAt.Add(20 * time.Minute)) {
 		return
 	}
 
