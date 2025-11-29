@@ -201,11 +201,13 @@ func matchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx
 	global.GVA_LOG.Info("reconcileAccount matchTransaction", zap.Uint("orderID", order.ID), zap.Any("trx", trx))
 	amount := utils.ParseAmount(trx.Value, trx.TokenInfo.Decimals)
 
+	global.GVA_LOG.Info("reconcileAccount matchTransaction", zap.Any("amount1", math.Abs(amount-order.Price) > 0.000001), zap.Any("amount", amount))
 	if math.Abs(amount-order.Price) > 0.000001 {
 		return
 	}
 
 	trxTime := time.UnixMilli(trx.BlockTimestamp)
+	global.GVA_LOG.Info("reconcileAccount matchTransaction", zap.Any("trxTime", trxTime), zap.Any("amount", trxTime.After(order.CreatedAt.Add(constant.OrderMatchAgo))))
 	if trxTime.After(order.CreatedAt.Add(constant.OrderMatchAgo)) {
 		return
 	}
