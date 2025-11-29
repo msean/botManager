@@ -99,20 +99,21 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		return
 	}
 
+	amount := fmt.Sprintf("%.3f USDT", price)
 	sendTex := fmt.Sprintf(
 		"订单号：%d\n"+
-			"转账金额：`%.3f USDT` （点击即可复制）\n"+
+			"转账金额：`%s` （点击即可复制）\n"+
 			"转账地址：`%s` （点击即可复制）\n"+
 			"充值时间：%s\n\n"+
 			"⚠️注意：\n"+
-			"▫️注意小数点 %.3f USDT 转错金额不能到账\n"+
+			"▫️注意小数点 %s 转错金额不能到账\n"+
 			"▫️请在10分钟完成付款，转错金额不能到账。\n\n"+
 			"转账10分钟后没到账及时联系",
 		rec.ID,
-		rec.Price,
-		rec.PaymentAddr,
+		bot_handler.EscapeMarkdownV2(amount),
+		bot_handler.EscapeMarkdownV2(paymentAddr),
 		rec.CreatedAt.Format("2006/01/02 15:04:05"),
-		rec.Price,
+		bot_handler.EscapeMarkdownV2(amount),
 	)
 
 	if err = botHandler.SendMarkDownMessage(chatID, token, sendTex); err != nil {

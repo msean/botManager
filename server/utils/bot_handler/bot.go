@@ -1,6 +1,8 @@
 package bot_handler
 
 import (
+	"strings"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -104,6 +106,17 @@ func (b *Bot) SendMarkDownMessage(chatID int64, token string, text string) (err 
 	msg.ParseMode = "MarkdownV2"
 	_, err = b.botApi.Send(msg)
 	return
+}
+
+// EscapeMarkdownV2 对 MarkdownV2 保留字符进行转义
+func EscapeMarkdownV2(text string) string {
+	specialChars := []string{
+		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!",
+	}
+	for _, ch := range specialChars {
+		text = strings.ReplaceAll(text, ch, "\\"+ch)
+	}
+	return text
 }
 
 // SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
