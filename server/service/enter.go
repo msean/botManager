@@ -48,7 +48,7 @@ func Init() {
 					recharge.ReconcileAccounts()
 				}
 			}()
-			time.Sleep(25 * time.Second)
+			time.Sleep(15 * time.Second)
 		}
 	}()
 }
