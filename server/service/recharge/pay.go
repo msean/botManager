@@ -85,7 +85,7 @@ func CheckExpiredOrders() {
 	// 批量更新
 	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
 		Where("status = ?", constant.AdRechargeCreate).
-		Where("start_time <= ?", deadline).
+		Where("created_at >= ?", deadline).
 		Updates(map[string]any{
 			"status":     constant.AdRechargeTimeout,
 			"updated_at": time.Now(),
