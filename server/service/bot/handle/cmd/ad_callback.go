@@ -19,16 +19,16 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 	ctx := context.Background()
 	bot, _ := tgbotapi.NewBotAPI(token)
 
-	// 2. 判断草稿是否存在
+	// // 2. 判断草稿是否存在
 	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
-	val, _ := global.GVA_REDIS.Get(ctx, draftKey).Result()
+	// val, _ := global.GVA_REDIS.Get(ctx, draftKey).Result()
 
-	if val == "" {
-		// 草稿不存在 = 超时
-		bot.Send(tgbotapi.NewMessage(chatID,
-			"⏱️ 发布请求已超时，请重新提交内容。"))
-		return nil
-	}
+	// if val == "" {
+	// 	// 草稿不存在 = 超时
+	// 	bot.Send(tgbotapi.NewMessage(chatID,
+	// 		"⏱️ 发布请求已超时，请重新提交内容。"))
+	// 	return nil
+	// }
 
 	if err = dao.RechargeDao.CancelOrder(global.GVA_DB, botID, userID, int64(updateID)); err != nil {
 		global.GVA_LOG.Error("HandleAdCancel CancelOrder", zap.Error(err))
@@ -58,7 +58,6 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 
 	val, err := global.GVA_REDIS.Get(ctx, draftKey).Result()
 	if err != nil || val == "" {
-
 		if err = botHandler.DeleteMsg(chatID, msgID); err != nil {
 			global.GVA_LOG.Error("HandleAdConfirm DeleteMsg", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
 		}
