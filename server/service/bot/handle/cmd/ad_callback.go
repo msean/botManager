@@ -99,11 +99,6 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		return
 	}
 
-	if err = global.GVA_REDIS.Del(ctx, draftKey).Err(); err != nil {
-		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.String("draftKey", draftKey), zap.Error(err))
-		return
-	}
-
 	sendTex := fmt.Sprintf(
 		"订单号：%d\n"+
 			"转账金额：`%.3f USDT` （点击即可复制）\n"+
@@ -120,7 +115,15 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		rec.Price,
 	)
 
-	err = botHandler.SendMarkDownMessage(chatID, token, sendTex)
+	if err = botHandler.SendMarkDownMessage(chatID, token, sendTex); err != nil {
+		global.GVA_LOG.Error("botHandle SendMarkDownMessage", zap.Int("botID", int(botID)), zap.String("draftKey", draftKey), zap.Error(err))
+		return
+	}
+
+	if err = global.GVA_REDIS.Del(ctx, draftKey).Err(); err != nil {
+		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.String("draftKey", draftKey), zap.Error(err))
+		return
+	}
 	// 查询所有频道
 	// var medias []bot_handler.MediaItem
 	// if err = json.Unmarshal([]byte(val), &medias); err != nil {

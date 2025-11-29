@@ -57,7 +57,10 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	}
 
 	if update.CallbackQuery != nil {
-		return HandleCallback(update.CallbackQuery, token, botID)
+		if err = HandleCallback(update.CallbackQuery, token, botID); err != nil {
+			global.GVA_LOG.Error("Handle HandleCallback", zap.Int64("botID", botID), zap.Error(err))
+			return
+		}
 	}
 
 	cmds := cache.NewBotCmdCacheList(botID)
