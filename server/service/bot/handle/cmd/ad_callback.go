@@ -119,7 +119,7 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 		rec.CreatedAt.Format("2006/01/02 15:04:05"),
 		rec.Price,
 	)
-	botHandler.SendTextMessage(chatID, token, sendTex)
+	err = botHandler.SendMarkDownMessage(chatID, token, sendTex)
 	// 查询所有频道
 	// var medias []bot_handler.MediaItem
 	// if err = json.Unmarshal([]byte(val), &medias); err != nil {
@@ -135,5 +135,5 @@ func HandleAdConfirm(chatID int64, userID int64, updateID int64, token string, b
 
 	// buttons := ParseContentFromCfg(*cmdCfg, global.ButtonTypeInline)
 	// global.GVA_LOG.Debug("botHandle HandleAdConfirm", zap.Any("buttons", buttons))
-	return nil
+	return
 }

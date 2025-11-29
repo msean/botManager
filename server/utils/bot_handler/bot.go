@@ -99,6 +99,13 @@ func (b *Bot) SendTextMessage(chatID int64, token string, text string) (err erro
 	return
 }
 
+func (b *Bot) SendMarkDownMessage(chatID int64, token string, text string) (err error) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "MarkdownV2"
+	_, err = b.botApi.Send(msg)
+	return
+}
+
 // SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
 // 如果 replyMarkup != nil，则用作按钮，否则不带按钮
 func (b *Bot) TgSend(token string, chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg tgbotapi.Message, err error) {
