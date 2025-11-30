@@ -155,11 +155,11 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 	}
 	trxResp.Data = append(trxResp.Data, utils.TronResponseData{
 		TransactionID:  "mock_tx_1001",
-		BlockTimestamp: 1764518190000, // 2025-11-30 22:40 北京时间
+		BlockTimestamp: 1764518680000, // 2025-11-30 22:40 北京时间
 		From:           "TEST_FROM_ADDRESS",
 		To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
 		Type:           "Transfer",
-		Value:          "10095000", // 10.085 * 1e6
+		Value:          "10076000", // 10.085 * 1e6
 		TokenInfo: struct {
 			Symbol   string `json:"symbol"`
 			Address  string `json:"address"`
