@@ -206,7 +206,13 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 					// 	global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
 					// }
 				}
-				if err = botHandler.SendTextMessage(order.ChatID, botModel.Token, fmt.Sprintf("订单号:%d 已经发布", order.ID)); err != nil {
+				for i := range medias {
+					if medias[i].Type == "text" {
+						medias[i].Text += "\n\n✅ 发布成功"
+						break
+					}
+				}
+				if _, err = botHandler.TgSend(botModel.Token, order.ChatID, medias, nil); err != nil {
 					global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Any("medias", medias), zap.Any("buttons", buttons), zap.Error(err))
 				}
 			}
