@@ -153,25 +153,25 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		global.GVA_LOG.Error("获取链上交易失败", zap.Error(err))
 		return
 	}
-	// trxResp.Data = append(trxResp.Data, utils.TronResponseData{
-	// 	TransactionID:  "mock_tx_1001",
-	// 	BlockTimestamp: 1764510941000, // 2025-11-30 22:40 北京时间
-	// 	From:           "TEST_FROM_ADDRESS",
-	// 	To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
-	// 	Type:           "Transfer",
-	// 	Value:          "10045000", // 10.085 * 1e6
-	// 	TokenInfo: struct {
-	// 		Symbol   string `json:"symbol"`
-	// 		Address  string `json:"address"`
-	// 		Decimals int    `json:"decimals"`
-	// 		Name     string `json:"name"`
-	// 	}{
-	// 		Symbol:   "USDT",
-	// 		Address:  "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
-	// 		Decimals: 6,
-	// 		Name:     "Tether USD",
-	// 	},
-	// })
+	trxResp.Data = append(trxResp.Data, utils.TronResponseData{
+		TransactionID:  "mock_tx_1001",
+		BlockTimestamp: 1764510941000, // 2025-11-30 22:40 北京时间
+		From:           "TEST_FROM_ADDRESS",
+		To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
+		Type:           "Transfer",
+		Value:          "10045000", // 10.085 * 1e6
+		TokenInfo: struct {
+			Symbol   string `json:"symbol"`
+			Address  string `json:"address"`
+			Decimals int    `json:"decimals"`
+			Name     string `json:"name"`
+		}{
+			Symbol:   "USDT",
+			Address:  "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+			Decimals: 6,
+			Name:     "Tether USD",
+		},
+	})
 	var orders []recharge.UserRechargeRecord
 	err = global.GVA_DB.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
 	if err != nil {
