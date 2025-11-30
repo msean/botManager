@@ -22,6 +22,7 @@ type UserRechargeRecord struct {
 	UserName        string    `json:"userName" form:"userName" gorm:"column:user_name;index"`
 	UserID          int64     `json:"userID" form:"userID" gorm:"column:user_id"`
 	Price           float64   `json:"price" form:"price" gorm:"type:decimal(10,3);column:price"`
+	ChatID          int64     `json:"chatID" form:"chatID" gorm:"type:decimal(10,3);column:chat_id"`
 	TxID            string    `json:"txID" form:"txID" gorm:"size:256;column:tx_id"`                       // 交易ID
 	PaymentAddr     string    `json:"paymentAddr" form:"paymentAddr" gorm:"size:256; column:payment_addr"` // 收款地址
 }

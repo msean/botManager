@@ -95,6 +95,7 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 		Price:           price,
 		PaymentAddr:     paymentAddr,
 		UserName:        userName,
+		ChatID:          chatID,
 	}
 	if err = global.GVA_DB.Create(&rec).Error; err != nil {
 		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("rec", rec), zap.Error(err))
