@@ -161,7 +161,7 @@ func ReleaseRechargeCnf(modelID int) (err error) {
 
 func (c RechargeCnfCacheList) WherePublishTimes(publishTimes int) (cnf RechargeCnfObj, has bool) {
 	for _, _cnf := range c.Objects {
-		if cnf.PublishTimes == publishTimes {
+		if _cnf.PublishTimes == publishTimes {
 			cnf = _cnf
 			has = true
 			break
