@@ -50,12 +50,15 @@ func getChatUserID(update tgbotapi.Update) (userId int64) {
 
 func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	var text string
+	var chatID int64
 
 	switch {
 	case update.CallbackQuery != nil:
 		text = update.CallbackQuery.Data
+		chatID = update.CallbackQuery.Message.Chat.ID
 	case update.Message != nil:
 		text = update.Message.Text
+		chatID = update.Message.Chat.ID
 	}
 
 	if update.CallbackQuery != nil {
@@ -132,10 +135,10 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 			switch cmd {
 			case AdPublishCmd:
 				if canPublich := PublishAdCheckHandle(update, token, botID); canPublich {
-					SendCfgMessage(update, token, *cmdCfg, constant.ButtonTypeInline)
+					SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
 				}
 			default:
-				SendCfgMessage(update, token, *cmdCfg, constant.ButtonTypeInline)
+				SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
 			}
 
 		}
@@ -211,15 +214,14 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 	return
 }
 
-func SendCfgMessage(update tgbotapi.Update, token string, cfg cache.BotCmdCache, buttonType int) error {
+func SendCfgMessage(chatID int64, token string, cfg cache.BotCmdCache, buttonType int) error {
 	markup := ParseContentFromCfg(cfg, buttonType)
-	chatID := update.Message.Chat.ID // 获取聊天 ID
+	// chatID := update.Message.Chat.ID // 获取聊天 ID
 	global.GVA_LOG.Debug("BotMsgHandlerSvc send", zap.Any("any", cfg.Content), zap.Any("markup", markup))
 	return bot_handler.HandleTexWithMarup(chatID, token, cfg.Content, markup)
 }
 
 func WaitCmd(update tgbotapi.Update, botID int64) string {
-
 	state, _ := global.GVA_REDIS.Get(context.Background(), cache.AdWaitCacheKey(botID, getChatUserID(update))).Result()
 
 	switch state {
@@ -229,7 +231,7 @@ func WaitCmd(update tgbotapi.Update, botID int64) string {
 	return ""
 }
 
-func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error {
+func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err error) {
 	chatID := cb.Message.Chat.ID
 	userID := cb.From.ID
 	data := cb.Data
@@ -256,6 +258,13 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) error
 
 	case AdCancelCmd:
 		return HandleAdCancel(chatID, userID, updateID, token, botID, cb.Message.MessageID)
+	case NoticeRechargeCmd:
+		cmdCfg := cache.NewBotCmdCache(botID, cmd, constant.BotReplyCmdType)
+		if _, err = cache.CacheGetItem(cmdCfg); err != nil {
+			global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
+			return
+		}
+		SendCfgMessage(chatID, token, *cmdCfg, 1)
 	}
 
 	return nil
