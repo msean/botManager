@@ -93,6 +93,8 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 		}
 	}
 
+	global.GVA_LOG.Debug("HandleAdConfirm recharge", zap.Int64("botID", botID), zap.Any("cnf", cnf), zap.Any("wallet.Balance", wallet.Balance), zap.Any("publishTimes", publishTimes))
+
 	// 余额不足提示充值
 	if wallet.Balance < cnf.Price {
 		msg := tgbotapi.NewMessage(chatID, "余额不足，请充值")
