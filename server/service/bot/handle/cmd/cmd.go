@@ -266,7 +266,7 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 			global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
 			return
 		}
-		SendCfgMessage(chatID, token, *cmdCfg, 1)
+		SendCfgMessage(chatID, token, *cmdCfg, 2)
 	}
 
 	return nil
