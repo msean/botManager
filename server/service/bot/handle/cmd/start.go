@@ -7,5 +7,5 @@ import (
 )
 
 func StartHandlerfunc(update tgbotapi.Update, token string, cfg cache.BotCmdCache) {
-	SendCfgMessage(update, token, cfg, constant.ButtonTypeKeyBoard)
+	SendCfgMessage(update.Message.Chat.ID, token, cfg, constant.ButtonTypeKeyBoard)
 }
