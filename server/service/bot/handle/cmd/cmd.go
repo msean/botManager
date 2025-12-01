@@ -238,13 +238,15 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("data", cb.Data))
 
+	var cmd string
+	var updateID int
 	parts := strings.Split(data, ":")
-	if len(parts) != 2 {
-		return nil
+	if len(parts) == 1 {
+		cmd = parts[0]
+	} else {
+		cmd = parts[0]
+		updateID, _ = strconv.Atoi(parts[1])
 	}
-
-	cmd := parts[0]
-	updateID, _ := strconv.Atoi(parts[1])
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("updateID", updateID), zap.Any("cmd", cmd))
 
