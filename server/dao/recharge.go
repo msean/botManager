@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type rechargeDao struct{}
@@ -57,4 +59,73 @@ func (dao *rechargeDao) CancelOrder(db *gorm.DB, botID int64, userID int64, upda
 		Where("bot_id = ? AND user_id = ? AND update_id = ?", botID, userID, updateID).
 		Update("status", constant.AdRechargeCancel).Error
 
+}
+
+func (dao *rechargeDao) GetUserWallet(db *gorm.DB, botID, userID int64, userName string) (wallet recharge.UserWallet, err error) {
+	err = db.
+		Where("bot_id = ? AND user_id = ?", botID, userID).
+		Attrs(recharge.UserWallet{
+			UserName: userName,
+		}).
+		FirstOrCreate(&wallet, recharge.UserWallet{
+			UserID: userID,
+			BotID:  botID,
+		}).Error
+	return
+}
+
+func (dao *rechargeDao) AddBalance(db *gorm.DB, botID, userID int64, amount float64) (balance float64, err error) {
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+
+		var wallet recharge.UserWallet
+
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("bot_id = ? AND user_id = ?", botID, userID).
+			First(&wallet).Error; err != nil {
+			return err
+		}
+
+		wallet.Balance += amount
+
+		if err := tx.Model(&wallet).
+			Update("balance", wallet.Balance).Error; err != nil {
+			return err
+		}
+
+		balance = wallet.Balance
+		return nil
+	})
+
+	return
+}
+
+func (dao *rechargeDao) ReduceBalance(db *gorm.DB, botID, userID int64, amount float64) (balance float64, err error) {
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+
+		var wallet recharge.UserWallet
+
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("bot_id = ? AND user_id = ?", botID, userID).
+			First(&wallet).Error; err != nil {
+			return err
+		}
+
+		if wallet.Balance < amount {
+			return errors.New("余额不足")
+		}
+
+		wallet.Balance -= amount
+
+		if err := tx.Model(&wallet).
+			Update("balance", wallet.Balance).Error; err != nil {
+			return err
+		}
+
+		balance = wallet.Balance
+		return nil
+	})
+
+	return
 }

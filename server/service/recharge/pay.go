@@ -202,7 +202,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 
 				for _, ch := range channels {
 					// global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
-					if _, err = botHandler.TgSend(token, ch.ChannelID, medias, buttons); err != nil {
+					if _, err = botHandler.TgSend(ch.ChannelID, medias, buttons); err != nil {
 						global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
 					}
 				}
@@ -212,7 +212,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 						break
 					}
 				}
-				if _, err = botHandler.TgSend(botModel.Token, order.ChatID, medias, nil); err != nil {
+				if _, err = botHandler.TgSend(order.ChatID, medias, nil); err != nil {
 					global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Any("medias", medias), zap.Any("buttons", buttons), zap.Error(err))
 				}
 			}

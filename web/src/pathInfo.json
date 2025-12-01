@@ -63,6 +63,8 @@
   "/src/view/recharge/rechargeConfig/rechargeConfigForm.vue": "RechargeConfigForm",
   "/src/view/recharge/userRechargeRecord/userRechargeRecord.vue": "UserRechargeRecord",
   "/src/view/recharge/userRechargeRecord/userRechargeRecordForm.vue": "UserRechargeRecordForm",
+  "/src/view/recharge/userWallet/userWallet.vue": "UserWallet",
+  "/src/view/recharge/userWallet/userWalletForm.vue": "UserWalletForm",
   "/src/view/routerHolder.vue": "RouterHolder",
   "/src/view/superAdmin/api/api.vue": "Api",
   "/src/view/superAdmin/authority/authority.vue": "Authority",

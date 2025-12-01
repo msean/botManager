@@ -89,10 +89,7 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 		zap.Int64("chatID", channelChatID),
 	)
 
-	cacheObject := cache.NewBotChannelCache(bot.BotChannel{
-		BotID:     botModel.BotID,
-		ChannelID: channelChatID,
-	})
+	cacheObject := cache.NewBotChannelCache(botModel.BotID, channelChatID)
 	has, err := cache.CacheGetItem(cacheObject)
 	if err != nil {
 		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", channelChatID), zap.Error(err))

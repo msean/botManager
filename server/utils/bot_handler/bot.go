@@ -150,9 +150,13 @@ func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt s
 	)
 }
 
+func (b *Bot) Send(c tgbotapi.Chattable) (msg tgbotapi.Message, err error) {
+	return b.botApi.Send(c)
+}
+
 // SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
 // 如果 replyMarkup != nil，则用作按钮，否则不带按钮
-func (b *Bot) TgSend(token string, chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg tgbotapi.Message, err error) {
+func (b *Bot) TgSend(chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg tgbotapi.Message, err error) {
 	var caption string
 	var photoID string
 	var videoID string

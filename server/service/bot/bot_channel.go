@@ -2,11 +2,13 @@ package bot
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/service/cache"
 )
 
 type BotChannelService struct{}
@@ -21,13 +23,25 @@ func (botChannelService *BotChannelService) CreateBotChannel(ctx context.Context
 // DeleteBotChannel 删除机器人渠道记录
 // Author [yourname](https://github.com/yourname)
 func (botChannelService *BotChannelService) DeleteBotChannel(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&bot.BotChannel{}, "id = ?", ID).Error
-	return err
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	if err = cache.ReleaseChannelModelChange(uint(id)); err != nil {
+		return
+	}
+	return global.GVA_DB.Delete(&bot.BotChannel{}, "id = ?", ID).Error
 }
 
 // DeleteBotChannelByIds 批量删除机器人渠道记录
 // Author [yourname](https://github.com/yourname)
 func (botChannelService *BotChannelService) DeleteBotChannelByIds(ctx context.Context, IDs []string) (err error) {
+	for _, ID := range IDs {
+		var id int
+		if id, _ = strconv.Atoi(ID); id > 0 {
+			cache.ReleaseChannelModelChange(uint(id))
+		}
+	}
 	err = global.GVA_DB.Delete(&[]bot.BotChannel{}, "id in ?", IDs).Error
 	return err
 }

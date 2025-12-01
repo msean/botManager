@@ -29,11 +29,7 @@ type (
 		BotID   int64                `json:"botID"`
 		Objects []BotBanContentCache `json:"objects"`
 	}
-	BotChannelCache struct {
-		BotID       int64  `json:"botID"`
-		ChannelID   int64  `json:"channelID"`
-		ChannelName string `json:"channelName"`
-	}
+
 	BotCmdCache struct {
 		BotID      int64  `json:"botID"`
 		Cmd        string `json:"cmd"`
@@ -67,13 +63,6 @@ func NewBotBanContentListCache(botID int64) *BotBanContentListCache {
 	}
 }
 
-func NewBotChannelCache(object bot.BotChannel) *BotChannelCache {
-	return &BotChannelCache{
-		BotID:     object.BotID,
-		ChannelID: object.ChannelID,
-	}
-}
-
 func NewBotCmdCache(botID int64, cmd string, _type int) *BotCmdCache {
 	return &BotCmdCache{
 		BotID: botID,
@@ -103,7 +92,6 @@ func NewRechargeCnfListCache(botID int64) *RechargeCnfCacheList {
 
 func (BotChatGroupBanMemCListCache) TableName() string { return bot.BotBanGroupMem{}.TableName() }
 func (BotBanContentListCache) TableName() string       { return bot.BotBanContent{}.TableName() }
-func (BotChannelCache) TableName() string              { return bot.BotChannel{}.TableName() }
 func (BotCmdCache) TableName() string                  { return bot.BotCmdConfig{}.TableName() }
 func (BotCmdCacheList) TableName() string              { return bot.BotCmdConfig{}.TableName() }
 func (RechargeCnfCacheList) TableName() string         { return recharge.RechargeConfig{}.TableName() }
@@ -118,13 +106,6 @@ func (c BotChatGroupBanMemCListCache) Pairs() []KvPkPair {
 func (c BotBanContentListCache) Pairs() []KvPkPair {
 	return []KvPkPair{
 		{"bot_id", c.BotID},
-	}
-}
-
-func (c BotChannelCache) Pairs() []KvPkPair {
-	return []KvPkPair{
-		{"bot_id", c.BotID},
-		{"channel_id", c.ChannelID},
 	}
 }
 
@@ -151,14 +132,12 @@ func (c RechargeCnfCacheList) Pairs() []KvPkPair {
 
 func (BotChatGroupBanMemCListCache) LoadType() LoadType { return LoadFromDBList }
 func (BotBanContentListCache) LoadType() LoadType       { return LoadFromDBList }
-func (BotChannelCache) LoadType() LoadType              { return LoadFromDBGet }
 func (BotCmdCache) LoadType() LoadType                  { return LoadFromDBGet }
 func (BotCmdCacheList) LoadType() LoadType              { return LoadFromDBList }
 func (RechargeCnfCacheList) LoadType() LoadType         { return LoadFromDBList }
 
 func (c BotChatGroupBanMemCListCache) Release() error { return CacheDelete(c) }
 func (c BotBanContentListCache) Release() error       { return CacheDelete(c) }
-func (c BotChannelCache) Release() error              { return CacheDelete(c) }
 func (c BotCmdCache) Release() error                  { return CacheDelete(c) }
 func (c BotCmdCacheList) Release() error              { return CacheDelete(c) }
 func (c RechargeCnfCacheList) Release() error         { return CacheDelete(c) }
@@ -176,6 +155,16 @@ func ReleaseRechargeCnf(modelID int) (err error) {
 
 	if err = NewRechargeCnfListCache(object.BotID).Release(); err != nil {
 		global.GVA_LOG.Error("ReleaseRechargeCnf", zap.Any("id", modelID), zap.Error(err))
+	}
+	return
+}
+
+func (c RechargeCnfCacheList) WherePublishTimes(publishTimes int) (cnf RechargeCnfObj, has bool) {
+	for _, cnf := range c.Objects {
+		if cnf.PublishTimes == publishTimes {
+			has = true
+			break
+		}
 	}
 	return
 }

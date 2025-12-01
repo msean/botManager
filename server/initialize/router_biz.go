@@ -30,5 +30,6 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		rechargeRouter := router.RouterGroupApp.Recharge
 		rechargeRouter.InitRechargeConfigRouter(privateGroup, publicGroup)
 		rechargeRouter.InitUserRechargeRecordRouter(privateGroup, publicGroup)
+		rechargeRouter.InitUserWalletRouter(privateGroup, publicGroup)
 	}
 }

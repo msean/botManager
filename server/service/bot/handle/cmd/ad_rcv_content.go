@@ -50,7 +50,7 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 		},
 	)
 	// 一次性发送预览 + 按 updateID 绑定按钮
-	if _, err = botHandler.TgSend(token, msg.Chat.ID, medias, buttons); err != nil {
+	if _, err = botHandler.TgSend(msg.Chat.ID, medias, buttons); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Any("medias", medias), zap.Any("buttons", buttons), zap.Error(err))
 	}
 	return

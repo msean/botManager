@@ -96,6 +96,7 @@ func bizModel() error {
 		bot.BotCmdConfig{},
 		recharge.RechargeConfig{},
 		recharge.UserRechargeRecord{},
+		recharge.UserWallet{},
 	)
 	if err != nil {
 		return err

@@ -16,11 +16,12 @@ import (
 )
 
 var (
-	startCmd        = "/start"        // 开始按钮
-	AdPublishCmd    = "/publishAd"    // 广告发布
-	AdCancelCmd     = "/AdCancel"     // 取消广告发布
-	AdRcvContentCmd = "/AdRcvContent" // 收到广告内容
-	AdConfirmCmd    = "/AdConfirm"    // 确认发布
+	startCmd          = "/start"        // 开始按钮
+	AdPublishCmd      = "/publishAd"    // 广告发布
+	AdCancelCmd       = "/AdCancel"     // 取消广告发布
+	AdRcvContentCmd   = "/AdRcvContent" // 收到广告内容
+	AdConfirmCmd      = "/AdConfirm"    // 确认发布
+	NoticeRechargeCmd = "/NoticeRecharge"
 )
 
 var (
