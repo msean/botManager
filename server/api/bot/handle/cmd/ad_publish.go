@@ -47,7 +47,7 @@ func PublishAdCheckHandle(update tgbotapi.Update, token string, botID int64) (ca
 			global.GVA_LOG.Error("PublishAdHandle NewBot", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Error(err))
 			return
 		}
-		botApi.SendTextMessage(update.Message.Chat.ID, token, "当前有未支付订单，若想重新下单，请先取消订单")
+		botApi.SendTextMessage(update.Message.Chat.ID, "当前有未支付订单，若想重新下单，请先取消订单")
 		return
 	}
 	return !has

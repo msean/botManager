@@ -1,7 +1,6 @@
 package bot_handler
 
 import (
-	"fmt"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -96,13 +95,13 @@ func (b *Bot) DeleteMsg(chatID int64, msgID int) (err error) {
 	return
 }
 
-func (b *Bot) SendTextMessage(chatID int64, token string, text string) (err error) {
+func (b *Bot) SendTextMessage(chatID int64, text string) (err error) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	_, err = b.botApi.Send(msg)
 	return
 }
 
-func (b *Bot) SendMarkDownMessage(chatID int64, token string, text string) (err error) {
+func (b *Bot) SendMarkDownMessage(chatID int64, text string) (err error) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "MarkdownV2"
 	_, err = b.botApi.Send(msg)
@@ -127,27 +126,6 @@ func EscapeMarkdownV2(text string) string {
 		text = strings.ReplaceAll(text, ch, "\\"+ch)
 	}
 	return text
-}
-
-// FormatRechargeMessage 生成安全的充值提示 MarkdownV2 消息
-func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {
-	return fmt.Sprintf(
-		"订单号：%d\n"+
-			"转账金额：`%s` USDT （点击即可复制）\n"+
-			"转账地址：`%s` （点击即可复制）\n"+
-			"充值时间：%s\n\n"+
-			"⚠️注意：\n"+
-			"▫️注意小数点 %s 转错金额不能到账\n"+
-			"▫️请在%d分钟完成付款，转错金额不能到账。\n\n"+
-			"转账%d分钟后没到账及时联系",
-		orderID,
-		EscapeMarkdownV2CodeBlock(amount),
-		EscapeMarkdownV2CodeBlock(paymentAddr),
-		createdAt,
-		EscapeMarkdownV2(amount),
-		leftPaidMinutes,
-		leftPaidMinutes,
-	)
 }
 
 func (b *Bot) Send(c tgbotapi.Chattable) (msg tgbotapi.Message, err error) {

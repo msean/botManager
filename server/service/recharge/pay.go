@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -20,42 +22,86 @@ import (
 
 type (
 	Pay struct {
-		botID        int64 // 机器人ID
-		publishTimes int   // 发布次数
+		botID int64 // 机器人ID
 	}
 )
 
-func NewPay(botID int64, publishTimes int) *Pay {
-	return &Pay{botID: botID, publishTimes: publishTimes}
+func NewPay(botID int64) *Pay {
+	return &Pay{botID: botID}
 }
 
-func (pay *Pay) RandomPrice() (float64, error) {
-	rechargeCnfList := cache.NewRechargeCnfListCache(pay.botID)
-	if _, err := cache.CacheGetItem(rechargeCnfList); err != nil {
-		return 0, err
+func (pay *Pay) RandomPrice(base float64) float64 {
+	baseStr := fmt.Sprintf("%.3f", base)
+	if !strings.HasSuffix(baseStr, ".000") {
+		return base
+	}
+	rand2 := rand.Intn(100)
+	randomDecimal := float64(rand2) / 1000.0
+	newPrice := base + randomDecimal
+	return utils.FloatReserve(newPrice, 3)
+}
+
+func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int64, amount float64) {
+
+	price := pay.RandomPrice(amount)
+
+	paymentAddr, err := pay.GetPaymentAddr()
+	if err != nil {
+		global.GVA_LOG.Error("GetPaymentAddress failed", zap.Error(err))
+		return
 	}
 
-	var base float64
-	found := false
-
-	for _, object := range rechargeCnfList.Objects {
-		if object.PublishTimes == pay.publishTimes {
-			base = object.Price
-			found = true
-			break
-		}
+	record := recharge.UserRechargeRecord{
+		BotID:       pay.botID,
+		UserID:      userID,
+		UpdateID:    int64(updateID),
+		ChatID:      chatID,
+		Price:       price,
+		Status:      1, // 创建
+		PaymentAddr: paymentAddr,
 	}
 
-	if !found {
-		return 0, fmt.Errorf("no config found for publishTimes=%d", pay.publishTimes)
+	if err := global.GVA_DB.Create(&record).Error; err != nil {
+		global.GVA_LOG.Error("create recharge record failed", zap.Error(err))
+		return
 	}
 
-	second := rand.Intn(10)
-	third := rand.Intn(10)
+	createdAt := record.CreatedAt.Format("2006-01-02 15:04:05")
+	// 给 Telegram 的消息内容
+	msg := FormatRechargeMessage(
+		record.ID,
+		fmt.Sprintf("%.3f", record.Price),
+		record.PaymentAddr,
+		createdAt,
+		constant.OrderLeftPaid,
+	)
 
-	randomDecimal := float64(second*10+third) / 1000.0
+	// 发送给 Telegram
+	msgConfig := tgbotapi.NewMessage(chatID, msg)
+	msgConfig.ParseMode = "MarkdownV2"
 
-	return utils.FloatReserve(float64(base+randomDecimal), 3), nil
+	botApi, _ := bot_handler.NewBot(token)
+	botApi.SendMarkDownMessage(chatID, token, msg)
+}
+
+func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {
+	return fmt.Sprintf(
+		"订单号：%d\n"+
+			"转账金额：`%s` USDT （点击即可复制）\n"+
+			"转账地址：`%s` （点击即可复制）\n"+
+			"充值时间：%s\n\n"+
+			"⚠️注意：\n"+
+			"▫️注意小数点 %s 转错金额不能到账\n"+
+			"▫️请在%d分钟完成付款，转错金额不能到账。\n\n"+
+			"转账%d分钟后没到账及时联系",
+		orderID,
+		bot_handler.EscapeMarkdownV2CodeBlock(amount),
+		bot_handler.EscapeMarkdownV2CodeBlock(paymentAddr),
+		createdAt,
+		bot_handler.EscapeMarkdownV2(amount),
+		leftPaidMinutes,
+		leftPaidMinutes,
+	)
 }
 
 func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {

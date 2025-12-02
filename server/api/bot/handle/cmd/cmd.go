@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -22,10 +23,12 @@ var (
 	AdRcvContentCmd   = "/AdRcvContent" // 收到广告内容
 	AdConfirmCmd      = "/AdConfirm"    // 确认发布
 	NoticeRechargeCmd = "/NoticeRecharge"
+	RechargeCmd       = "/Recharge"
 )
 
 var (
-	waitAdContentState = "waiting_publish_content" // 用户状态
+	waitAdContentState = "waiting_publish_content" // 等待用户输入广告
+	waitRechargeState  = "waiting_recharge"        // 等待用户输入充值金额
 )
 
 var (
@@ -64,8 +67,8 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	if update.CallbackQuery != nil {
 		if err = HandleCallback(update.CallbackQuery, token, botID); err != nil {
 			global.GVA_LOG.Error("Handle HandleCallback", zap.Int64("botID", botID), zap.Error(err))
-			return
 		}
+		return
 	}
 
 	cmds := cache.NewBotCmdCacheList(botID)
@@ -154,6 +157,54 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd s
 		PublishAdHandle(update, token, botID)
 	case AdRcvContentCmd: // 用户输入广告内容
 		ReceiveAdContentHandle(update, token, botID)
+	case RechargeCmd:
+		ctx := context.Background()
+		key := cache.RechargeTryCountKey(botID, update.Message.From.ID)
+		// 当前次数
+		tryCount, _ := global.GVA_REDIS.Get(ctx, key).Int()
+
+		if tryCount >= 2 {
+			// 清理状态
+			global.GVA_REDIS.Del(ctx,
+				cache.AdWaitCacheKey(botID, update.Message.From.ID),
+				key,
+			)
+
+			reply := tgbotapi.NewMessage(
+				update.Message.Chat.ID,
+				"❌ 输入错误次数过多，请重新点击充值按钮",
+			)
+			bot, _ := tgbotapi.NewBotAPI(token)
+			bot.Send(reply)
+			return
+		}
+
+		text := strings.TrimSpace(update.Message.Text)
+
+		amount, err := strconv.ParseFloat(text, 64)
+		if err != nil || amount <= 0 {
+
+			// 次数 +1
+			global.GVA_REDIS.Incr(ctx, key)
+
+			left := 2 - (tryCount + 1)
+
+			reply := tgbotapi.NewMessage(
+				update.Message.Chat.ID,
+				fmt.Sprintf("❌ 金额无效，你还有 %d 次输入机会", left),
+			)
+
+			bot, _ := tgbotapi.NewBotAPI(token)
+			bot.Send(reply)
+			return
+		}
+
+		// ✅ 输入正确 -> 清理状态
+		global.GVA_REDIS.Del(ctx,
+			cache.AdWaitCacheKey(botID, update.Message.From.ID),
+			key,
+		)
+		Recharge(update.Message.Chat.ID, update.Message.From.ID, update.UpdateID, token, botID, update.Message.MessageID, amount)
 	default:
 	}
 }
@@ -227,6 +278,8 @@ func WaitCmd(update tgbotapi.Update, botID int64) string {
 	switch state {
 	case waitAdContentState:
 		return AdRcvContentCmd
+	case waitRechargeState:
+		return RechargeCmd
 	}
 	return ""
 }
@@ -246,6 +299,9 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 	} else {
 		cmd = parts[0]
 		updateID, _ = strconv.Atoi(parts[1])
+	}
+	if strings.HasPrefix(cmd, "recharge") {
+		cmd = RechargeCmd
 	}
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("updateID", updateID), zap.Any("cmd", cmd))
@@ -267,6 +323,24 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 			return
 		}
 		SendCfgMessage(chatID, token, *cmdCfg, 2)
+	case RechargeCmd:
+		parts := strings.Split(data, "_")
+		if len(parts) == 1 {
+			return
+		}
+		_amount := parts[1]
+
+		var amount float64
+		if amount, err = strconv.ParseFloat(_amount, 64); err != nil {
+			global.GVA_LOG.Error(
+				"amount parse failed",
+				zap.String("data", data),
+				zap.Error(err),
+			)
+			return
+		}
+
+		Recharge(chatID, userID, updateID, token, botID, cb.Message.MessageID, amount)
 	}
 
 	return nil

@@ -20,7 +20,6 @@ var (
 	banRecordService      = service.ServiceGroupApp.BotServiceGroup.BanRecordService
 	botChatGroupService   = service.ServiceGroupApp.BotServiceGroup.BotChatGroupService
 	botBanGroupMemService = service.ServiceGroupApp.BotServiceGroup.BotBanGroupMemService
-	botMsgHandlerSvc      = service.ServiceGroupApp.BotServiceGroup.BotMsgHandlerSvc
 	taskService           = service.ServiceGroupApp.BotServiceGroup.BotTaskService
 	botChannelService     = service.ServiceGroupApp.BotServiceGroup.BotChannelService
 	botCmdConfigService   = service.ServiceGroupApp.BotServiceGroup.BotCmdConfigService

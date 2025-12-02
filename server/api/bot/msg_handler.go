@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/msean/botmanager/server/api/bot/handle"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/common/response"
 	"go.uber.org/zap"
@@ -38,6 +39,6 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 				global.GVA_LOG.Error("telegram webhook panic", zap.Any("recover", r))
 			}
 		}()
-		botMsgHandlerSvc.Handle(c, botID, body)
+		handle.NewBotHandler().Handle(c, botID, body)
 	}()
 }

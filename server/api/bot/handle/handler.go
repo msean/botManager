@@ -5,15 +5,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/msean/botmanager/server/api/bot/handle/cmd"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
-	"github.com/msean/botmanager/server/service/bot/handle/cmd"
 	"go.uber.org/zap"
 )
 
-type BotMsgHandlerSvc struct{}
+type BotHandler struct{}
+
+func NewBotHandler() *BotHandler {
+	return &BotHandler{}
+}
 
 func getUpdateText(u tgbotapi.Update) string {
 	if u.Message != nil {
@@ -25,7 +29,7 @@ func getUpdateText(u tgbotapi.Update) string {
 	return ""
 }
 
-func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err error) {
+func (handler *BotHandler) Handle(c *gin.Context, botID int, body []byte) (err error) {
 	var tgMsg tgbotapi.Update
 	if err = json.Unmarshal(body, &tgMsg); err != nil {
 		global.GVA_LOG.Error("invalid telegram tgMsg", zap.Error(err))
@@ -66,11 +70,11 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 		if tgMsg.ChannelPost != nil {
 			global.GVA_LOG.Debug("BotMsgHandlerSvc  ChannelPost",
 				zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
-			svc.HandleChannel(botModel, tgMsg)
+			handler.HandleChannel(botModel, tgMsg)
 		} else {
 			global.GVA_LOG.Debug("BotMsgHandlerSvc ChatGroup",
 				zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
-			svc.HandelChatGroup(botModel, tgMsg)
+			handler.HandelChatGroup(botModel, tgMsg)
 		}
 	}
 
@@ -78,12 +82,12 @@ func (svc *BotMsgHandlerSvc) Handle(c *gin.Context, botID int, body []byte) (err
 }
 
 // HandelChatGroup 处理群频道
-func (svc *BotMsgHandlerSvc) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
+func (handler *BotHandler) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 	SyncChannel(botModel, tgMsg)
 }
 
 // HandelChatGroup 处理群聊消息
-func (svc *BotMsgHandlerSvc) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
+func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 	SyncChatGroup(botModel, tgMsg)
 
 	// 只要消息是转发的都需要禁止
