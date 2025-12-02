@@ -41,11 +41,12 @@ func (pay *Pay) RandomPrice(base float64) float64 {
 	return utils.FloatReserve(newPrice, 3)
 }
 
-func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int64, amount float64) {
+func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int64, amount float64) (err error) {
 
 	price := pay.RandomPrice(amount)
 
-	paymentAddr, err := pay.GetPaymentAddr()
+	var paymentAddr string
+	paymentAddr, err = pay.GetPaymentAddr()
 	if err != nil {
 		global.GVA_LOG.Error("GetPaymentAddress failed", zap.Error(err))
 		return
@@ -61,7 +62,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int6
 		PaymentAddr: paymentAddr,
 	}
 
-	if err := global.GVA_DB.Create(&record).Error; err != nil {
+	if err = global.GVA_DB.Create(&record).Error; err != nil {
 		global.GVA_LOG.Error("create recharge record failed", zap.Error(err))
 		return
 	}
@@ -81,7 +82,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int6
 	msgConfig.ParseMode = "MarkdownV2"
 
 	botApi, _ := bot_handler.NewBot(token)
-	botApi.SendMarkDownMessage(chatID, msg)
+	return botApi.SendMarkDownMessage(chatID, msg)
 }
 
 func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {

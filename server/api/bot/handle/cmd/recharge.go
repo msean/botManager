@@ -7,9 +7,10 @@ import (
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/service/recharge"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	"go.uber.org/zap"
 )
 
-func Recharge(chatID int64, userID int64, updateID int, token string, botID int64, msgID int, amount float64) {
+func Recharge(chatID int64, userID int64, updateID int, token string, botID int64, msgID int, amount float64) (err error) {
 	// 自定义
 	if amount == 0 {
 		// 设置当前用户状态
@@ -20,6 +21,9 @@ func Recharge(chatID int64, userID int64, updateID int, token string, botID int6
 	} else {
 		// 创建订单
 		pay := recharge.NewPay(botID)
-		pay.Recharge(token, userID, chatID, int64(updateID), amount)
+		if err = pay.Recharge(token, userID, chatID, int64(updateID), amount); err != nil {
+			global.GVA_LOG.Error("Recharge", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Error(err))
+		}
 	}
+	return
 }
