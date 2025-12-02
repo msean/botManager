@@ -170,9 +170,9 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd s
 	case AdPublishCmd: // 点击发布广告
 		PublishAdHandle(update, token, botID)
 	case BalanceShowCmd:
-		ReceiveAdContentHandle(update, token, botID)
-	case AdRcvContentCmd: // 用户输入广告内容
 		BalanceShowHandle(update, token, botID)
+	case AdRcvContentCmd: // 用户输入广告内容
+		ReceiveAdContentHandle(update, token, botID)
 	case RechargeChoiceCmd:
 		RechargeChoiceHandler(update, token, botID)
 	default:
