@@ -32,7 +32,7 @@ func Recharge(chatID int64, userID int64, token string, botID int64, msgID int, 
 	return
 }
 
-func RechargeHandler(update tgbotapi.Update, token string, botID int64) (err error) {
+func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (err error) {
 	ctx := context.Background()
 	key := cache.RechargeTryCountKey(botID, update.Message.From.ID)
 	// 当前次数
@@ -81,4 +81,32 @@ func RechargeHandler(update tgbotapi.Update, token string, botID int64) (err err
 	)
 	Recharge(update.Message.Chat.ID, update.Message.From.ID, token, botID, update.Message.MessageID, amount)
 	return
+}
+
+func RechargeInputCallbackHandler(update tgbotapi.Update, token string, botID int64) (err error) {
+	data := update.CallbackQuery.Data
+	parts := strings.Split(data, "_")
+	if len(parts) == 1 {
+		return
+	}
+	_amount := parts[1]
+	chatID := getChatID(update)
+	userID := getChatUserID(update)
+	msgID := update.CallbackQuery.Message.MessageID
+
+	global.GVA_LOG.Debug("BotMsgHandlerSvc RechargeCallbackHandler", zap.Any("msgID", msgID), zap.Any("data", data))
+	var amount float64
+	if amount, err = strconv.ParseFloat(_amount, 64); err != nil {
+		global.GVA_LOG.Error(
+			"amount parse failed",
+			zap.String("data", data),
+			zap.Error(err),
+		)
+		return
+	}
+
+	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery amount", zap.Any("amount", amount), zap.Any("msgID", msgID), zap.Any("data", data))
+	Recharge(chatID, userID, token, botID, msgID, amount)
+	botApi, _ := bot_handler.NewBot(token)
+	return botApi.DeleteOriginMessage(chatID, msgID)
 }

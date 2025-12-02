@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"strings"
 	"time"
 
@@ -22,7 +21,7 @@ var (
 	AdRcvContentCmd   = "/adPublish" // 收到广告内容
 	AdConfirmCmd      = "/adConfirm" // 确认发布
 	NoticeRechargeCmd = "/noticeRecharge"
-	RechargeCmd       = "/recharge"
+	RechargeChoiceCmd = "/rechargeChoice"
 	BalanceShowCmd    = "/balanceShow"
 )
 
@@ -80,7 +79,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	}
 
 	if update.CallbackQuery != nil {
-		if err = HandleCallback(update.CallbackQuery, token, botID); err != nil {
+		if err = HandleCallback(update, token, botID); err != nil {
 			global.GVA_LOG.Error("Handle HandleCallback", zap.Int64("botID", botID), zap.Error(err))
 		}
 		return
@@ -174,8 +173,8 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd s
 		ReceiveAdContentHandle(update, token, botID)
 	case AdRcvContentCmd: // 用户输入广告内容
 		BalanceShowHandle(update, token, botID)
-	case RechargeCmd:
-		RechargeHandler(update, token, botID)
+	case RechargeChoiceCmd:
+		RechargeChoiceHandler(update, token, botID)
 	default:
 	}
 }
@@ -250,12 +249,13 @@ func WaitCmd(update tgbotapi.Update, botID int64) string {
 	case waitAdContentState:
 		return AdRcvContentCmd
 	case waitRechargeState:
-		return RechargeCmd
+		return RechargeChoiceCmd
 	}
 	return ""
 }
 
-func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err error) {
+func HandleCallback(update tgbotapi.Update, token string, botID int64) (err error) {
+	cb := update.CallbackQuery
 	chatID := cb.Message.Chat.ID
 	userID := cb.From.ID
 	data := cb.Data
@@ -264,16 +264,8 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("data", cb.Data))
 
 	cmd := cb.Data
-	// var updateID int
-	// parts := strings.Split(data, ":")
-	// if len(parts) == 1 {
-	// 	cmd = parts[0]
-	// } else {
-	// 	cmd = parts[0]
-	// 	updateID, _ = strconv.Atoi(parts[1])
-	// }
-	if strings.HasPrefix(cmd, RechargeCmd) {
-		cmd = RechargeCmd
+	if strings.HasPrefix(cmd, RechargeChoiceCmd) {
+		cmd = RechargeChoiceCmd
 	}
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("msg", msgID), zap.Any("cmd", cmd), zap.Any("data", data))
@@ -295,28 +287,8 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 			return
 		}
 		SendCfgMessage(chatID, token, *cmdCfg, 2)
-	case RechargeCmd:
-		parts := strings.Split(data, "_")
-		if len(parts) == 1 {
-			return
-		}
-		_amount := parts[1]
-
-		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("msgID", msgID), zap.Any("cmd", cmd), zap.Any("data", data))
-		var amount float64
-		if amount, err = strconv.ParseFloat(_amount, 64); err != nil {
-			global.GVA_LOG.Error(
-				"amount parse failed",
-				zap.String("data", data),
-				zap.Error(err),
-			)
-			return
-		}
-
-		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery amount", zap.Any("amount", amount), zap.Any("msgID", msgID), zap.Any("cmd", cmd), zap.Any("data", data))
-		Recharge(chatID, userID, token, botID, cb.Message.MessageID, amount)
-		botApi, _ := bot_handler.NewBot(token)
-		botApi.DeleteOriginMessage(chatID, cb.Message.MessageID)
+	case RechargeChoiceCmd:
+		RechargeInputCallbackHandler(update, token, botID)
 	}
 
 	return nil
