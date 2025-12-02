@@ -343,6 +343,8 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 
 		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery amount", zap.Any("amount", amount), zap.Any("updateID", updateID), zap.Any("cmd", cmd), zap.Any("data", data))
 		Recharge(chatID, userID, updateID, token, botID, cb.Message.MessageID, amount)
+		botApi, _ := bot_handler.NewBot(token)
+		botApi.DeleteOriginMessage(chatID, cb.Message.MessageID)
 	}
 
 	return nil

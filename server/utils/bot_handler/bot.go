@@ -132,6 +132,12 @@ func (b *Bot) Send(c tgbotapi.Chattable) (msg tgbotapi.Message, err error) {
 	return b.botApi.Send(c)
 }
 
+func (b *Bot) DeleteOriginMessage(chatID int64, msgID int) error {
+	deleteMsg := tgbotapi.NewDeleteMessage(chatID, msgID)
+	_, err := b.Send(deleteMsg)
+	return err
+}
+
 // SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
 // 如果 replyMarkup != nil，则用作按钮，否则不带按钮
 func (b *Bot) TgSend(chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg tgbotapi.Message, err error) {
