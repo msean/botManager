@@ -18,8 +18,8 @@ var (
 	startCmd          = "/start"     // 开始按钮
 	AdPublishCmd      = "/publishAd" // 广告发布
 	AdCancelCmd       = "/adCancel"  // 取消广告发布
-	AdRcvContentCmd   = "/adPublish" // 收到广告内容
 	AdConfirmCmd      = "/adConfirm" // 确认发布
+	AdRcvContentCmd   = "/adPublish" // 收到广告内容
 	NoticeRechargeCmd = "/noticeRecharge"
 	RechargeChoiceCmd = "/rechargeChoice"
 	BalanceShowCmd    = "/balanceShow"

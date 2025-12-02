@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
@@ -30,7 +29,6 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 	}
 
 	ctx := context.Background()
-	updateID := update.UpdateID // 每条内容唯一 ID
 	userID := getChatUserID(update)
 
 	data, _ := json.Marshal(medias)
@@ -43,10 +41,10 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 
 	buttons := tgbotapi.NewInlineKeyboardMarkup(
 		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", fmt.Sprintf("%s_%s_%d", AdConfirmCmd, updateID)),
+			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", AdConfirmCmd),
 		},
 		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", fmt.Sprintf("%s:%d", AdCancelCmd, updateID)),
+			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", AdCancelCmd),
 		},
 	)
 	// 一次性发送预览 + 按 updateID 绑定按钮
