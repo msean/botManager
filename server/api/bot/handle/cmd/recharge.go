@@ -38,7 +38,7 @@ func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (e
 	// 当前次数
 	tryCount, _ := global.GVA_REDIS.Get(ctx, key).Int()
 
-	if tryCount >= 2 {
+	if tryCount >= 1 {
 		// 清理状态
 		global.GVA_REDIS.Del(ctx,
 			cache.AdWaitCacheKey(botID, update.Message.From.ID),
@@ -66,7 +66,7 @@ func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (e
 
 		reply := tgbotapi.NewMessage(
 			update.Message.Chat.ID,
-			fmt.Sprintf("❌ 金额无效，你还有 %d 次输入机会", left),
+			fmt.Sprintf("❌ 金额无效(输入必须为数字，默认单位是USDT)，你还有 %d 次输入机会", left),
 		)
 
 		bot, _ := tgbotapi.NewBotAPI(token)
