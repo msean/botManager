@@ -111,7 +111,7 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
 			return
 		}
-		global.GVA_REDIS.Set(ctx, cache.AdDraftConfirmCacheKey(botID, userID, updateID), val, constant.OrderMatchAgo*time.Minute)
+		global.GVA_REDIS.Set(ctx, cache.AdDraftConfirmCacheKey(botID, userID), val, constant.OrderMatchAgo*time.Minute)
 	}
 
 	var medias []bot_handler.MediaItem

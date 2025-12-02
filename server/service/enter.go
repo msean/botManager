@@ -137,11 +137,11 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 	}
 	trxResp.Data = append(trxResp.Data, utils.TronResponseData{
 		TransactionID:  "mock_tx_1001",
-		BlockTimestamp: 1764662681000, // 2025-11-30 22:40 北京时间
+		BlockTimestamp: 1764663105000, // 2025-11-30 22:40 北京时间
 		From:           "TEST_FROM_ADDRESS",
 		To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
 		Type:           "Transfer",
-		Value:          "20064000",
+		Value:          "20048000",
 		TokenInfo: struct {
 			Symbol   string `json:"symbol"`
 			Address  string `json:"address"`
@@ -183,7 +183,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 				}
 
 				// 假如有缓存的广告 发布吧
-				draftKey := cache.AdDraftConfirmCacheKey(botID, order.UserID, order.UpdateID)
+				draftKey := cache.AdDraftConfirmCacheKey(botID, order.UserID)
 				var publishContent string
 				publishContent, err = global.GVA_REDIS.Get(context.Background(), draftKey).Result()
 				if err != nil || publishContent == "" {
