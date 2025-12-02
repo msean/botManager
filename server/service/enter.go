@@ -141,7 +141,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		From:           "TEST_FROM_ADDRESS",
 		To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
 		Type:           "Transfer",
-		Value:          "20048000",
+		Value:          "10087000",
 		TokenInfo: struct {
 			Symbol   string `json:"symbol"`
 			Address  string `json:"address"`
