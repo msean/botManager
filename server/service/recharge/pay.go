@@ -77,7 +77,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, msgID int, am
 	// 按钮2：取消充值
 	btnCancel := tgbotapi.NewInlineKeyboardButtonData(
 		"❌ 取消充值",
-		fmt.Sprintf("recharge_cancel:%d", record.ID),
+		fmt.Sprintf("/rechargeCancel:%d", record.ID),
 	)
 
 	// 组装键盘
