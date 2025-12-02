@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/recharge"
@@ -68,8 +69,25 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, msgID int, am
 		constant.OrderLeftPaid,
 	)
 
+	btnAmount := tgbotapi.NewInlineKeyboardButtonData(
+		fmt.Sprintf("💰 请支付%.3f USDT", record.Price),
+		fmt.Sprintf("recharge_amount:%d", record.ID),
+	)
+
+	// 按钮2：取消充值
+	btnCancel := tgbotapi.NewInlineKeyboardButtonData(
+		"❌ 取消充值",
+		fmt.Sprintf("recharge_cancel:%d", record.ID),
+	)
+
+	// 组装键盘
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		[]tgbotapi.InlineKeyboardButton{btnAmount},
+		[]tgbotapi.InlineKeyboardButton{btnCancel},
+	)
+
 	botApi, _ := bot_handler.NewBot(token)
-	return botApi.SendMarkDownMessage(chatID, msg)
+	return botApi.SendMarkDownMessage(chatID, msg, keyboard)
 }
 
 func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {

@@ -23,6 +23,7 @@ var (
 	NoticeRechargeCmd = "/noticeRecharge"
 	RechargeChoiceCmd = "/rechargeChoice"
 	BalanceShowCmd    = "/balanceShow"
+	RechargeCancelCmd = "/rechargeCancel"
 )
 
 var (
@@ -150,14 +151,14 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	default:
 		if inCfg {
 			switch cmd {
-			case AdPublishCmd:
-				// if canPublich := PublishAdCheckHandle(update, token, botID); canPublich {
-				SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
-				// }
+			case NoticeRechargeCmd:
+				canRecharge, e := CheckRechargeAndNotify(botID, getChatUserID(update), getChatID(update), token)
+				if canRecharge && e == nil {
+					SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
+				}
 			default:
 				SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
 			}
-
 		}
 	}
 	global.GVA_LOG.Debug("BotMsgHandlerSvc ProcessBindCommand", zap.Any("cmd", cmd))
@@ -272,6 +273,9 @@ func HandleCallback(update tgbotapi.Update, token string, botID int64) (err erro
 	if strings.HasPrefix(cmd, AdCancelCmd) {
 		cmd = AdCancelCmd
 	}
+	if strings.HasPrefix(cmd, RechargeCancelCmd) {
+		cmd = RechargeCancelCmd
+	}
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("msg", msgID), zap.Any("cmd", cmd), zap.Any("data", data))
 
@@ -281,14 +285,19 @@ func HandleCallback(update tgbotapi.Update, token string, botID int64) (err erro
 	case AdCancelCmd:
 		return HandleAdCancel(update, token, botID)
 	case NoticeRechargeCmd:
-		cmdCfg := cache.NewBotCmdCache(botID, cmd, constant.BotReplyCmdType)
-		if _, err = cache.CacheGetItem(cmdCfg); err != nil {
-			global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
-			return
+		canRecharge, e := CheckRechargeAndNotify(botID, getChatUserID(update), getChatID(update), token)
+		if canRecharge && e == nil {
+			cmdCfg := cache.NewBotCmdCache(botID, cmd, constant.BotReplyCmdType)
+			if _, err = cache.CacheGetItem(cmdCfg); err != nil {
+				global.GVA_LOG.Error("botHandle GetBotCmdCache", zap.Int("botID", int(botID)), zap.Error(err))
+				return
+			}
+			SendCfgMessage(chatID, token, *cmdCfg, 2)
 		}
-		SendCfgMessage(chatID, token, *cmdCfg, 2)
 	case RechargeChoiceCmd:
 		RechargeInputCallbackHandler(update, token, botID)
+	case RechargeCancelCmd:
+		RechargeCancelHandler(update, token, botID)
 	}
 
 	return nil

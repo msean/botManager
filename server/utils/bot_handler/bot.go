@@ -101,9 +101,10 @@ func (b *Bot) SendTextMessage(chatID int64, text string) (err error) {
 	return
 }
 
-func (b *Bot) SendMarkDownMessage(chatID int64, text string) (err error) {
+func (b *Bot) SendMarkDownMessage(chatID int64, text string, button any) (err error) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = "MarkdownV2"
+	msg.ReplyMarkup = button
 	_, err = b.botApi.Send(msg)
 	return
 }
