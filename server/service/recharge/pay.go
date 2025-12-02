@@ -66,7 +66,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int6
 		return
 	}
 
-	createdAt := record.CreatedAt.Format("2006-01-02 15:04:05")
+	createdAt := bot_handler.EscapeMarkdownV2(record.CreatedAt.Format("2006-01-02 15:04:05"))
 	// 给 Telegram 的消息内容
 	msg := FormatRechargeMessage(
 		record.ID,
