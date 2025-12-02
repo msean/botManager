@@ -3,10 +3,12 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/bot"
 	"github.com/msean/botmanager/server/service/cache"
@@ -46,6 +48,7 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 
 // 确认发布
 func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64, token string, botID int64, msgID int, publishTimes int) (err error) {
+
 	ctx := context.Background()
 
 	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
@@ -108,12 +111,7 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
 			return
 		}
-	}
-
-	// 余额充足 立马 扣减余额
-	if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, userID, cnf.Price); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Any("price", cnf.Price), zap.Error(err))
-		return
+		global.GVA_REDIS.Set(ctx, cache.AdDraftConfirmCacheKey(botID, userID, updateID), val, constant.OrderMatchAgo*time.Minute)
 	}
 
 	var medias []bot_handler.MediaItem
@@ -122,6 +120,11 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 		return
 	}
 
+	// 余额充足 立马 扣减余额
+	if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, userID, cnf.Price); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Any("price", cnf.Price), zap.Error(err))
+		return
+	}
 	// 发布到所有渠道
 	if err = bot.NewBotHandlerSvc(botID).PublishAd2Channel(*botHandler, chatID, medias); err != nil {
 		global.GVA_LOG.Error("botHandle PublishAd2Channel", zap.Int("botID", int(botID)), zap.Any("val", val), zap.Error(err))

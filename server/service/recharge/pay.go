@@ -1,17 +1,14 @@
 package recharge
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
 	"strings"
 	"time"
 
-	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
-	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils"
@@ -121,150 +118,7 @@ func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {
 	return
 }
 
-func CheckExpiredOrders() {
-	deadline := time.Now().Add(-constant.OrderMatchAgo * time.Minute)
-
-	// 批量更新
-	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
-		Where("status = ?", constant.AdRechargeCreate).
-		Where("created_at <= ?", deadline).
-		Updates(map[string]any{
-			"status":     constant.AdRechargeTimeout,
-			"updated_at": time.Now(),
-		}).Error
-
-	if err != nil {
-		global.GVA_LOG.Error("订单超时更新失败", zap.Error(err))
-	}
-}
-
-func ReconcileAccounts() {
-	db := global.GVA_DB
-
-	bots, err := dao.BotDao.All(db)
-	if err != nil {
-		global.GVA_LOG.Error("获取机器人失败", zap.Error(err))
-		return
-	}
-
-	for _, botModel := range bots {
-		reconcileAccount(botModel)
-	}
-}
-
-func reconcileAccount(botModel bot.Bot) (err error) {
-	botID := botModel.BotID
-	token := botModel.Token
-	// 获取机器人所有的channel
-	var channels []bot.BotChannel
-	if err = global.GVA_DB.Where("bot_id = ?", botID).Find(&channels).Error; err != nil {
-		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int64("botID", botID), zap.Error(err))
-		return
-	}
-
-	var botHandler *bot_handler.Bot
-	if botHandler, err = bot_handler.NewBot(token); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Error(err))
-		return
-	}
-	_ = botHandler
-	// 1. 读取收款地址
-	key := fmt.Sprintf("payment:%d", botID)
-	paymentSysCnf, err := cache.LoadSyscnf(key, false, "")
-	if err != nil || paymentSysCnf.Value == "" {
-		global.GVA_LOG.Error("机器人未设置收款地址", zap.Int64("BotID", botID))
-		return
-	}
-	paymentAddr := paymentSysCnf.Value
-
-	var buttons any
-	var hasPublishCfg bool
-	cmdCfg := cache.NewBotCmdCache(int64(botID), constant.BotReplyCnfPublish2Channel, constant.BotReplyCnfType)
-	if hasPublishCfg, err = cache.CacheGetItem(cmdCfg); err != nil {
-		global.GVA_LOG.Error("handleBot", zap.Int("botID", int(botID)), zap.Error(err))
-		return
-	}
-
-	if hasPublishCfg {
-		buttons = bot_handler.ParseContentFromCfg(*cmdCfg, constant.ButtonTypeInline)
-		global.GVA_LOG.Debug("handleBot", zap.Any("buttons", buttons))
-	}
-
-	trxResp, err := utils.FetchTransactions(paymentAddr, 20)
-	if err != nil || !trxResp.Success {
-		global.GVA_LOG.Error("获取链上交易失败", zap.Error(err))
-		return
-	}
-	// trxResp.Data = append(trxResp.Data, utils.TronResponseData{
-	// 	TransactionID:  "mock_tx_1001",
-	// 	BlockTimestamp: 1764518680000, // 2025-11-30 22:40 北京时间
-	// 	From:           "TEST_FROM_ADDRESS",
-	// 	To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
-	// 	Type:           "Transfer",
-	// 	Value:          "10076000", // 10.085 * 1e6
-	// 	TokenInfo: struct {
-	// 		Symbol   string `json:"symbol"`
-	// 		Address  string `json:"address"`
-	// 		Decimals int    `json:"decimals"`
-	// 		Name     string `json:"name"`
-	// 	}{
-	// 		Symbol:   "USDT",
-	// 		Address:  "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
-	// 		Decimals: 6,
-	// 		Name:     "Tether USD",
-	// 	},
-	// })
-	var orders []recharge.UserRechargeRecord
-	err = global.GVA_DB.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
-	if err != nil {
-		global.GVA_LOG.Error("查询订单失败", zap.Error(err))
-		return
-	}
-
-	for _, order := range orders {
-		global.GVA_LOG.Info("reconcileAccount", zap.Uint("orderID", order.ID), zap.Any("order", order))
-		var medias []bot_handler.MediaItem
-		if err = json.Unmarshal([]byte(order.PublishContent), &medias); err != nil {
-			global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("val", order.PublishContent), zap.Error(err))
-			continue
-		}
-		for _, trx := range trxResp.Data {
-			var match bool
-			// 更新
-			if match = matchTransaction(paymentAddr, order, trx); match {
-				if err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
-					Where("id = ? AND status = 1", order.ID).
-					Updates(map[string]interface{}{
-						"status":     constant.AdRechargePaid,
-						"tx_id":      trx.TransactionID,
-						"updated_at": time.Now(),
-					}).Error; err != nil {
-					global.GVA_LOG.Error("更新订单失败", zap.Error(err))
-				}
-
-				for _, ch := range channels {
-					// global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
-					if _, err = botHandler.TgSend(ch.ChannelID, medias, buttons); err != nil {
-						global.GVA_LOG.Error("HandleAdConfirm TgSend", zap.Int64("channelID", ch.ChannelID), zap.Error(err))
-					}
-				}
-				for i := range medias {
-					if medias[i].Type == "text" {
-						medias[i].Text += "\n\n✅ 发布成功"
-						break
-					}
-				}
-				if _, err = botHandler.TgSend(order.ChatID, medias, nil); err != nil {
-					global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Any("medias", medias), zap.Any("buttons", buttons), zap.Error(err))
-				}
-			}
-		}
-	}
-
-	return
-}
-
-func matchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx utils.TronResponseData) (match bool) {
+func MatchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx utils.TronResponseData) (match bool) {
 	if trx.To != paymentAddr {
 		return
 	}
