@@ -19,7 +19,7 @@ func NewBotHandlerSvc(botID int64) *BotHandlerSvc {
 }
 
 func (svc BotHandlerSvc) PublishAd2Channel(botApi bot_handler.Bot, chatID int64, medias []bot_handler.MediaItem) (err error) {
-	channels := *cache.NewBotChannelListCache(svc.botID)
+	channels := cache.NewBotChannelListCache(svc.botID)
 	if _, err = cache.CacheGetItem(channels); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm CacheGetItem", zap.Int64("botID", svc.botID), zap.Error(err))
 		return
