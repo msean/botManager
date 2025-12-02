@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/msean/botmanager/server/global"
@@ -27,10 +26,6 @@ func NewPay(botID int64) *Pay {
 }
 
 func (pay *Pay) RandomPrice(base float64) float64 {
-	baseStr := fmt.Sprintf("%.3f", base)
-	if !strings.HasSuffix(baseStr, ".000") {
-		return base
-	}
 	rand2 := rand.Intn(100)
 	randomDecimal := float64(rand2) / 1000.0
 	newPrice := base + randomDecimal
