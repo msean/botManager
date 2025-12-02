@@ -22,5 +22,5 @@ func RechargeTryCountKey(botID int64, userID int64) string {
 }
 
 func AdDraftConfirmCacheKey(botID, userID int64) string {
-	return fmt.Sprintf("bot_manager:ad_draft_confirm:%d_%d_%d", botID, userID)
+	return fmt.Sprintf("bot_manager:ad_draft_confirm:%d_%d", botID, userID)
 }
