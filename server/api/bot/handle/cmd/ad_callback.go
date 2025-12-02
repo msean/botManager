@@ -24,10 +24,6 @@ func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err erro
 	ctx := context.Background()
 
 	data := update.CallbackQuery.Data
-	userName := update.CallbackQuery.From.UserName
-	if userName == "" {
-		userName = update.CallbackQuery.From.FirstName + " " + update.CallbackQuery.From.LastName
-	}
 	parts := strings.Split(data, ":")
 	if len(parts) == 1 {
 		return
@@ -54,7 +50,7 @@ func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err erro
 	// 3. 正常取消
 	global.GVA_REDIS.Del(ctx, draftKey)
 
-	del := tgbotapi.NewDeleteMessage(chatID, draftMsgID)
+	del := tgbotapi.NewDeleteMessage(chatID, update.CallbackQuery.Message.MessageID)
 	bot.Send(del)
 
 	bot.Send(tgbotapi.NewMessage(chatID, "❌ 已取消发布。"))
