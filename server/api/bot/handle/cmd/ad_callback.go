@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -125,7 +126,7 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 
 	// 余额不足提示充值
 	if wallet.Balance < cnf.Price {
-		msg := tgbotapi.NewMessage(chatID, "余额不足，请充值")
+		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("你当前的余额为%.3f, 余额不足，请充值", wallet.Balance))
 		btn := tgbotapi.NewInlineKeyboardButtonData("⚡ 立即充值", NoticeRechargeCmd)
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(btn),
