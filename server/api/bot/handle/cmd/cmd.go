@@ -257,7 +257,6 @@ func WaitCmd(update tgbotapi.Update, botID int64) string {
 func HandleCallback(update tgbotapi.Update, token string, botID int64) (err error) {
 	cb := update.CallbackQuery
 	chatID := cb.Message.Chat.ID
-	userID := cb.From.ID
 	data := cb.Data
 	msgID := cb.Message.MessageID
 
@@ -280,7 +279,7 @@ func HandleCallback(update tgbotapi.Update, token string, botID int64) (err erro
 	case AdConfirmCmd:
 		return HandleAdConfirmCallback(update, token, botID)
 	case AdCancelCmd:
-		return HandleAdCancel(chatID, userID, token, botID, cb.Message.MessageID)
+		return HandleAdCancel(update, token, botID)
 	case NoticeRechargeCmd:
 		cmdCfg := cache.NewBotCmdCache(botID, cmd, constant.BotReplyCmdType)
 		if _, err = cache.CacheGetItem(cmdCfg); err != nil {
