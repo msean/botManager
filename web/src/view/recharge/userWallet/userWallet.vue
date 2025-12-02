@@ -31,8 +31,8 @@
         <el-form-item>
           <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
           <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button link type="primary" icon="arrow-down" @click="showAllQuery=true" v-if="!showAllQuery">展开</el-button>
-          <el-button link type="primary" icon="arrow-up" @click="showAllQuery=false" v-else>收起</el-button>
+          <!-- <el-button link type="primary" icon="arrow-down" @click="showAllQuery=true" v-if="!showAllQuery">展开</el-button> -->
+          <!-- <el-button link type="primary" icon="arrow-up" @click="showAllQuery=false" v-else>收起</el-button> -->
         </el-form-item>
       </el-form>
     </div>
@@ -52,8 +52,8 @@
         >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column sortable align="left" label="日期" prop="CreatedAt" width="180">
-            <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
+        <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
+            <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
         
             <el-table-column align="left" label="用户ID" prop="userID" width="120" />
@@ -68,7 +68,7 @@
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
             <el-button  type="primary" link icon="edit" class="table-button" @click="updateUserWalletFunc(scope.row)">编辑</el-button>
-            <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
+            <!-- <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button> -->
             </template>
         </el-table-column>
         </el-table>
