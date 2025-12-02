@@ -304,7 +304,7 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 		cmd = RechargeCmd
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("updateID", updateID), zap.Any("cmd", cmd))
+	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("updateID", updateID), zap.Any("cmd", cmd), zap.Any("data", data))
 
 	switch cmd {
 	case AdConfirmCmd:
@@ -330,6 +330,7 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 		}
 		_amount := parts[1]
 
+		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("updateID", updateID), zap.Any("cmd", cmd), zap.Any("data", data))
 		var amount float64
 		if amount, err = strconv.ParseFloat(_amount, 64); err != nil {
 			global.GVA_LOG.Error(
@@ -340,6 +341,7 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 			return
 		}
 
+		global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery amount", zap.Any("amount", amount), zap.Any("updateID", updateID), zap.Any("cmd", cmd), zap.Any("data", data))
 		Recharge(chatID, userID, updateID, token, botID, cb.Message.MessageID, amount)
 	}
 
