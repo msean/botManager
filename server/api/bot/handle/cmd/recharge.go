@@ -88,11 +88,6 @@ func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (e
 }
 func RechargeCancelHandler(update tgbotapi.Update, token string, botID int64) (err error) {
 	data := update.CallbackQuery.Data
-
-	if !strings.HasPrefix(data, "recharge_cancel:") {
-		return nil
-	}
-
 	parts := strings.Split(data, ":")
 	if len(parts) != 2 {
 		return
