@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -16,12 +18,26 @@ import (
 	"go.uber.org/zap"
 )
 
-func HandleAdCancel(chatID int64, userID int64, token string, botID int64, msgID int) (err error) {
+func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err error) {
+	userID := getChatUserID(update)
+	chatID := getChatID(update)
 	ctx := context.Background()
+
+	data := update.CallbackQuery.Data
+	userName := update.CallbackQuery.From.UserName
+	if userName == "" {
+		userName = update.CallbackQuery.From.FirstName + " " + update.CallbackQuery.From.LastName
+	}
+	parts := strings.Split(data, ":")
+	if len(parts) == 1 {
+		return
+	}
+	draftMsgIDStr := parts[1]
+	draftMsgID, _ := strconv.Atoi(draftMsgIDStr)
+	draftKey := cache.AdDraftCacheKey(botID, userID, draftMsgID)
 	bot, _ := tgbotapi.NewBotAPI(token)
 
 	// // 2. 判断草稿是否存在
-	draftKey := cache.AdDraftCacheKey(botID, userID, msgID)
 	// val, _ := global.GVA_REDIS.Get(ctx, draftKey).Result()
 
 	// if val == "" {
@@ -38,7 +54,7 @@ func HandleAdCancel(chatID int64, userID int64, token string, botID int64, msgID
 	// 3. 正常取消
 	global.GVA_REDIS.Del(ctx, draftKey)
 
-	del := tgbotapi.NewDeleteMessage(chatID, msgID)
+	del := tgbotapi.NewDeleteMessage(chatID, draftMsgID)
 	bot.Send(del)
 
 	bot.Send(tgbotapi.NewMessage(chatID, "❌ 已取消发布。"))
@@ -47,51 +63,64 @@ func HandleAdCancel(chatID int64, userID int64, token string, botID int64, msgID
 }
 
 // 确认发布
-func HandleAdConfirm(chatID int64, userID int64, userName string, token string, botID int64, msgID int, publishTimes int) (err error) {
-
+func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) (err error) {
+	publishTimes := 1
+	userID := getChatUserID(update)
+	chatID := getChatID(update)
 	ctx := context.Background()
 
-	draftKey := cache.AdDraftCacheKey(botID, userID, msgID)
+	data := update.CallbackQuery.Data
+	userName := update.CallbackQuery.From.UserName
+	if userName == "" {
+		userName = update.CallbackQuery.From.FirstName + " " + update.CallbackQuery.From.LastName
+	}
+	parts := strings.Split(data, ":")
+	if len(parts) == 1 {
+		return
+	}
+	draftMsgIDStr := parts[1]
+	draftMsgID, _ := strconv.Atoi(draftMsgIDStr)
+	draftKey := cache.AdDraftCacheKey(botID, userID, draftMsgID)
 	var botHandler *bot_handler.Bot
 	if botHandler, err = bot_handler.NewBot(token); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 		return
 	}
 
 	val, err := global.GVA_REDIS.Get(ctx, draftKey).Result()
 	if err != nil || val == "" {
-		if err = botHandler.DeleteMsg(chatID, msgID); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm DeleteMsg", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+		if err = botHandler.DeleteMsg(chatID, draftMsgID); err != nil {
+			global.GVA_LOG.Error("HandleAdConfirm DeleteMsg", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 		}
 		if err = botHandler.SendTextMessage(chatID, "❌ 此发布请求已过期，请重新发送内容。"); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 		}
 		return nil
 	}
 
 	var wallet recharge.UserWallet
 	if wallet, err = dao.RechargeDao.GetUserWallet(global.GVA_DB, botID, userID, userName); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm GetUserWallet", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+		global.GVA_LOG.Error("HandleAdConfirm GetUserWallet", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 		if err = botHandler.SendTextMessage(chatID, "获取余额失败，稍后再试"); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 			return
 		}
 	}
 
 	rechargeCnfList := cache.NewRechargeCnfListCache(botID)
 	if _, err = cache.CacheGetItem(rechargeCnfList); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 		if err = botHandler.SendTextMessage(chatID, "获取价格配置错误，稍后再试"); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 			return
 		}
 		return
 	}
 	cnf, has := rechargeCnfList.WherePublishTimes(publishTimes)
 	if !has {
-		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(msgID)))
+		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(draftMsgID)))
 		if err = botHandler.SendTextMessage(chatID, "后台价格配置有误，稍后再试"); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 			return
 		}
 	}
@@ -108,7 +137,7 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, token string, 
 
 		msg.ReplyMarkup = keyboard
 		if _, err = botHandler.Send(msg); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
+			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 			return
 		}
 		global.GVA_REDIS.Set(ctx, cache.AdDraftConfirmCacheKey(botID, userID), val, constant.OrderMatchAgo*time.Minute)

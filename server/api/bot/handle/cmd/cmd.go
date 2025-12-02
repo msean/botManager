@@ -267,17 +267,18 @@ func HandleCallback(update tgbotapi.Update, token string, botID int64) (err erro
 	if strings.HasPrefix(cmd, RechargeChoiceCmd) {
 		cmd = RechargeChoiceCmd
 	}
+	if strings.HasPrefix(cmd, AdConfirmCmd) {
+		cmd = AdConfirmCmd
+	}
+	if strings.HasPrefix(cmd, AdCancelCmd) {
+		cmd = AdCancelCmd
+	}
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery", zap.Any("msg", msgID), zap.Any("cmd", cmd), zap.Any("data", data))
 
 	switch cmd {
 	case AdConfirmCmd:
-		userName := cb.From.UserName
-		if userName == "" {
-			userName = cb.From.FirstName + " " + cb.From.LastName
-		}
-		return HandleAdConfirm(chatID, userID, userName, token, botID, cb.Message.MessageID, 1)
-
+		return HandleAdConfirmCallback(update, token, botID)
 	case AdCancelCmd:
 		return HandleAdCancel(chatID, userID, token, botID, cb.Message.MessageID)
 	case NoticeRechargeCmd:

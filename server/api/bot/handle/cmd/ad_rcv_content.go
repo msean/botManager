@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
@@ -16,6 +17,7 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 	if msg == nil {
 		return
 	}
+	msgID := msg.MessageID
 
 	medias := ParseIncomingMedia(msg)
 	if len(medias) == 0 {
@@ -34,17 +36,17 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 	data, _ := json.Marshal(medias)
 
 	// 设置 30 分钟过期（自动处理超时）
-	global.GVA_REDIS.Set(ctx, cache.AdDraftCacheKey(botID, userID, update.Message.MessageID), string(data), confirmAdExpire)
+	global.GVA_REDIS.Set(ctx, cache.AdDraftCacheKey(botID, userID, msgID), string(data), confirmAdExpire)
 
 	// 清除等待状态
 	global.GVA_REDIS.Del(ctx, cache.AdWaitCacheKey(botID, userID))
 
 	buttons := tgbotapi.NewInlineKeyboardMarkup(
 		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", AdConfirmCmd),
+			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", AdConfirmCmd+":"+strconv.Itoa(msgID)),
 		},
 		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", AdCancelCmd),
+			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", AdCancelCmd+":"+strconv.Itoa(msgID)),
 		},
 	)
 	// 一次性发送预览 + 按 updateID 绑定按钮
