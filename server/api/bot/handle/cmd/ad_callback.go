@@ -51,7 +51,7 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 
 	ctx := context.Background()
 
-	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
+	draftKey := cache.AdDraftCacheKey(botID, userID, updateID)
 	var botHandler *bot_handler.Bot
 	if botHandler, err = bot_handler.NewBot(token); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))
@@ -130,6 +130,5 @@ func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64
 		global.GVA_LOG.Error("botHandle PublishAd2Channel", zap.Int("botID", int(botID)), zap.Any("val", val), zap.Error(err))
 		return
 	}
-
 	return
 }

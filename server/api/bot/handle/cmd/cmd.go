@@ -137,9 +137,9 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		if inCfg {
 			switch cmd {
 			case AdPublishCmd:
-				if canPublich := PublishAdCheckHandle(update, token, botID); canPublich {
-					SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
-				}
+				// if canPublich := PublishAdCheckHandle(update, token, botID); canPublich {
+				SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
+				// }
 			default:
 				SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
 			}
