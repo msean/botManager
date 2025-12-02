@@ -300,7 +300,7 @@ func HandleCallback(cb *tgbotapi.CallbackQuery, token string, botID int64) (err 
 		cmd = parts[0]
 		updateID, _ = strconv.Atoi(parts[1])
 	}
-	if strings.HasPrefix(cmd, "recharge") {
+	if strings.HasPrefix(cmd, RechargeCmd) {
 		cmd = RechargeCmd
 	}
 
