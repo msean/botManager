@@ -81,7 +81,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int6
 	msgConfig.ParseMode = "MarkdownV2"
 
 	botApi, _ := bot_handler.NewBot(token)
-	botApi.SendMarkDownMessage(chatID, token, msg)
+	botApi.SendMarkDownMessage(chatID, msg)
 }
 
 func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {
