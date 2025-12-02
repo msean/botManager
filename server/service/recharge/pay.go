@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -76,10 +75,6 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int6
 		createdAt,
 		constant.OrderLeftPaid,
 	)
-
-	// 发送给 Telegram
-	msgConfig := tgbotapi.NewMessage(chatID, msg)
-	msgConfig.ParseMode = "MarkdownV2"
 
 	botApi, _ := bot_handler.NewBot(token)
 	return botApi.SendMarkDownMessage(chatID, msg)
