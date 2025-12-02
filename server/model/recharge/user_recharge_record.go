@@ -16,7 +16,7 @@ type UserRechargeRecord struct {
 	PublishInterval int64     `json:"publishInterval" form:"publishInterval" gorm:"comment:发布间隔;column:publish_interval;"`        //发布间隔
 	PublishContent  string    `json:"publishContent" form:"publishContent" gorm:"comment:发布内容;column:publish_content;type:text;"` //发布内容
 	Status          int64     `json:"status" form:"status" gorm:"comment:状态(1、创建 2、支付成功 3、支付超时失败);column:status;index"`           //状态
-	UpdateID        int64     `json:"updateID" form:"updateID" gorm:"column:update_id;"`                                          //状态
+	MsgID           int       `json:"msgID" form:"msgID" gorm:"column:msg_id;"`                                                   //状态
 	ChannelID       int64     `json:"channelID" form:"channelID" gorm:"column:channel_id"`                                        //状态
 	BotName         string    `json:"botName" form:"botName" gorm:"-;"`
 	UserName        string    `json:"userName" form:"userName" gorm:"column:user_name;index"`

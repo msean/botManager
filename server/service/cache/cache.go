@@ -9,8 +9,8 @@ func AdWaitCacheKey(botID, userID int64) string {
 }
 
 // 用户输入的广告内容
-func AdDraftCacheKey(botID, userID, updateID int64) string {
-	return fmt.Sprintf("bot_manager:ad_draft:%d_%d_%d", botID, userID, updateID)
+func AdDraftCacheKey(botID, userID int64, msgID int) string {
+	return fmt.Sprintf("bot_manager:ad_draft:%d_%d_%d", botID, userID, msgID)
 }
 
 // func AdDraftCacheKey(botID, userID int64) string {

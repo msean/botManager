@@ -16,12 +16,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botID int64, msgID int) (err error) {
+func HandleAdCancel(chatID int64, userID int64, token string, botID int64, msgID int) (err error) {
 	ctx := context.Background()
 	bot, _ := tgbotapi.NewBotAPI(token)
 
 	// // 2. 判断草稿是否存在
-	draftKey := cache.AdDraftCacheKey(botID, userID, int64(updateID))
+	draftKey := cache.AdDraftCacheKey(botID, userID, msgID)
 	// val, _ := global.GVA_REDIS.Get(ctx, draftKey).Result()
 
 	// if val == "" {
@@ -30,10 +30,10 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 	// 		"⏱️ 发布请求已超时，请重新提交内容。"))
 	// 	return nil
 	// }
-	if err = dao.RechargeDao.CancelOrder(global.GVA_DB, botID, userID, int64(updateID)); err != nil {
-		global.GVA_LOG.Error("HandleAdCancel CancelOrder", zap.Error(err))
-		return
-	}
+	// if err = dao.RechargeDao.CancelOrder(global.GVA_DB, botID, userID, msgID); err != nil {
+	// 	global.GVA_LOG.Error("HandleAdCancel CancelOrder", zap.Error(err))
+	// 	return
+	// }
 
 	// 3. 正常取消
 	global.GVA_REDIS.Del(ctx, draftKey)
@@ -47,11 +47,11 @@ func HandleAdCancel(chatID int64, userID int64, updateID int, token string, botI
 }
 
 // 确认发布
-func HandleAdConfirm(chatID int64, userID int64, userName string, updateID int64, token string, botID int64, msgID int, publishTimes int) (err error) {
+func HandleAdConfirm(chatID int64, userID int64, userName string, token string, botID int64, msgID int, publishTimes int) (err error) {
 
 	ctx := context.Background()
 
-	draftKey := cache.AdDraftCacheKey(botID, userID, updateID)
+	draftKey := cache.AdDraftCacheKey(botID, userID, msgID)
 	var botHandler *bot_handler.Bot
 	if botHandler, err = bot_handler.NewBot(token); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(msgID)), zap.Error(err))

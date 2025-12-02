@@ -187,7 +187,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 				var publishContent string
 				publishContent, err = global.GVA_REDIS.Get(context.Background(), draftKey).Result()
 				if err != nil || publishContent == "" {
-					global.GVA_LOG.Error("reconcileAccount DeleteMsg", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Int64("updateID", order.UpdateID), zap.Error(err))
+					global.GVA_LOG.Error("reconcileAccount DeleteMsg", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Int("msgID", order.MsgID), zap.Error(err))
 					continue
 				} else {
 					var medias []bot_handler.MediaItem

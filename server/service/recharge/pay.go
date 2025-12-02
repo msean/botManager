@@ -37,7 +37,7 @@ func (pay *Pay) RandomPrice(base float64) float64 {
 	return utils.FloatReserve(newPrice, 3)
 }
 
-func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int64, amount float64) (err error) {
+func (pay *Pay) Recharge(token string, userID int64, chatID int64, msgID int, amount float64) (err error) {
 
 	price := pay.RandomPrice(amount)
 
@@ -51,7 +51,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, updateID int6
 	record := recharge.UserRechargeRecord{
 		BotID:       pay.botID,
 		UserID:      userID,
-		UpdateID:    int64(updateID),
+		MsgID:       msgID,
 		ChatID:      chatID,
 		Price:       price,
 		Status:      1, // 创建

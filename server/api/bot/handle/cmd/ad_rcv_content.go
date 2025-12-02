@@ -36,14 +36,14 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 	data, _ := json.Marshal(medias)
 
 	// 设置 30 分钟过期（自动处理超时）
-	global.GVA_REDIS.Set(ctx, cache.AdDraftCacheKey(botID, userID, int64(update.UpdateID)), string(data), confirmAdExpire)
+	global.GVA_REDIS.Set(ctx, cache.AdDraftCacheKey(botID, userID, update.Message.MessageID), string(data), confirmAdExpire)
 
 	// 清除等待状态
 	global.GVA_REDIS.Del(ctx, cache.AdWaitCacheKey(botID, userID))
 
 	buttons := tgbotapi.NewInlineKeyboardMarkup(
 		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", fmt.Sprintf("%s:%d", AdConfirmCmd, updateID)),
+			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", fmt.Sprintf("%s_%s_%d", AdConfirmCmd, updateID)),
 		},
 		[]tgbotapi.InlineKeyboardButton{
 			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", fmt.Sprintf("%s:%d", AdCancelCmd, updateID)),
