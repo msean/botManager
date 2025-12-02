@@ -89,11 +89,16 @@ func RechargeInputCallbackHandler(update tgbotapi.Update, token string, botID in
 	if len(parts) == 1 {
 		return
 	}
+
 	_amount := parts[1]
 	chatID := getChatID(update)
 	userID := getChatUserID(update)
 	msgID := update.CallbackQuery.Message.MessageID
 
+	if data == "/rechargeChoice_close" {
+		botApi, _ := bot_handler.NewBot(token)
+		return botApi.DeleteOriginMessage(chatID, msgID)
+	}
 	global.GVA_LOG.Debug("BotMsgHandlerSvc RechargeCallbackHandler", zap.Any("msgID", msgID), zap.Any("data", data))
 	var amount float64
 	if amount, err = strconv.ParseFloat(_amount, 64); err != nil {
