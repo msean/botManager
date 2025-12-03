@@ -107,7 +107,7 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 
 	var cnf cache.RechargeCnfObj
 	var has bool
-	if cnf, has, err = cache.NewRechargeCnfListCache(botID).WherePublishTimes(publishTimes); has || err != nil {
+	if cnf, has, err = cache.NewRechargeCnfListCache(botID).WherePublishTimes(publishTimes); !has || err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID),
 			zap.Int64("chatID", chatID),
 			zap.String("userName", userName),
