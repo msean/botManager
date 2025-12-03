@@ -102,6 +102,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		}
 	}
 
+	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("cmd", cmd), zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
 	if cmd == "" {
 		if cmd = WaitCmd(update, botID); cmd == "" {
 			return
@@ -114,7 +115,6 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		return
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("cmd", cmd), zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
 	switch cmd {
 	case startCmd:
 		StartHandlerfunc(update, token, *cmdCfg)
