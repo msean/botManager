@@ -128,9 +128,6 @@ func RechargeCancelHandler(update tgbotapi.Update, token string, botID int64) (e
 	// 提示用户
 	bot.Send(tgbotapi.NewMessage(chatID, "✅ 充值已取消"))
 
-	// 回复回调（防止转圈）
-	// bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, "已取消"))
-
 	return nil
 }
 

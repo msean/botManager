@@ -33,16 +33,6 @@ func Init() {
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for range // 每一分钟去检查过期订单
-		// 每25s 检查收款记录
-		// 批量更新
-		// 获取机器人所有的channel
-		// 1. 读取收款地址
-		// 2025-11-30 22:40 北京时间
-		// 更新
-		// 加钱
-		// 假如有缓存的广告 发布吧
-		// 余额充足 立马 扣减余额
-		// 发布到所有渠道
 		ticker.C {
 			func() {
 				defer func() {
@@ -66,10 +56,11 @@ func Init() {
 					ReconcileAccounts()
 				}
 			}()
-			time.Sleep(15 * time.Second)
+			time.Sleep(20 * time.Second)
 		}
 	}()
 }
+
 func CheckExpiredOrders() {
 	deadline := time.Now().Add(-constant.OrderMatchAgo * time.Minute)
 	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).Where("status = ?", constant.AdRechargeCreate).Where("created_at <= ?", deadline).Updates(map[string]any{"status": constant.AdRechargeTimeout, "updated_at": time.Now()}).Error
@@ -164,16 +155,17 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 					var medias []bot_handler.MediaItem
 					if err = json.Unmarshal([]byte(publishContent), &medias); err != nil {
 						global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("val", publishContent), zap.Error(err))
-						return
-					}
-					rechargeCnfList := cache.NewRechargeCnfListCache(botID)
-					if _, err = cache.CacheGetItem(rechargeCnfList); err != nil {
-						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", order.ChatID), zap.Int64("userID", order.UserID), zap.Error(err))
 						continue
 					}
-					cnf, has := rechargeCnfList.WherePublishTimes(1)
-					if !has {
-						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", order.ChatID), zap.Int64("userID", order.UserID))
+					var cnf cache.RechargeCnfObj
+					var has bool
+					if cnf, has, err = cache.NewRechargeCnfListCache(botID).WherePublishTimes(order.PublishTimes); has || err != nil {
+						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID),
+							zap.String("userName", order.UserName),
+							zap.Int64("userID", order.UserID),
+							zap.Bool("has", has),
+							zap.Error(err),
+						)
 						continue
 					}
 					if balance < order.Price {
@@ -206,6 +198,10 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 					}
 					if err = botSrv.NewBotHandlerSvc(botID).PublishAd2Channel(*botHandler, order.ChatID, medias, hook); err != nil {
 						global.GVA_LOG.Error("botHandle PublishAd2Channel", zap.Int("botID", int(botID)), zap.Any("order", order.ID), zap.Error(err))
+						continue
+					}
+					if err = global.GVA_REDIS.Del(context.Background(), draftKey).Err(); err != nil {
+						global.GVA_LOG.Error("botHandle global.GVA_REDIS.Del", zap.String("draftKey", draftKey), zap.Any("order", order.ID), zap.Error(err))
 						continue
 					}
 					if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, order.UserID, cnf.Price); err != nil {

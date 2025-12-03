@@ -64,13 +64,14 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 	publishTimes := 1
 	userID := bot_handler.GetChatUserID(update)
 	chatID := bot_handler.GetChatID(update)
+	userName := bot_handler.GetUserName(update)
 	ctx := context.Background()
 
 	data := update.CallbackQuery.Data
-	userName := update.CallbackQuery.From.UserName
-	if userName == "" {
-		userName = update.CallbackQuery.From.FirstName + " " + update.CallbackQuery.From.LastName
-	}
+	// userName := update.CallbackQuery.From.UserName
+	// if userName == "" {
+	// 	userName = update.CallbackQuery.From.FirstName + " " + update.CallbackQuery.From.LastName
+	// }
 	parts := strings.Split(data, ":")
 	if len(parts) == 1 {
 		return
@@ -104,24 +105,22 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 		}
 	}
 
-	rechargeCnfList := cache.NewRechargeCnfListCache(botID)
-	if _, err = cache.CacheGetItem(rechargeCnfList); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
-		if err = botHandler.SendTextMessage(chatID, "获取价格配置错误，稍后再试"); err != nil {
-			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
-			return
-		}
-		return
-	}
-	cnf, has := rechargeCnfList.WherePublishTimes(publishTimes)
-	if !has {
-		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(draftMsgID)))
+	var cnf cache.RechargeCnfObj
+	var has bool
+	if cnf, has, err = cache.NewRechargeCnfListCache(botID).WherePublishTimes(publishTimes); has || err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID),
+			zap.Int64("chatID", chatID),
+			zap.String("userName", userName),
+			zap.Int64("userID", userID),
+			zap.Int64("msgID", int64(draftMsgID)),
+			zap.Bool("has", has),
+			zap.Error(err),
+		)
 		if err = botHandler.SendTextMessage(chatID, "后台价格配置有误，稍后再试"); err != nil {
 			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 			return
 		}
 	}
-
 	global.GVA_LOG.Debug("HandleAdConfirm recharge", zap.Int64("botID", botID), zap.Any("cnf", cnf), zap.Any("wallet.Balance", wallet.Balance), zap.Any("publishTimes", publishTimes))
 
 	// 余额不足提示充值

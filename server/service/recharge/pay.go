@@ -71,7 +71,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, msgID int, us
 	)
 
 	btnAmount := tgbotapi.NewInlineKeyboardButtonData(
-		fmt.Sprintf("💰 请支付%.3f USDT", record.Price),
+		fmt.Sprintf("💰 请支付%.3fUSDT", record.Price),
 		fmt.Sprintf("recharge_amount:%d", record.ID),
 	)
 
@@ -140,7 +140,6 @@ func MatchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx
 	global.GVA_LOG.Info("reconcileAccount matchTransaction", zap.Uint("orderID", order.ID), zap.Any("trx", trx))
 	amount := utils.ParseAmount(trx.Value, trx.TokenInfo.Decimals)
 
-	global.GVA_LOG.Info("reconcileAccount matchTransaction", zap.Any("amount1", math.Abs(amount-order.Price) > 0.000001), zap.Any("amount", amount))
 	if math.Abs(amount-order.Price) > 0.000001 {
 		return
 	}
