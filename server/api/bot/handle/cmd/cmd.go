@@ -97,12 +97,12 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		if bindCmd != "" {
 			if cfg, ok = cmdCfgMapper[bindCmd]; ok {
 				inCfg = true
-				cmd = bindCmd
 			}
+			cmd = bindCmd
 		}
 	}
 
-	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("cmd", cmd), zap.Any("any", cmdCfgMapper), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
+	global.GVA_LOG.Debug("BotMsgHandlerSvc handleCmd", zap.Any("any", cmdCfgMapper), zap.String("text", text), zap.Any("triggerMapper", triggerMapper), zap.Any("cmd", cmd), zap.Any("inCfg", inCfg), zap.Any("cfg", cfg))
 	if cmd == "" {
 		if cmd = WaitCmd(update, botID); cmd == "" {
 			return
