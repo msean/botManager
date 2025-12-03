@@ -45,13 +45,14 @@
         >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column sortable align="left" label="日期" prop="CreatedAt" width="180">
-            <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
+        <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
+            <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
             <el-table-column align="left" label="机器人ID" prop="botID" width="120" />
             <el-table-column align="left" label="发布次数" prop="publishTimes" width="120" />
             <el-table-column align="left" label="发布用户ID" prop="userID" width="120" />
             <el-table-column align="left" label="发布价格" prop="price" width="120" />
+            <el-table-column align="left" label="用户名" prop="userName" width="120" />
             <el-table-column label="发布内容" prop="content" width="200">
                 <template #default="scope">
                   <el-button type="primary" size="mini" @click="showContent(scope.row.publishContent)">
