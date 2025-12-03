@@ -98,13 +98,13 @@
         />
         <el-table-column align="left" label="收款地址" prop="paymentAddr" width="400" />
         <el-table-column align="left" label="交易ID" prop="txID" width="400" />
-        <el-table-column label="发布内容" width="120">
+        <!-- <el-table-column label="发布内容" width="120">
           <template #default="scope">
             <el-button type="primary" size="mini" @click="showContent(scope.row.publishContent)">
               查看
             </el-button>
           </template>
-        </el-table-column>
+        </el-table-column> -->
         <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
           <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>

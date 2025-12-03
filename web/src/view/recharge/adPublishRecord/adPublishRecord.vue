@@ -55,7 +55,7 @@
             <el-table-column align="left" label="用户名" prop="userName" width="120" />
             <el-table-column label="发布内容" prop="content" width="200">
                 <template #default="scope">
-                  <el-button type="primary" size="mini" @click="showContent(scope.row.publishContent)">
+                  <el-button type="primary" size="mini" @click="showContent(scope.row.content)">
                     查看
                   </el-button>
                 </template>

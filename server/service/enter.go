@@ -125,11 +125,11 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 	}
 	trxResp.Data = append(trxResp.Data, utils.TronResponseData{
 		TransactionID:  "mock_tx_1001",
-		BlockTimestamp: 1764743067000,
+		BlockTimestamp: 1764746290000,
 		From:           "TEST_FROM_ADDRESS",
 		To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
 		Type:           "Transfer",
-		Value:          "10008000",
+		Value:          "10004000",
 		TokenInfo: struct {
 			Symbol   string `json:"symbol"`
 			Address  string `json:"address"`
@@ -179,10 +179,6 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 					if balance < order.Price {
 						continue
 					}
-					if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, order.UserID, cnf.Price); err != nil {
-						global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Any("price", cnf.Price), zap.Error(err))
-						continue
-					}
 
 					hook := func(channels []cache.BotChannelCache) error {
 						go func() {
@@ -212,6 +208,11 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 						global.GVA_LOG.Error("botHandle PublishAd2Channel", zap.Int("botID", int(botID)), zap.Any("order", order.ID), zap.Error(err))
 						continue
 					}
+					if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, order.UserID, cnf.Price); err != nil {
+						global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Any("price", cnf.Price), zap.Error(err))
+						continue
+					}
+
 				}
 			}
 		}
