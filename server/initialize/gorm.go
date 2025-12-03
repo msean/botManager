@@ -97,6 +97,7 @@ func bizModel() error {
 		recharge.RechargeConfig{},
 		recharge.UserRechargeRecord{},
 		recharge.UserWallet{},
+		recharge.AdPublishRecord{},
 	)
 	if err != nil {
 		return err

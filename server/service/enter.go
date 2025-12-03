@@ -34,6 +34,15 @@ func Init() {
 	go func() {
 		for range // 每一分钟去检查过期订单
 		// 每25s 检查收款记录
+		// 批量更新
+		// 获取机器人所有的channel
+		// 1. 读取收款地址
+		// 2025-11-30 22:40 北京时间
+		// 更新
+		// 加钱
+		// 假如有缓存的广告 发布吧
+		// 余额充足 立马 扣减余额
+		// 发布到所有渠道
 		ticker.C {
 			func() {
 				defer func() {
@@ -61,48 +70,31 @@ func Init() {
 		}
 	}()
 }
-
 func CheckExpiredOrders() {
 	deadline := time.Now().Add(-constant.OrderMatchAgo * time.Minute)
-
-	// 批量更新
-	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
-		Where("status = ?", constant.AdRechargeCreate).
-		Where("created_at <= ?", deadline).
-		Updates(map[string]any{
-			"status":     constant.AdRechargeTimeout,
-			"updated_at": time.Now(),
-		}).Error
-
+	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).Where("status = ?", constant.AdRechargeCreate).Where("created_at <= ?", deadline).Updates(map[string]any{"status": constant.AdRechargeTimeout, "updated_at": time.Now()}).Error
 	if err != nil {
 		global.GVA_LOG.Error("订单超时更新失败", zap.Error(err))
 	}
 }
-
 func ReconcileAccounts() {
 	db := global.GVA_DB
-
 	bots, err := dao.BotDao.All(db)
 	if err != nil {
 		global.GVA_LOG.Error("获取机器人失败", zap.Error(err))
 		return
 	}
-
 	for _, botModel := range bots {
 		reconcileAccount(botModel)
 	}
 }
-
 func reconcileAccount(botModel bot.Bot) (err error) {
 	botID := botModel.BotID
-	// 获取机器人所有的channel
 	var channels []bot.BotChannel
 	if err = global.GVA_DB.Where("bot_id = ?", botID).Find(&channels).Error; err != nil {
 		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
-
-	// 1. 读取收款地址
 	key := fmt.Sprintf("payment:%d", botID)
 	paymentSysCnf, err := cache.LoadSyscnf(key, false, "")
 	if err != nil || paymentSysCnf.Value == "" {
@@ -110,7 +102,6 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		return
 	}
 	paymentAddr := paymentSysCnf.Value
-
 	var buttons any
 	var hasPublishCfg bool
 	cmdCfg := cache.NewBotCmdCache(int64(botID), constant.BotReplyCnfPublish2Channel, constant.BotReplyCnfType)
@@ -118,71 +109,44 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		global.GVA_LOG.Error("handleBot", zap.Int("botID", int(botID)), zap.Error(err))
 		return
 	}
-
 	if hasPublishCfg {
 		buttons = bot_handler.ParseContentFromCfg(*cmdCfg, constant.ButtonTypeInline)
 		global.GVA_LOG.Debug("handleBot", zap.Any("buttons", buttons))
 	}
-
 	trxResp, err := utils.FetchTransactions(paymentAddr, 20)
 	if err != nil || !trxResp.Success {
 		global.GVA_LOG.Error("获取链上交易失败", zap.Error(err))
 		return
 	}
-
 	var botHandler *bot_handler.Bot
 	if botHandler, err = bot_handler.NewBot(botModel.Token); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
-	trxResp.Data = append(trxResp.Data, utils.TronResponseData{
-		TransactionID:  "mock_tx_1001",
-		BlockTimestamp: 1764673699000, // 2025-11-30 22:40 北京时间
-		From:           "TEST_FROM_ADDRESS",
-		To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
-		Type:           "Transfer",
-		Value:          "20018000",
-		TokenInfo: struct {
-			Symbol   string `json:"symbol"`
-			Address  string `json:"address"`
-			Decimals int    `json:"decimals"`
-			Name     string `json:"name"`
-		}{
-			Symbol:   "USDT",
-			Address:  "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
-			Decimals: 6,
-			Name:     "Tether USD",
-		},
-	})
+	trxResp.Data = append(trxResp.Data, utils.TronResponseData{TransactionID: "mock_tx_1001", BlockTimestamp: 1764673699000, From: "TEST_FROM_ADDRESS", To: "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E", Type: "Transfer", Value: "20018000", TokenInfo: struct {
+		Symbol   string `json:"symbol"`
+		Address  string `json:"address"`
+		Decimals int    `json:"decimals"`
+		Name     string `json:"name"`
+	}{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
 	var orders []recharge.UserRechargeRecord
 	err = global.GVA_DB.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
 	if err != nil {
 		global.GVA_LOG.Error("查询订单失败", zap.Error(err))
 		return
 	}
-
 	for _, order := range orders {
 		for _, trx := range trxResp.Data {
 			var match bool
-			// 更新
 			if match = rechargeSrv.MatchTransaction(paymentAddr, order, trx); match {
-				if err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).
-					Where("id = ? AND status = 1", order.ID).
-					Updates(map[string]interface{}{
-						"status":     constant.AdRechargePaid,
-						"tx_id":      trx.TransactionID,
-						"updated_at": time.Now(),
-					}).Error; err != nil {
+				if err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).Where("id = ? AND status = 1", order.ID).Updates(map[string]interface{}{"status": constant.AdRechargePaid, "tx_id": trx.TransactionID, "updated_at": time.Now()}).Error; err != nil {
 					global.GVA_LOG.Error("更新订单失败", zap.Error(err))
 				}
-				// 加钱
 				var balance float64
 				if balance, err = dao.RechargeDao.AddBalance(global.GVA_DB, botID, order.UserID, order.Price); err != nil {
 					global.GVA_LOG.Error("reconcileAccount AddBalance", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Float64("price", order.Price), zap.Error(err))
 					continue
 				}
-
-				// 假如有缓存的广告 发布吧
 				draftKey := cache.AdDraftConfirmCacheKey(botID, order.UserID)
 				var publishContent string
 				publishContent, err = global.GVA_REDIS.Get(context.Background(), draftKey).Result()
@@ -195,7 +159,6 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 						global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int("botID", int(botID)), zap.Any("val", publishContent), zap.Error(err))
 						return
 					}
-
 					rechargeCnfList := cache.NewRechargeCnfListCache(botID)
 					if _, err = cache.CacheGetItem(rechargeCnfList); err != nil {
 						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", order.ChatID), zap.Int64("userID", order.UserID), zap.Error(err))
@@ -206,18 +169,39 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.Int64("chatID", order.ChatID), zap.Int64("userID", order.UserID))
 						continue
 					}
-
 					if balance < order.Price {
 						continue
 					}
-
-					// 余额充足 立马 扣减余额
 					if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, order.UserID, cnf.Price); err != nil {
 						global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Any("price", cnf.Price), zap.Error(err))
 						continue
 					}
-					// 发布到所有渠道
-					if err = botSrv.NewBotHandlerSvc(botID).PublishAd2Channel(*botHandler, order.ChatID, medias); err != nil {
+
+					hook := func(channels []cache.BotChannelCache) error {
+						go func() {
+							var channelIDList []int64
+							for _, channel := range channels {
+								channelIDList = append(channelIDList, channel.ChannelID)
+							}
+							err := dao.RechargeDao.CreatePublishRecords(
+								global.GVA_DB,
+								recharge.AdPublishRecord{
+									BotID:        botID,
+									PublishTimes: 1,
+									UserID:       order.UserID,
+									UserName:     order.UserName,
+									Price:        cnf.Price,
+									Content:      order.PublishContent,
+								},
+								channelIDList,
+							)
+							if err != nil {
+								global.GVA_LOG.Error("保存发布记录失败", zap.Error(err))
+							}
+						}()
+						return nil
+					}
+					if err = botSrv.NewBotHandlerSvc(botID).PublishAd2Channel(*botHandler, order.ChatID, medias, hook); err != nil {
 						global.GVA_LOG.Error("botHandle PublishAd2Channel", zap.Int("botID", int(botID)), zap.Any("order", order.ID), zap.Error(err))
 						continue
 					}
@@ -225,6 +209,5 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 			}
 		}
 	}
-
 	return
 }

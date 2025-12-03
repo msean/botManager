@@ -31,7 +31,7 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 	}
 
 	ctx := context.Background()
-	userID := getChatUserID(update)
+	userID := bot_handler.GetChatUserID(update)
 
 	data, _ := json.Marshal(medias)
 

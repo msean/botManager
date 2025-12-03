@@ -12,13 +12,15 @@ type BotHandlerSvc struct {
 	botID int64
 }
 
+type AfterPublishHook func(channels []cache.BotChannelCache) error
+
 func NewBotHandlerSvc(botID int64) *BotHandlerSvc {
 	return &BotHandlerSvc{
 		botID: botID,
 	}
 }
 
-func (svc BotHandlerSvc) PublishAd2Channel(botApi bot_handler.Bot, chatID int64, medias []bot_handler.MediaItem) (err error) {
+func (svc BotHandlerSvc) PublishAd2Channel(botApi bot_handler.Bot, chatID int64, medias []bot_handler.MediaItem, afterHook AfterPublishHook) (err error) {
 	channels := cache.NewBotChannelListCache(svc.botID)
 	if _, err = cache.CacheGetItem(channels); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm CacheGetItem", zap.Int64("botID", svc.botID), zap.Error(err))
@@ -49,6 +51,13 @@ func (svc BotHandlerSvc) PublishAd2Channel(botApi bot_handler.Bot, chatID int64,
 	}
 	if _, err = botApi.TgSend(chatID, medias, nil); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", svc.botID), zap.Any("medias", medias), zap.Any("buttons", buttons), zap.Error(err))
+	}
+
+	// ✅ 执行钩子
+	if afterHook != nil {
+		if err = afterHook(channels.Objects); err != nil {
+			global.GVA_LOG.Error("afterPublishHook 执行失败", zap.Error(err))
+		}
 	}
 	return
 }

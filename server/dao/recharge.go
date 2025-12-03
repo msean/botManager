@@ -128,3 +128,24 @@ func (dao *rechargeDao) ReduceBalance(db *gorm.DB, botID, userID int64, amount f
 
 	return
 }
+
+func (dao *rechargeDao) CreatePublishRecords(
+	db *gorm.DB,
+	base recharge.AdPublishRecord,
+	channelIDs []int64,
+) error {
+
+	if len(channelIDs) == 0 {
+		return errors.New("空渠道")
+	}
+
+	list := make([]recharge.AdPublishRecord, 0, len(channelIDs))
+
+	for _, cid := range channelIDs {
+		r := base
+		r.ChannelID = cid
+		list = append(list, r)
+	}
+
+	return db.Create(&list).Error
+}

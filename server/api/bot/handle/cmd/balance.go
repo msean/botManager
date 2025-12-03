@@ -10,12 +10,12 @@ import (
 )
 
 func BalanceShowHandle(update tgbotapi.Update, token string, botID int64) (err error) {
-	wallet, getWalletErr := dao.RechargeDao.GetUserWallet(global.GVA_DB, botID, getChatUserID(update), "")
+	wallet, getWalletErr := dao.RechargeDao.GetUserWallet(global.GVA_DB, botID, bot_handler.GetChatUserID(update), "")
 	if getWalletErr != nil {
 		err = getWalletErr
 		return
 	}
 	botApi, _ := bot_handler.NewBot(token)
-	botApi.SendTextMessage(getChatID(update), fmt.Sprintf("您的当前余额是：%.3f", wallet.Balance))
+	botApi.SendTextMessage(bot_handler.GetChatID(update), fmt.Sprintf("当前余额为：%.3fUSDT", wallet.Balance))
 	return
 }

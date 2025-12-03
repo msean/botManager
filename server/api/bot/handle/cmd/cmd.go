@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	startCmd          = "/start"     // 开始按钮
-	AdPublishCmd      = "/publishAd" // 广告发布
-	AdCancelCmd       = "/adCancel"  // 取消广告发布
-	AdConfirmCmd      = "/adConfirm" // 确认发布
-	AdRcvContentCmd   = "/adPublish" // 收到广告内容
-	NoticeRechargeCmd = "/noticeRecharge"
+	startCmd          = "/start"          // 开始按钮
+	AdPublishCmd      = "/publishAd"      // 广告发布
+	AdCancelCmd       = "/adCancel"       // 取消广告发布
+	AdConfirmCmd      = "/adConfirm"      // 确认发布
+	AdRcvContentCmd   = "/adPublish"      // 收到广告内容
+	NoticeRechargeCmd = "/noticeRecharge" // 充值按钮
 	RechargeChoiceCmd = "/rechargeChoice"
 	BalanceShowCmd    = "/balanceShow"
 	RechargeCancelCmd = "/rechargeCancel"
@@ -35,36 +35,6 @@ var (
 	waitAdContentExpire = 30 * time.Minute // 等待用户输入广告超时时间
 	confirmAdExpire     = 30 * time.Minute // 确认广告超时有效时间
 )
-
-func getChatUserID(update tgbotapi.Update) (userId int64) {
-	switch {
-	case update.Message != nil:
-		// 如果是用户发送的消息
-		userId = int64(update.Message.From.ID)
-	case update.CallbackQuery != nil:
-		// 如果是用户点击了按钮
-		userId = int64(update.CallbackQuery.From.ID)
-	default:
-		// 其他情况
-		userId = 0
-	}
-	return
-}
-
-func getChatID(update tgbotapi.Update) (chatID int64) {
-	switch {
-	case update.Message != nil:
-		// 如果是用户发送的消息
-		chatID = update.Message.Chat.ID
-	case update.CallbackQuery != nil:
-		// 如果是用户点击了按钮
-		chatID = update.CallbackQuery.Message.Chat.ID
-	default:
-		// 其他情况
-		chatID = 0
-	}
-	return
-}
 
 func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	var text string
@@ -152,7 +122,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 		if inCfg {
 			switch cmd {
 			case NoticeRechargeCmd:
-				canRecharge, e := CheckRechargeAndNotify(botID, getChatUserID(update), getChatID(update), token)
+				canRecharge, e := CheckRechargeAndNotify(botID, bot_handler.GetChatUserID(update), bot_handler.GetChatID(update), token)
 				if canRecharge && e == nil {
 					SendCfgMessage(chatID, token, *cmdCfg, constant.ButtonTypeInline)
 				}
@@ -244,7 +214,7 @@ func SendCfgMessage(chatID int64, token string, cfg cache.BotCmdCache, buttonTyp
 }
 
 func WaitCmd(update tgbotapi.Update, botID int64) string {
-	state, _ := global.GVA_REDIS.Get(context.Background(), cache.AdWaitCacheKey(botID, getChatUserID(update))).Result()
+	state, _ := global.GVA_REDIS.Get(context.Background(), cache.AdWaitCacheKey(botID, bot_handler.GetChatUserID(update))).Result()
 
 	switch state {
 	case waitAdContentState:
@@ -285,7 +255,7 @@ func HandleCallback(update tgbotapi.Update, token string, botID int64) (err erro
 	case AdCancelCmd:
 		return HandleAdCancel(update, token, botID)
 	case NoticeRechargeCmd:
-		canRecharge, e := CheckRechargeAndNotify(botID, getChatUserID(update), getChatID(update), token)
+		canRecharge, e := CheckRechargeAndNotify(botID, bot_handler.GetChatUserID(update), bot_handler.GetChatID(update), token)
 		if canRecharge && e == nil {
 			cmdCfg := cache.NewBotCmdCache(botID, cmd, constant.BotReplyCmdType)
 			if _, err = cache.CacheGetItem(cmdCfg); err != nil {

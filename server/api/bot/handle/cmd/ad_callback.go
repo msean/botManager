@@ -20,8 +20,8 @@ import (
 )
 
 func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err error) {
-	userID := getChatUserID(update)
-	chatID := getChatID(update)
+	userID := bot_handler.GetChatUserID(update)
+	chatID := bot_handler.GetChatID(update)
 	ctx := context.Background()
 
 	data := update.CallbackQuery.Data
@@ -62,8 +62,8 @@ func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err erro
 // 确认发布
 func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) (err error) {
 	publishTimes := 1
-	userID := getChatUserID(update)
-	chatID := getChatID(update)
+	userID := bot_handler.GetChatUserID(update)
+	chatID := bot_handler.GetChatID(update)
 	ctx := context.Background()
 
 	data := update.CallbackQuery.Data
@@ -151,10 +151,36 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 		global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Any("price", cnf.Price), zap.Error(err))
 		return
 	}
+
+	hook := func(channels []cache.BotChannelCache) error {
+		go func() {
+			var channelIDList []int64
+			for _, channel := range channels {
+				channelIDList = append(channelIDList, channel.ChannelID)
+			}
+			err := dao.RechargeDao.CreatePublishRecords(
+				global.GVA_DB,
+				recharge.AdPublishRecord{
+					BotID:        botID,
+					PublishTimes: 1,
+					UserID:       userID,
+					UserName:     userName,
+					Price:        cnf.Price,
+					Content:      val,
+				},
+				channelIDList,
+			)
+			if err != nil {
+				global.GVA_LOG.Error("保存发布记录失败", zap.Error(err))
+			}
+		}()
+		return nil
+	}
 	// 发布到所有渠道
-	if err = bot.NewBotHandlerSvc(botID).PublishAd2Channel(*botHandler, chatID, medias); err != nil {
+	if err = bot.NewBotHandlerSvc(botID).PublishAd2Channel(*botHandler, chatID, medias, hook); err != nil {
 		global.GVA_LOG.Error("botHandle PublishAd2Channel", zap.Int("botID", int(botID)), zap.Any("val", val), zap.Error(err))
 		return
 	}
+
 	return
 }

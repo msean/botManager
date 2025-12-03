@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Recharge(chatID int64, userID int64, token string, botID int64, msgID int, amount float64) (err error) {
+func Recharge(chatID int64, userID int64, token string, botID int64, msgID int, userName string, amount float64) (err error) {
 	// 自定义
 	if amount == 0 {
 		// 设置当前用户状态
@@ -29,7 +29,7 @@ func Recharge(chatID int64, userID int64, token string, botID int64, msgID int, 
 	} else {
 		// 创建订单
 		pay := recharge.NewPay(botID)
-		if err = pay.Recharge(token, userID, chatID, msgID, amount); err != nil {
+		if err = pay.Recharge(token, userID, chatID, msgID, userName, amount); err != nil {
 			global.GVA_LOG.Error("Recharge", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Error(err))
 		}
 	}
@@ -83,9 +83,10 @@ func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (e
 		cache.AdWaitCacheKey(botID, update.Message.From.ID),
 		key,
 	)
-	Recharge(update.Message.Chat.ID, update.Message.From.ID, token, botID, update.Message.MessageID, amount)
+	Recharge(update.Message.Chat.ID, update.Message.From.ID, token, botID, update.Message.MessageID, bot_handler.GetUserName(update), amount)
 	return
 }
+
 func RechargeCancelHandler(update tgbotapi.Update, token string, botID int64) (err error) {
 	data := update.CallbackQuery.Data
 	parts := strings.Split(data, ":")
@@ -141,8 +142,8 @@ func RechargeInputCallbackHandler(update tgbotapi.Update, token string, botID in
 	}
 
 	_amount := parts[1]
-	chatID := getChatID(update)
-	userID := getChatUserID(update)
+	chatID := bot_handler.GetChatID(update)
+	userID := bot_handler.GetChatUserID(update)
 	msgID := update.CallbackQuery.Message.MessageID
 
 	if data == "/rechargeChoice_close" {
@@ -161,7 +162,7 @@ func RechargeInputCallbackHandler(update tgbotapi.Update, token string, botID in
 	}
 
 	global.GVA_LOG.Debug("BotMsgHandlerSvc CallbackQuery amount", zap.Any("amount", amount), zap.Any("msgID", msgID), zap.Any("data", data))
-	Recharge(chatID, userID, token, botID, msgID, amount)
+	Recharge(chatID, userID, token, botID, msgID, bot_handler.GetUserName(update), amount)
 	botApi, _ := bot_handler.NewBot(token)
 	return botApi.DeleteOriginMessage(chatID, msgID)
 }

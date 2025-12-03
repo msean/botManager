@@ -246,3 +246,64 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 	}
 	return
 }
+
+func GetChatUserID(update tgbotapi.Update) (userId int64) {
+	switch {
+	case update.Message != nil:
+		// 如果是用户发送的消息
+		userId = int64(update.Message.From.ID)
+	case update.CallbackQuery != nil:
+		// 如果是用户点击了按钮
+		userId = int64(update.CallbackQuery.From.ID)
+	default:
+		// 其他情况
+		userId = 0
+	}
+	return
+}
+
+func GetUserName(update tgbotapi.Update) (userName string) {
+	var from *tgbotapi.User
+
+	switch {
+	case update.Message != nil:
+		from = update.Message.From
+
+	case update.CallbackQuery != nil:
+		from = update.CallbackQuery.From
+	}
+
+	if from == nil {
+		return "Unknown"
+	}
+
+	// 优先使用 username
+	if from.UserName != "" {
+		userName = from.UserName
+		return
+	}
+
+	// fallback 使用 姓名
+	userName = strings.TrimSpace(from.FirstName + " " + from.LastName)
+
+	if userName == "" {
+		userName = "Unknown"
+	}
+
+	return
+}
+
+func GetChatID(update tgbotapi.Update) (chatID int64) {
+	switch {
+	case update.Message != nil:
+		// 如果是用户发送的消息
+		chatID = update.Message.Chat.ID
+	case update.CallbackQuery != nil:
+		// 如果是用户点击了按钮
+		chatID = update.CallbackQuery.Message.Chat.ID
+	default:
+		// 其他情况
+		chatID = 0
+	}
+	return
+}
