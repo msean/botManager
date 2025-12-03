@@ -159,7 +159,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 					}
 					var cnf cache.RechargeCnfObj
 					var has bool
-					if cnf, has, err = cache.NewRechargeCnfListCache(botID).WherePublishTimes(order.PublishTimes); has || err != nil {
+					if cnf, has, err = cache.NewRechargeCnfListCache(botID).WherePublishTimes(order.PublishTimes); !has || err != nil {
 						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID),
 							zap.String("userName", order.UserName),
 							zap.Int64("userID", order.UserID),
