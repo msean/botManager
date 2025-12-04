@@ -2,6 +2,7 @@ package bot_handler
 
 import (
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -43,6 +44,28 @@ func (b *Bot) BanUser(chatID, userID int64, until int64) (err error) {
 		UntilDate: until,
 	}
 	_, err = b.botApi.Request(cfg)
+	return err
+}
+
+func (b *Bot) UnMuteUser(chatID int64, userID int64) error {
+	cfg := tgbotapi.RestrictChatMemberConfig{
+		ChatMemberConfig: tgbotapi.ChatMemberConfig{
+			ChatID: chatID,
+			UserID: userID,
+		},
+		UntilDate: time.Now().Unix(),
+		Permissions: &tgbotapi.ChatPermissions{
+			CanSendMessages:       true,
+			CanSendMediaMessages:  true,
+			CanSendPolls:          true,
+			CanSendOtherMessages:  true,
+			CanAddWebPagePreviews: true,
+			CanChangeInfo:         true,
+			CanInviteUsers:        true,
+			CanPinMessages:        true,
+		},
+	}
+	_, err := b.botApi.Request(cfg)
 	return err
 }
 

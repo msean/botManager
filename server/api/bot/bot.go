@@ -21,7 +21,7 @@ type BotApi struct{}
 // @Param data body bot.Bot true "创建机器人"
 // @Success 200 {object} response.Response{msg=string} "创建成功"
 // @Router /bot_mgr/createBot [post]
-func (bot_mgrApi *BotApi) CreateBot(c *gin.Context) {
+func (api *BotApi) CreateBot(c *gin.Context) {
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
@@ -49,7 +49,7 @@ func (bot_mgrApi *BotApi) CreateBot(c *gin.Context) {
 // @Param data body bot.Bot true "删除机器人"
 // @Success 200 {object} response.Response{msg=string} "删除成功"
 // @Router /bot_mgr/deleteBot [delete]
-func (bot_mgrApi *BotApi) DeleteBot(c *gin.Context) {
+func (api *BotApi) DeleteBot(c *gin.Context) {
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
@@ -71,7 +71,7 @@ func (bot_mgrApi *BotApi) DeleteBot(c *gin.Context) {
 // @Produce application/json
 // @Success 200 {object} response.Response{msg=string} "批量删除成功"
 // @Router /bot_mgr/deleteBotByIds [delete]
-func (bot_mgrApi *BotApi) DeleteBotByIds(c *gin.Context) {
+func (api *BotApi) DeleteBotByIds(c *gin.Context) {
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
@@ -94,7 +94,7 @@ func (bot_mgrApi *BotApi) DeleteBotByIds(c *gin.Context) {
 // @Param data body bot.Bot true "更新机器人"
 // @Success 200 {object} response.Response{msg=string} "更新成功"
 // @Router /bot_mgr/updateBot [put]
-func (bot_mgrApi *BotApi) UpdateBot(c *gin.Context) {
+func (api *BotApi) UpdateBot(c *gin.Context) {
 	// 从ctx获取标准context进行业务行为
 	ctx := c.Request.Context()
 
@@ -122,7 +122,7 @@ func (bot_mgrApi *BotApi) UpdateBot(c *gin.Context) {
 // @Param ID query uint true "用id查询机器人"
 // @Success 200 {object} response.Response{data=bot.Bot,msg=string} "查询成功"
 // @Router /bot_mgr/findBot [get]
-func (bot_mgrApi *BotApi) FindBot(c *gin.Context) {
+func (api *BotApi) FindBot(c *gin.Context) {
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
@@ -145,7 +145,7 @@ func (bot_mgrApi *BotApi) FindBot(c *gin.Context) {
 // @Param data query botReq.BotSearch true "分页获取机器人列表"
 // @Success 200 {object} response.Response{data=response.PageResult,msg=string} "获取成功"
 // @Router /bot_mgr/getBotList [get]
-func (bot_mgrApi *BotApi) GetBotList(c *gin.Context) {
+func (api *BotApi) GetBotList(c *gin.Context) {
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
@@ -176,7 +176,7 @@ func (bot_mgrApi *BotApi) GetBotList(c *gin.Context) {
 // @Produce application/json
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /bot_mgr/getBotPublic [get]
-func (bot_mgrApi *BotApi) GetBotPublic(c *gin.Context) {
+func (api *BotApi) GetBotPublic(c *gin.Context) {
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
@@ -188,7 +188,7 @@ func (bot_mgrApi *BotApi) GetBotPublic(c *gin.Context) {
 	}, "获取成功", c)
 }
 
-func (bot_mgrApi *BotApi) All(c *gin.Context) {
+func (api *BotApi) All(c *gin.Context) {
 	bots, err := dao.BotDao.All(global.GVA_DB)
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
@@ -198,7 +198,7 @@ func (bot_mgrApi *BotApi) All(c *gin.Context) {
 	response.OkWithDetailed(bots, "获取成功", c)
 }
 
-func (bot_mgrApi *BotApi) AllWithChatGroupAndChannel(c *gin.Context) {
+func (api *BotApi) AllWithChatGroupAndChannel(c *gin.Context) {
 	bots, err := dao.BotDao.AllWithChatGroup(global.GVA_DB)
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
@@ -206,4 +206,17 @@ func (bot_mgrApi *BotApi) AllWithChatGroupAndChannel(c *gin.Context) {
 		return
 	}
 	response.OkWithDetailed(bots, "获取成功", c)
+}
+
+func (api *BotApi) UnbanUser(c *gin.Context) {
+	// 创建业务用Context
+	ctx := c.Request.Context()
+	ID := c.Query("ID")
+	err := botMgrService.UnbanUser(ctx, ID)
+	if err != nil {
+		global.GVA_LOG.Error("操作失败!", zap.Error(err))
+		response.FailWithMessage("操作失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithMessage("操作成功", c)
 }

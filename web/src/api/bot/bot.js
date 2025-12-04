@@ -75,3 +75,11 @@ export const getBotChoiceWithChatGroup = (params) => {
     params
   })
 }
+
+export const unBanUser = (params) => {
+  return service({
+    url: '/bot_mgr/unban_user',
+    method: 'post',
+    params
+  })
+}

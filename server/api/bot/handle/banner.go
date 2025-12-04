@@ -135,6 +135,7 @@ func BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
 	if _type == constant.BanTypeWord {
 		msg = tgMsg.Message.Text
 	}
+	_liftingTime := time.Now().Add(time.Duration(durationMinutes) * time.Minute)
 	record := bot.BanRecord{
 		BotID:       botModel.BotID,
 		UserID:      tgMsg.Message.From.ID,
@@ -146,6 +147,7 @@ func BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
 		BanType:     _type,
 		FullName:    fmt.Sprintf("%s%s", tgMsg.Message.From.FirstName, tgMsg.Message.From.LastName),
 		Msg:         msg,
+		LiftingTime: &_liftingTime,
 	}
 	if err := global.GVA_DB.Create(&record).Error; err != nil {
 		global.GVA_LOG.Error("failed to insert BanRecord", zap.Any("record", record), zap.Error(err))

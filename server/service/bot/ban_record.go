@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"time"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -91,11 +92,18 @@ func (banRecordService *BanRecordService) GetBanRecordInfoList(ctx context.Conte
 	}
 
 	for _, object := range banRecords {
+		object.Status = 2
+		if object.LiftingTime != nil {
+			if time.Now().Before(*object.LiftingTime) {
+				object.Status = 1
+			}
+		}
 		object.BotName = botMapper[object.BotID].Name
 		object.ChatName = chatGroupMapper[object.ChatID].ChatGroupName
 	}
 	return banRecords, total, err
 }
+
 func (banRecordService *BanRecordService) GetBanRecordPublic(ctx context.Context) {
 	// 此方法为获取数据源定义的数据
 	// 请自行实现

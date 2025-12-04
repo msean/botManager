@@ -14,6 +14,7 @@ import (
 	"github.com/msean/botmanager/server/utils"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type BotService struct{}
@@ -158,4 +159,36 @@ func (svc *BotService) GetBotInfoList(ctx context.Context, info botReq.BotSearch
 func (svc *BotService) GetBotPublic(ctx context.Context) {
 	// 此方法为获取数据源定义的数据
 	// 请自行实现
+}
+
+func (svc *BotService) UnbanUser(ctx context.Context, ID string) (err error) {
+	var banRecord bot.BanRecord
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	if err = global.GVA_DB.Where("id = ?", id).First(&banRecord).Error; err != nil {
+		return
+	}
+
+	botModel, has, getBotErr := dao.BotDao.FromBotID(global.GVA_DB, int(banRecord.BotID))
+	if getBotErr != nil {
+		err = getBotErr
+		return
+	}
+	if !has {
+		err = errors.New("")
+		return
+	}
+
+	err = global.GVA_DB.Model(&bot.BanRecord{}).
+		Where("id = ?", banRecord.ID).
+		Updates(map[string]interface{}{
+			"lifting_time": gorm.Expr("NULL"),
+		}).Error
+	botApi, newBotApiErr := bot_handler.NewBot(botModel.Token)
+	if newBotApiErr != nil {
+		return
+	}
+	return botApi.UnMuteUser(banRecord.ChatID, banRecord.UserID)
 }

@@ -22,17 +22,9 @@
             end-placeholder="结束时间"
           />
        </el-form-item>
-      
-
-        <template v-if="showAllQuery">
-          <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
-        </template>
-
         <el-form-item>
           <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
           <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button link type="primary" icon="arrow-down" @click="showAllQuery=true" v-if="!showAllQuery">展开</el-button>
-          <el-button link type="primary" icon="arrow-up" @click="showAllQuery=false" v-else>收起</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -67,6 +59,16 @@
             </el-table-column>
 
             <el-table-column align="left" label="备注" prop="reMark" width="300" />
+            <el-table-column align="left" label="状态" prop="status" width="300">
+              <template #default="scope">
+                <el-tag v-if="scope.row.status === 1" type="danger">
+                  封禁中
+                </el-tag>
+                <el-tag v-else type="success">
+                  非封禁中
+                </el-tag>
+              </template>
+            </el-table-column>
 
             <el-table-column
               align="left"
@@ -83,24 +85,30 @@
               <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
             </el-table-column>
 
-        <!-- <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
-            <template #default="scope">
-            <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
-            <el-button  type="primary" link icon="edit" class="table-button" @click="updateBanRecordFunc(scope.row)">编辑</el-button>
-            <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
-            </template>
-        </el-table-column> -->
+        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
+          <template #default="scope">
+            <el-button
+              v-if="scope.row.status === 1"
+              type="danger"
+              link
+              class="table-button"
+              @click="handleUnban(scope.row)"
+            >
+              解禁
+            </el-button>
+          </template>
+        </el-table-column>
         </el-table>
-        <div class="gva-pagination">
-            <el-pagination
-            layout="total, sizes, prev, pager, next, jumper"
-            :current-page="page"
-            :page-size="pageSize"
-            :page-sizes="[10, 30, 50, 100]"
-            :total="total"
-            @current-change="handleCurrentChange"
-            @size-change="handleSizeChange"
-            />
+          <div class="gva-pagination">
+              <el-pagination
+              layout="total, sizes, prev, pager, next, jumper"
+              :current-page="page"
+              :page-size="pageSize"
+              :page-sizes="[10, 30, 50, 100]"
+              :total="total"
+              @current-change="handleCurrentChange"
+              @size-change="handleSizeChange"
+              />
         </div>
     </div>
     <!-- <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="dialogFormVisible" :show-close="false" :before-close="closeDialog">
@@ -177,8 +185,7 @@ import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, r
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, reactive } from 'vue'
 import { useAppStore } from "@/pinia"
-
-
+import { unBanUser } from '@/api/bot/bot'
 
 defineOptions({
     name: 'BanRecord'
@@ -207,6 +214,35 @@ const banTypeMap = {
   3: '转发' // 如果以后有第三种类型
 }
 
+const handleUnban = (row) => {
+  ElMessageBox.confirm(
+    `确定要解禁用户：${row.userName || row.userID} 吗？`,
+    '解禁确认',
+    {
+      confirmButtonText: '确定解禁',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      const res = await unBanUser({
+        id: row.ID,
+        botID: row.botID,
+        userID: row.userID,
+        chatID: row.chatID
+      })
+
+      if (res.code === 0) {
+        ElMessage.success('解禁成功')
+        getTableData() // 刷新表格
+      } else {
+        ElMessage.error(res.msg || '解禁失败')
+      }
+    } catch (err) {
+      ElMessage.error('解禁请求异常')
+    }
+  }).catch(() => {})
+}
 
 // 验证规则
 const rule = reactive({
