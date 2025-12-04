@@ -60,6 +60,10 @@ func (banRecordService *BanRecordService) GetBanRecordInfoList(ctx context.Conte
 		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
 	}
 
+	if info.UserName != "" {
+		db = db.Where("user_name LIKE ?", info.UserName+"%")
+	}
+
 	err = db.Count(&total).Error
 	if err != nil {
 		return

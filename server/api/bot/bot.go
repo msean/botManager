@@ -210,9 +210,16 @@ func (api *BotApi) AllWithChatGroupAndChannel(c *gin.Context) {
 
 func (api *BotApi) UnbanUser(c *gin.Context) {
 	// 创建业务用Context
-	ctx := c.Request.Context()
-	ID := c.Query("ID")
-	err := botMgrService.UnbanUser(ctx, ID)
+	type Form struct {
+		ID uint `json:"id" form:"id"`
+	}
+	var form Form
+	err := c.ShouldBindJSON(&form)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	err = botMgrService.UnbanUser(c.Request.Context(), form.ID)
 	if err != nil {
 		global.GVA_LOG.Error("操作失败!", zap.Error(err))
 		response.FailWithMessage("操作失败:"+err.Error(), c)

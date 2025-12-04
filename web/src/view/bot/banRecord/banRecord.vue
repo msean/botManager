@@ -22,6 +22,16 @@
             end-placeholder="结束时间"
           />
        </el-form-item>
+
+       <!-- 用户名 -->
+      <el-form-item label="用户名" prop="userName">
+        <el-input
+          v-model="searchInfo.userName"
+          placeholder="请输入用户名"
+          clearable
+          class="!w-200px"
+        />
+      </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
           <el-button icon="refresh" @click="onReset">重置</el-button>

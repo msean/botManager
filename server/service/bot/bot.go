@@ -161,12 +161,8 @@ func (svc *BotService) GetBotPublic(ctx context.Context) {
 	// 请自行实现
 }
 
-func (svc *BotService) UnbanUser(ctx context.Context, ID string) (err error) {
+func (svc *BotService) UnbanUser(ctx context.Context, id uint) (err error) {
 	var banRecord bot.BanRecord
-	var id int
-	if id, err = strconv.Atoi(ID); err != nil {
-		return
-	}
 	if err = global.GVA_DB.Where("id = ?", id).First(&banRecord).Error; err != nil {
 		return
 	}
