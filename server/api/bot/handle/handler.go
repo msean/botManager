@@ -100,10 +100,22 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Upda
 		return
 	}
 
+	global.GVA_LOG.Debug("HandelChatGroup Sync", zap.Int64("SyncMessage", chatGroup.SyncMessage))
 	// 需要同步群聊消息
-	if chatGroup.SyncMessage == 1 {
-		go SyncChatGroupMessage(botModel.BotID, chatGroupID, tgMsg)
-	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				global.GVA_LOG.Error(
+					"panic in SyncChatGroupMessage",
+					zap.Any("recover", r),
+					zap.Int64("chatGroupID", chatGroupID),
+					zap.Stack("stack"),
+				)
+			}
+		}()
+
+		SyncChatGroupMessage(botModel.BotID, chatGroupID, tgMsg)
+	}()
 
 	SyncChatGroup(botModel, tgMsg, chatGroup, has)
 

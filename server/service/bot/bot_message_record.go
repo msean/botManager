@@ -9,6 +9,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm/clause"
 )
@@ -34,6 +35,7 @@ func (svc BotMsgRecordSvc) tableLockKey() string {
 }
 
 func (svc BotMsgRecordSvc) Sync() error {
+	global.GVA_LOG.Debug("BotMsgRecordSvc Sync", zap.String("table", svc.MessageTable()))
 	ctx := context.Background()
 
 	cacheKey := svc.tableCacheKey()
@@ -44,6 +46,7 @@ func (svc BotMsgRecordSvc) Sync() error {
 		return nil
 	}
 
+	global.GVA_LOG.Debug("BotMsgRecordSvc Sync", zap.String("cacheKey", cacheKey))
 	// 2️⃣ 尝试加分布式锁（10 秒足够）
 	locked, err := global.GVA_REDIS.SetNX(ctx, lockKey, 1, 10*time.Second).Result()
 	if err != nil {
@@ -53,29 +56,25 @@ func (svc BotMsgRecordSvc) Sync() error {
 		return nil
 	}
 
-	// 确保释放锁
 	defer global.GVA_REDIS.Del(ctx, lockKey)
 
-	// 3️⃣ 二次检查（非常关键）
 	if ok, _ := global.GVA_REDIS.Get(ctx, cacheKey).Bool(); ok {
 		return nil
 	}
 
-	// 4️⃣ 查表是否存在
 	exists, err := svc.tableExists()
 	if err != nil {
 		return err
 	}
 
+	global.GVA_LOG.Debug("BotMsgRecordSvc Sync", zap.Bool("exists", exists))
 	if !exists {
-		// 5️⃣ 创建表
 		if err := global.GVA_PGSQL.
 			Table(svc.MessageTable()).
 			AutoMigrate(&bot.TGMessageRecord{}); err != nil {
 			return err
 		}
 
-		// 6️⃣ 创建索引
 		global.GVA_PGSQL.Exec(
 			fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%d_time ON %s (timestamp)`,
 				svc.chatGroupID, svc.MessageTable()),
