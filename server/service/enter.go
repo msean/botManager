@@ -63,13 +63,13 @@ func Init() {
 
 func CheckExpiredOrders() {
 	deadline := time.Now().Add(-constant.OrderMatchAgo * time.Minute)
-	err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).Where("status = ?", constant.AdRechargeCreate).Where("created_at <= ?", deadline).Updates(map[string]any{"status": constant.AdRechargeTimeout, "updated_at": time.Now()}).Error
+	err := global.GVA_MYSQL.Model(&recharge.UserRechargeRecord{}).Where("status = ?", constant.AdRechargeCreate).Where("created_at <= ?", deadline).Updates(map[string]any{"status": constant.AdRechargeTimeout, "updated_at": time.Now()}).Error
 	if err != nil {
 		global.GVA_LOG.Error("订单超时更新失败", zap.Error(err))
 	}
 }
 func ReconcileAccounts() {
-	db := global.GVA_DB
+	db := global.GVA_MYSQL
 	bots, err := dao.BotDao.All(db)
 	if err != nil {
 		global.GVA_LOG.Error("获取机器人失败", zap.Error(err))
@@ -82,7 +82,7 @@ func ReconcileAccounts() {
 func reconcileAccount(botModel bot.Bot) (err error) {
 	botID := botModel.BotID
 	var channels []bot.BotChannel
-	if err = global.GVA_DB.Where("bot_id = ?", botID).Find(&channels).Error; err != nil {
+	if err = global.GVA_MYSQL.Where("bot_id = ?", botID).Find(&channels).Error; err != nil {
 		global.GVA_LOG.Error("botHandle HandleAdConfirm", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
@@ -128,7 +128,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 			Name     string `json:"name"`
 		}{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
 	var orders []recharge.UserRechargeRecord
-	err = global.GVA_DB.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
+	err = global.GVA_MYSQL.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
 	if err != nil {
 		global.GVA_LOG.Error("查询订单失败", zap.Error(err))
 		return
@@ -137,11 +137,11 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		for _, trx := range trxResp.Data {
 			var match bool
 			if match = rechargeSrv.MatchTransaction(paymentAddr, order, trx); match {
-				if err := global.GVA_DB.Model(&recharge.UserRechargeRecord{}).Where("id = ? AND status = 1", order.ID).Updates(map[string]interface{}{"status": constant.AdRechargePaid, "tx_id": trx.TransactionID, "updated_at": time.Now()}).Error; err != nil {
+				if err := global.GVA_MYSQL.Model(&recharge.UserRechargeRecord{}).Where("id = ? AND status = 1", order.ID).Updates(map[string]interface{}{"status": constant.AdRechargePaid, "tx_id": trx.TransactionID, "updated_at": time.Now()}).Error; err != nil {
 					global.GVA_LOG.Error("更新订单失败", zap.Error(err))
 				}
 				var balance float64
-				if balance, err = dao.RechargeDao.AddBalance(global.GVA_DB, botID, order.UserID, order.Price); err != nil {
+				if balance, err = dao.RechargeDao.AddBalance(global.GVA_MYSQL, botID, order.UserID, order.Price); err != nil {
 					global.GVA_LOG.Error("reconcileAccount AddBalance", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Float64("price", order.Price), zap.Error(err))
 					continue
 				}
@@ -179,7 +179,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 								channelIDList = append(channelIDList, channel.ChannelID)
 							}
 							err := dao.RechargeDao.CreatePublishRecords(
-								global.GVA_DB,
+								global.GVA_MYSQL,
 								recharge.AdPublishRecord{
 									BotID:        botID,
 									PublishTimes: 1,
@@ -204,7 +204,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 						global.GVA_LOG.Error("botHandle global.GVA_REDIS.Del", zap.String("draftKey", draftKey), zap.Any("order", order.ID), zap.Error(err))
 						continue
 					}
-					if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, order.UserID, cnf.Price); err != nil {
+					if _, err = dao.RechargeDao.ReduceBalance(global.GVA_MYSQL, botID, order.UserID, cnf.Price); err != nil {
 						global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Any("price", cnf.Price), zap.Error(err))
 						continue
 					}

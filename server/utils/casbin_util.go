@@ -18,7 +18,7 @@ var (
 // GetCasbin 获取casbin实例
 func GetCasbin() *casbin.SyncedCachedEnforcer {
 	once.Do(func() {
-		a, err := gormadapter.NewAdapterByDB(global.GVA_DB)
+		a, err := gormadapter.NewAdapterByDB(global.GVA_MYSQL)
 		if err != nil {
 			zap.L().Error("适配数据库失败请检查casbin表是否为InnoDB引擎!", zap.Error(err))
 			return

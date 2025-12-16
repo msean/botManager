@@ -61,3 +61,4 @@ func (svc BotHandlerSvc) PublishAd2Channel(botApi bot_handler.Bot, chatID int64,
 	}
 	return
 }
+

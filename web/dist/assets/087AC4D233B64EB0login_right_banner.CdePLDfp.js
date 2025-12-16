@@ -1,4 +1,4 @@
 /*! 
  Build based on gin-vue-admin 
- Time : 1764840431000 */
+ Time : 1765858061000 */
 const s="/assets/087AC4D233B64EB0login_right_banner.Dgs3yKiB.jpg";export{s as _};

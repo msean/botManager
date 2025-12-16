@@ -24,8 +24,9 @@ import (
 )
 
 var (
-	GVA_DB        *gorm.DB
-	GVA_DBList    map[string]*gorm.DB
+	GVA_MYSQL     *gorm.DB
+	GVA_PGSQL     *gorm.DB
+	GVA_MYSQLList map[string]*gorm.DB
 	GVA_REDIS     redis.UniversalClient
 	GVA_REDISList map[string]redis.UniversalClient
 	GVA_MONGO     *qmgo.QmgoClient
@@ -46,14 +47,14 @@ var (
 func GetGlobalDBByDBName(dbname string) *gorm.DB {
 	lock.RLock()
 	defer lock.RUnlock()
-	return GVA_DBList[dbname]
+	return GVA_MYSQLList[dbname]
 }
 
 // MustGetGlobalDBByDBName 通过名称获取db 如果不存在则panic
 func MustGetGlobalDBByDBName(dbname string) *gorm.DB {
 	lock.RLock()
 	defer lock.RUnlock()
-	db, ok := GVA_DBList[dbname]
+	db, ok := GVA_MYSQLList[dbname]
 	if !ok || db == nil {
 		panic("db no init")
 	}

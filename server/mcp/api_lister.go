@@ -128,7 +128,7 @@ func (a *ApiLister) Handle(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallT
 // getDatabaseApis 获取数据库中的所有API
 func (a *ApiLister) getDatabaseApis() ([]ApiInfo, error) {
 	var apis []system.SysApi
-	err := global.GVA_DB.Model(&system.SysApi{}).Order("api_group ASC, path ASC").Find(&apis).Error
+	err := global.GVA_MYSQL.Model(&system.SysApi{}).Order("api_group ASC, path ASC").Find(&apis).Error
 	if err != nil {
 		return nil, err
 	}

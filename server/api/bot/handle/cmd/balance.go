@@ -10,7 +10,7 @@ import (
 )
 
 func BalanceShowHandle(update tgbotapi.Update, token string, botID int64) (err error) {
-	wallet, getWalletErr := dao.RechargeDao.GetUserWallet(global.GVA_DB, botID, bot_handler.GetChatUserID(update), "")
+	wallet, getWalletErr := dao.RechargeDao.GetUserWallet(global.GVA_MYSQL, botID, bot_handler.GetChatUserID(update), "")
 	if getWalletErr != nil {
 		err = getWalletErr
 		return

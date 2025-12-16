@@ -1,6 +1,6 @@
 {{- $db := "" }}
 {{- if eq .BusinessDB "" }}
- {{- $db = "global.GVA_DB" }}
+ {{- $db = "global.GVA_MYSQL" }}
 {{- else}}
  {{- $db =  printf "global.MustGetGlobalDBByDBName(\"%s\")" .BusinessDB   }}
 {{- end}}
@@ -195,7 +195,7 @@ func ({{.Abbreviation}}Service *{{.StructName}}Service)Get{{.StructName}}DataSou
 	   {{$key}} := make([]map[string]any, 0)
 	   {{ $dataDB := "" }}
 	   {{- if eq $value.DBName "" }}
-       {{ $dataDB = "global.GVA_DB" }}
+       {{ $dataDB = "global.GVA_MYSQL" }}
        {{- else}}
        {{ $dataDB = printf "global.MustGetGlobalDBByDBName(\"%s\")" $value.DBName }}
        {{- end}}

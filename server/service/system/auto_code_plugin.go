@@ -210,7 +210,7 @@ func (s *autoCodePlugin) InitMenu(menuInfo request.InitMenu) (err error) {
 	}
 
 	// 查询菜单及其关联的参数和按钮
-	err = global.GVA_DB.Preload("Parameters").Preload("MenuBtn").Find(&menus, "id in (?)", menuInfo.Menus).Error
+	err = global.GVA_MYSQL.Preload("Parameters").Preload("MenuBtn").Find(&menus, "id in (?)", menuInfo.Menus).Error
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (s *autoCodePlugin) InitAPI(apiInfo request.InitApi) (err error) {
 	astFile, err := parser.ParseFile(fileSet, "", src, 0)
 	arrayAst := ast.FindArray(astFile, "model", "SysApi")
 	var apis []system.SysApi
-	err = global.GVA_DB.Find(&apis, "id in (?)", apiInfo.APIs).Error
+	err = global.GVA_MYSQL.Find(&apis, "id in (?)", apiInfo.APIs).Error
 	if err != nil {
 		return err
 	}

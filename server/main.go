@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/msean/botmanager/server/core"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/initialize"
@@ -41,11 +43,11 @@ func initializeSystem() {
 	initialize.OtherInit()
 	global.GVA_LOG = core.Zap() // 初始化zap日志库
 	zap.ReplaceGlobals(global.GVA_LOG)
-	global.GVA_DB = initialize.Gorm() // gorm连接数据库
-	initialize.Timer()
-	initialize.DBList()
+	global.GVA_MYSQL = initialize.Gorm("mysql") // gorm连接数据库
+	global.GVA_PGSQL = initialize.Gorm("pgsql")
+	time.Sleep(10 * time.Second)
 	initialize.SetupHandlers() // 注册全局函数
-	if global.GVA_DB != nil {
+	if global.GVA_MYSQL != nil {
 		initialize.RegisterTables() // 初始化表
 	}
 }

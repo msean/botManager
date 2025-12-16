@@ -44,11 +44,11 @@ func (s *autoCodePackage) Create(ctx context.Context, info *request.SysAutoCodeP
 	default:
 		break
 	}
-	if !errors.Is(global.GVA_DB.Where("package_name = ? and template = ?", info.PackageName, info.Template).First(&model.SysAutoCodePackage{}).Error, gorm.ErrRecordNotFound) {
+	if !errors.Is(global.GVA_MYSQL.Where("package_name = ? and template = ?", info.PackageName, info.Template).First(&model.SysAutoCodePackage{}).Error, gorm.ErrRecordNotFound) {
 		return errors.New("存在相同PackageName")
 	}
 	create := info.Create()
-	return global.GVA_DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return global.GVA_MYSQL.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Create(&create).Error
 		if err != nil {
 			return errors.Wrap(err, "创建失败!")
@@ -108,7 +108,7 @@ func (s *autoCodePackage) Create(ctx context.Context, info *request.SysAutoCodeP
 // @author: [piexlmax](https://github.com/piexlmax)
 // @author: [SliverHorn](https://github.com/SliverHorn)
 func (s *autoCodePackage) Delete(ctx context.Context, info common.GetById) error {
-	err := global.GVA_DB.WithContext(ctx).Delete(&model.SysAutoCodePackage{}, info.Uint()).Error
+	err := global.GVA_MYSQL.WithContext(ctx).Delete(&model.SysAutoCodePackage{}, info.Uint()).Error
 	if err != nil {
 		return errors.Wrap(err, "删除失败!")
 	}
@@ -122,7 +122,7 @@ func (s *autoCodePackage) DeleteByNames(ctx context.Context, names []string) err
 	if len(names) == 0 {
 		return nil
 	}
-	err := global.GVA_DB.WithContext(ctx).Where("package_name IN ?", names).Delete(&model.SysAutoCodePackage{}).Error
+	err := global.GVA_MYSQL.WithContext(ctx).Where("package_name IN ?", names).Delete(&model.SysAutoCodePackage{}).Error
 	if err != nil {
 		return errors.Wrap(err, "删除失败!")
 	}
@@ -204,7 +204,7 @@ func (s *autoCodePackage) All(ctx context.Context) (entities []model.SysAutoCode
 		}
 	}
 
-	err = global.GVA_DB.WithContext(ctx).Find(&entities).Error
+	err = global.GVA_MYSQL.WithContext(ctx).Find(&entities).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "获取所有包失败!")
 	}
@@ -229,7 +229,7 @@ func (s *autoCodePackage) All(ctx context.Context) (entities []model.SysAutoCode
 	}
 
 	if len(createEntity) > 0 {
-		err = global.GVA_DB.WithContext(ctx).Create(&createEntity).Error
+		err = global.GVA_MYSQL.WithContext(ctx).Create(&createEntity).Error
 		if err != nil {
 			return nil, errors.Wrap(err, "同步失败!")
 		}
@@ -256,7 +256,7 @@ func (s *autoCodePackage) All(ctx context.Context) (entities []model.SysAutoCode
 
 	// 删除数据库中不存在文件的记录
 	if len(deleteEntityIDs) > 0 {
-		err = global.GVA_DB.WithContext(ctx).Delete(&model.SysAutoCodePackage{}, deleteEntityIDs).Error
+		err = global.GVA_MYSQL.WithContext(ctx).Delete(&model.SysAutoCodePackage{}, deleteEntityIDs).Error
 		if err != nil {
 			return nil, errors.Wrap(err, "删除不存在的包记录失败!")
 		}

@@ -58,7 +58,7 @@ func (c BotChannelCache) Release() error     { return CacheDelete(c) }
 func ReleaseChannelModelChange(modelID uint) (err error) {
 	var object bot.BotChannel
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(modelID)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(modelID)); !has || err != nil {
 		if !has {
 			err = fmt.Errorf("record not found")
 		}

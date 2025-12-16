@@ -31,7 +31,7 @@ type autoCodeHistory struct{}
 // Author [songzhibin97](https://github.com/songzhibin97)
 func (s *autoCodeHistory) Create(ctx context.Context, info request.SysAutoHistoryCreate) error {
 	create := info.Create()
-	err := global.GVA_DB.WithContext(ctx).Create(&create).Error
+	err := global.GVA_MYSQL.WithContext(ctx).Create(&create).Error
 	if err != nil {
 		return errors.Wrap(err, "创建失败!")
 	}
@@ -43,7 +43,7 @@ func (s *autoCodeHistory) Create(ctx context.Context, info request.SysAutoHistor
 // Author [songzhibin97](https://github.com/songzhibin97)
 func (s *autoCodeHistory) First(ctx context.Context, info common.GetById) (string, error) {
 	var meta string
-	err := global.GVA_DB.WithContext(ctx).Model(model.SysAutoCodeHistory{}).Where("id = ?", info.ID).Pluck("request", &meta).Error
+	err := global.GVA_MYSQL.WithContext(ctx).Model(model.SysAutoCodeHistory{}).Where("id = ?", info.ID).Pluck("request", &meta).Error
 	if err != nil {
 		return "", errors.Wrap(err, "获取失败!")
 	}
@@ -55,7 +55,7 @@ func (s *autoCodeHistory) First(ctx context.Context, info common.GetById) (strin
 // Author [songzhibin97](https://github.com/songzhibin97)
 func (s *autoCodeHistory) Repeat(businessDB, structName, abbreviation, Package string) bool {
 	var count int64
-	global.GVA_DB.Model(&model.SysAutoCodeHistory{}).Where("business_db = ? and (struct_name = ? OR abbreviation = ?) and package = ? and flag = ?", businessDB, structName, abbreviation, Package, 0).Count(&count).Debug()
+	global.GVA_MYSQL.Model(&model.SysAutoCodeHistory{}).Where("business_db = ? and (struct_name = ? OR abbreviation = ?) and package = ? and flag = ?", businessDB, structName, abbreviation, Package, 0).Count(&count).Debug()
 	return count > 0
 }
 
@@ -64,12 +64,12 @@ func (s *autoCodeHistory) Repeat(businessDB, structName, abbreviation, Package s
 // Author [songzhibin97](https://github.com/songzhibin97)
 func (s *autoCodeHistory) RollBack(ctx context.Context, info request.SysAutoHistoryRollBack) error {
 	var history model.SysAutoCodeHistory
-	err := global.GVA_DB.Where("id = ?", info.ID).First(&history).Error
+	err := global.GVA_MYSQL.Where("id = ?", info.ID).First(&history).Error
 	if err != nil {
 		return err
 	}
 	if history.ExportTemplateID != 0 {
-		err = global.GVA_DB.Delete(&model.SysExportTemplate{}, "id = ?", history.ExportTemplateID).Error
+		err = global.GVA_MYSQL.Delete(&model.SysExportTemplate{}, "id = ?", history.ExportTemplateID).Error
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ func (s *autoCodeHistory) RollBack(ctx context.Context, info request.SysAutoHist
 			return errors.Wrapf(err, "[src:%s][dst:%s]文件移动失败!", value, removePath)
 		}
 	} // 移动文件
-	err = global.GVA_DB.WithContext(ctx).Model(&model.SysAutoCodeHistory{}).Where("id = ?", info.ID).Update("flag", 1).Error
+	err = global.GVA_MYSQL.WithContext(ctx).Model(&model.SysAutoCodeHistory{}).Where("id = ?", info.ID).Update("flag", 1).Error
 	if err != nil {
 		return errors.Wrap(err, "更新失败!")
 	}
@@ -186,7 +186,7 @@ func (s *autoCodeHistory) RollBack(ctx context.Context, info request.SysAutoHist
 // Author [SliverHorn](https://github.com/SliverHorn)
 // Author [songzhibin97](https://github.com/songzhibin97)
 func (s *autoCodeHistory) Delete(ctx context.Context, info common.GetById) error {
-	err := global.GVA_DB.WithContext(ctx).Where("id = ?", info.Uint()).Delete(&model.SysAutoCodeHistory{}).Error
+	err := global.GVA_MYSQL.WithContext(ctx).Where("id = ?", info.Uint()).Delete(&model.SysAutoCodeHistory{}).Error
 	if err != nil {
 		return errors.Wrap(err, "删除失败!")
 	}
@@ -198,7 +198,7 @@ func (s *autoCodeHistory) Delete(ctx context.Context, info common.GetById) error
 // Author [songzhibin97](https://github.com/songzhibin97)
 func (s *autoCodeHistory) GetList(ctx context.Context, info common.PageInfo) (list []model.SysAutoCodeHistory, total int64, err error) {
 	var entities []model.SysAutoCodeHistory
-	db := global.GVA_DB.WithContext(ctx).Model(&model.SysAutoCodeHistory{})
+	db := global.GVA_MYSQL.WithContext(ctx).Model(&model.SysAutoCodeHistory{})
 	err = db.Count(&total).Error
 	if err != nil {
 		return nil, total, err
@@ -213,6 +213,6 @@ func (s *autoCodeHistory) DropTable(BusinessDb, tableName string) error {
 	if BusinessDb != "" {
 		return global.MustGetGlobalDBByDBName(BusinessDb).Exec("DROP TABLE " + tableName).Error
 	} else {
-		return global.GVA_DB.Exec("DROP TABLE " + tableName).Error
+		return global.GVA_MYSQL.Exec("DROP TABLE " + tableName).Error
 	}
 }

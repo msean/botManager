@@ -90,7 +90,7 @@ func (tr *TaskRunner) Run() {
 			// 如果任务设置了 StopTime 且已到期，停止任务
 			if !tr.Task.StopTime.IsZero() && now.After(tr.Task.StopTime) {
 				tr.Task.Status = 2
-				global.GVA_DB.Model(tr.Task).Update("status", 2)
+				global.GVA_MYSQL.Model(tr.Task).Update("status", 2)
 				global.GVA_LOG.Info("TaskRunner StopTask due to StopTime", zap.Int("taskID", int(tr.Task.ID)))
 				return
 			}
@@ -101,7 +101,7 @@ func (tr *TaskRunner) Run() {
 				// 如果下次发送时间已经超过 StopTime，则任务结束
 				if !tr.Task.StopTime.IsZero() && tr.Task.NextSendTime.After(tr.Task.StopTime) {
 					tr.Task.Status = 2
-					global.GVA_DB.Model(tr.Task).Update("status", 2)
+					global.GVA_MYSQL.Model(tr.Task).Update("status", 2)
 					global.GVA_LOG.Info("TaskRunner StopTask due to StopTime (next send)", zap.Int("taskID", int(tr.Task.ID)))
 					return
 				}
@@ -132,7 +132,7 @@ func (tr *TaskRunner) Run() {
 				// 如果下次发送时间已经超过 StopTime，则任务结束
 				if !tr.Task.StopTime.IsZero() && tr.Task.NextSendTime.After(tr.Task.StopTime) {
 					tr.Task.Status = 2
-					global.GVA_DB.Model(tr.Task).Updates(map[string]interface{}{
+					global.GVA_MYSQL.Model(tr.Task).Updates(map[string]interface{}{
 						"pre_send_time":  tr.Task.PreSendTime,
 						"next_send_time": tr.Task.NextSendTime,
 						"status":         2,
@@ -141,7 +141,7 @@ func (tr *TaskRunner) Run() {
 					return
 				}
 
-				global.GVA_DB.Model(tr.Task).Updates(map[string]interface{}{
+				global.GVA_MYSQL.Model(tr.Task).Updates(map[string]interface{}{
 					"pre_send_time":  tr.Task.PreSendTime,
 					"next_send_time": tr.Task.NextSendTime,
 				})
@@ -152,7 +152,7 @@ func (tr *TaskRunner) Run() {
 
 func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 	// 1. 获取 bot
-	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID))
+	botModel, has, err := dao.BotDao.FromBotID(global.GVA_MYSQL, int(task.BotID))
 	if !has || err != nil {
 		if !has {
 			return fmt.Errorf("bot %d not found", task.BotID)
@@ -253,7 +253,7 @@ func InitBotTaskManager() {
 		tasks: make(map[uint]*TaskRunner),
 	}
 	var tasks []bot.BotTask
-	err := global.GVA_DB.
+	err := global.GVA_MYSQL.
 		Where("status = ? AND (stop_time IS NULL OR stop_time > ?)", 1, time.Now()).
 		Find(&tasks).Error
 	if err != nil {

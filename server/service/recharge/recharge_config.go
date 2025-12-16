@@ -19,14 +19,14 @@ type RechargeConfigService struct{}
 // Author [yourname](https://github.com/yourname)
 func (rechargeConfigService *RechargeConfigService) CreateRechargeConfig(ctx context.Context, rechargeConfig *recharge.RechargeConfig) (err error) {
 	var has bool
-	has, err = dao.RechargeDao.ExistConfig(global.GVA_DB, rechargeConfig.BotID, int(rechargeConfig.PublishTimes))
+	has, err = dao.RechargeDao.ExistConfig(global.GVA_MYSQL, rechargeConfig.BotID, int(rechargeConfig.PublishTimes))
 	if err != nil {
 		return
 	}
 	if has {
 		return fmt.Errorf("存在该机器人发布次数%d的配置", rechargeConfig.PublishTimes)
 	}
-	err = global.GVA_DB.Create(rechargeConfig).Error
+	err = global.GVA_MYSQL.Create(rechargeConfig).Error
 	return err
 }
 
@@ -38,7 +38,7 @@ func (rechargeConfigService *RechargeConfigService) DeleteRechargeConfig(ctx con
 		return
 	}
 	cache.ReleaseRechargeCnf(id)
-	if err = global.GVA_DB.Delete(&recharge.RechargeConfig{}, "id = ?", ID).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&recharge.RechargeConfig{}, "id = ?", ID).Error; err != nil {
 		return
 	}
 	return err
@@ -53,21 +53,21 @@ func (rechargeConfigService *RechargeConfigService) DeleteRechargeConfigByIds(ct
 			cache.ReleaseRechargeCnf(id)
 		}
 	}
-	return global.GVA_DB.Delete(&[]recharge.RechargeConfig{}, "id in ?", IDs).Error
+	return global.GVA_MYSQL.Delete(&[]recharge.RechargeConfig{}, "id in ?", IDs).Error
 }
 
 // UpdateRechargeConfig 更新充值配置记录
 // Author [yourname](https://github.com/yourname)
 func (rechargeConfigService *RechargeConfigService) UpdateRechargeConfig(ctx context.Context, rechargeConfig recharge.RechargeConfig) (err error) {
 	cache.ReleaseRechargeCnf(int(rechargeConfig.ID))
-	err = global.GVA_DB.Model(&recharge.RechargeConfig{}).Where("id = ?", rechargeConfig.ID).Updates(&rechargeConfig).Error
+	err = global.GVA_MYSQL.Model(&recharge.RechargeConfig{}).Where("id = ?", rechargeConfig.ID).Updates(&rechargeConfig).Error
 	return err
 }
 
 // GetRechargeConfig 根据ID获取充值配置记录
 // Author [yourname](https://github.com/yourname)
 func (rechargeConfigService *RechargeConfigService) GetRechargeConfig(ctx context.Context, ID string) (rechargeConfig recharge.RechargeConfig, err error) {
-	if err = global.GVA_DB.Where("id = ?", ID).First(&rechargeConfig).Error; err != nil {
+	if err = global.GVA_MYSQL.Where("id = ?", ID).First(&rechargeConfig).Error; err != nil {
 		return
 	}
 	return
@@ -79,7 +79,7 @@ func (rechargeConfigService *RechargeConfigService) GetRechargeConfigInfoList(ct
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&recharge.RechargeConfig{})
+	db := global.GVA_MYSQL.Model(&recharge.RechargeConfig{})
 	var rechargeConfigs []*recharge.RechargeConfig
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -109,7 +109,7 @@ func (rechargeConfigService *RechargeConfigService) GetRechargeConfigInfoList(ct
 	}
 
 	var botMapper map[int64]bot.Bot
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 

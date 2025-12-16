@@ -43,7 +43,7 @@ func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err erro
 	// 		"⏱️ 发布请求已超时，请重新提交内容。"))
 	// 	return nil
 	// }
-	// if err = dao.RechargeDao.CancelOrder(global.GVA_DB, botID, userID, msgID); err != nil {
+	// if err = dao.RechargeDao.CancelOrder(global.GVA_MYSQL, botID, userID, msgID); err != nil {
 	// 	global.GVA_LOG.Error("HandleAdCancel CancelOrder", zap.Error(err))
 	// 	return
 	// }
@@ -97,7 +97,7 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 	}
 
 	var wallet recharge.UserWallet
-	if wallet, err = dao.RechargeDao.GetUserWallet(global.GVA_DB, botID, userID, userName); err != nil {
+	if wallet, err = dao.RechargeDao.GetUserWallet(global.GVA_MYSQL, botID, userID, userName); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm GetUserWallet", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.String("userName", userName), zap.Int64("userID", userID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
 		if err = botHandler.SendTextMessage(chatID, "获取余额失败，稍后再试"); err != nil {
 			global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", botID), zap.Int64("chatID", chatID), zap.Int64("msgID", int64(draftMsgID)), zap.Error(err))
@@ -146,7 +146,7 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 	}
 
 	// 余额充足 立马 扣减余额
-	if _, err = dao.RechargeDao.ReduceBalance(global.GVA_DB, botID, userID, cnf.Price); err != nil {
+	if _, err = dao.RechargeDao.ReduceBalance(global.GVA_MYSQL, botID, userID, cnf.Price); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Any("price", cnf.Price), zap.Error(err))
 		return
 	}
@@ -158,7 +158,7 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 				channelIDList = append(channelIDList, channel.ChannelID)
 			}
 			err := dao.RechargeDao.CreatePublishRecords(
-				global.GVA_DB,
+				global.GVA_MYSQL,
 				recharge.AdPublishRecord{
 					BotID:        botID,
 					PublishTimes: 1,

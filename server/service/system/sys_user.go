@@ -27,13 +27,13 @@ var UserServiceApp = new(UserService)
 
 func (userService *UserService) Register(u system.SysUser) (userInter system.SysUser, err error) {
 	var user system.SysUser
-	if !errors.Is(global.GVA_DB.Where("username = ?", u.Username).First(&user).Error, gorm.ErrRecordNotFound) { // 判断用户名是否注册
+	if !errors.Is(global.GVA_MYSQL.Where("username = ?", u.Username).First(&user).Error, gorm.ErrRecordNotFound) { // 判断用户名是否注册
 		return userInter, errors.New("用户名已注册")
 	}
 	// 否则 附加uuid 密码hash加密 注册
 	u.Password = utils.BcryptHash(u.Password)
 	u.UUID = uuid.New()
-	err = global.GVA_DB.Create(&u).Error
+	err = global.GVA_MYSQL.Create(&u).Error
 	return u, err
 }
 
@@ -45,12 +45,12 @@ func (userService *UserService) Register(u system.SysUser) (userInter system.Sys
 //@return: err error, userInter *model.SysUser
 
 func (userService *UserService) Login(u *system.SysUser) (userInter *system.SysUser, err error) {
-	if nil == global.GVA_DB {
+	if nil == global.GVA_MYSQL {
 		return nil, fmt.Errorf("db not init")
 	}
 
 	var user system.SysUser
-	err = global.GVA_DB.Where("username = ?", u.Username).Preload("Authorities").Preload("Authority").First(&user).Error
+	err = global.GVA_MYSQL.Where("username = ?", u.Username).Preload("Authorities").Preload("Authority").First(&user).Error
 	if err == nil {
 		if ok := utils.BcryptCheck(u.Password, user.Password); !ok {
 			return nil, errors.New("密码错误")
@@ -68,7 +68,7 @@ func (userService *UserService) Login(u *system.SysUser) (userInter *system.SysU
 
 func (userService *UserService) ChangePassword(u *system.SysUser, newPassword string) (err error) {
 	var user system.SysUser
-	err = global.GVA_DB.Select("id, password").Where("id = ?", u.ID).First(&user).Error
+	err = global.GVA_MYSQL.Select("id, password").Where("id = ?", u.ID).First(&user).Error
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (userService *UserService) ChangePassword(u *system.SysUser, newPassword st
 		return errors.New("原密码错误")
 	}
 	pwd := utils.BcryptHash(newPassword)
-	err = global.GVA_DB.Model(&user).Update("password", pwd).Error
+	err = global.GVA_MYSQL.Model(&user).Update("password", pwd).Error
 	return err
 }
 
@@ -89,7 +89,7 @@ func (userService *UserService) ChangePassword(u *system.SysUser, newPassword st
 func (userService *UserService) GetUserInfoList(info systemReq.GetUserList) (list interface{}, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
-	db := global.GVA_DB.Model(&system.SysUser{})
+	db := global.GVA_MYSQL.Model(&system.SysUser{})
 	var userList []system.SysUser
 
 	if info.NickName != "" {
@@ -121,19 +121,19 @@ func (userService *UserService) GetUserInfoList(info systemReq.GetUserList) (lis
 
 func (userService *UserService) SetUserAuthority(id uint, authorityId uint) (err error) {
 
-	assignErr := global.GVA_DB.Where("sys_user_id = ? AND sys_authority_authority_id = ?", id, authorityId).First(&system.SysUserAuthority{}).Error
+	assignErr := global.GVA_MYSQL.Where("sys_user_id = ? AND sys_authority_authority_id = ?", id, authorityId).First(&system.SysUserAuthority{}).Error
 	if errors.Is(assignErr, gorm.ErrRecordNotFound) {
 		return errors.New("该用户无此角色")
 	}
 
 	var authority system.SysAuthority
-	err = global.GVA_DB.Where("authority_id = ?", authorityId).First(&authority).Error
+	err = global.GVA_MYSQL.Where("authority_id = ?", authorityId).First(&authority).Error
 	if err != nil {
 		return err
 	}
 	var authorityMenu []system.SysAuthorityMenu
 	var authorityMenuIDs []string
-	err = global.GVA_DB.Where("sys_authority_authority_id = ?", authorityId).Find(&authorityMenu).Error
+	err = global.GVA_MYSQL.Where("sys_authority_authority_id = ?", authorityId).Find(&authorityMenu).Error
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (userService *UserService) SetUserAuthority(id uint, authorityId uint) (err
 	}
 
 	var authorityMenus []system.SysBaseMenu
-	err = global.GVA_DB.Preload("Parameters").Where("id in (?)", authorityMenuIDs).Find(&authorityMenus).Error
+	err = global.GVA_MYSQL.Preload("Parameters").Where("id in (?)", authorityMenuIDs).Find(&authorityMenus).Error
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (userService *UserService) SetUserAuthority(id uint, authorityId uint) (err
 		return errors.New("找不到默认路由,无法切换本角色")
 	}
 
-	err = global.GVA_DB.Model(&system.SysUser{}).Where("id = ?", id).Update("authority_id", authorityId).Error
+	err = global.GVA_MYSQL.Model(&system.SysUser{}).Where("id = ?", id).Update("authority_id", authorityId).Error
 	return err
 }
 
@@ -169,7 +169,7 @@ func (userService *UserService) SetUserAuthority(id uint, authorityId uint) (err
 //@return: err error
 
 func (userService *UserService) SetUserAuthorities(adminAuthorityID, id uint, authorityIds []uint) (err error) {
-	return global.GVA_DB.Transaction(func(tx *gorm.DB) error {
+	return global.GVA_MYSQL.Transaction(func(tx *gorm.DB) error {
 		var user system.SysUser
 		TxErr := tx.Where("id = ?", id).First(&user).Error
 		if TxErr != nil {
@@ -210,7 +210,7 @@ func (userService *UserService) SetUserAuthorities(adminAuthorityID, id uint, au
 //@return: err error
 
 func (userService *UserService) DeleteUser(id int) (err error) {
-	return global.GVA_DB.Transaction(func(tx *gorm.DB) error {
+	return global.GVA_MYSQL.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("id = ?", id).Delete(&system.SysUser{}).Error; err != nil {
 			return err
 		}
@@ -228,7 +228,7 @@ func (userService *UserService) DeleteUser(id int) (err error) {
 //@return: err error, user model.SysUser
 
 func (userService *UserService) SetUserInfo(req system.SysUser) error {
-	return global.GVA_DB.Model(&system.SysUser{}).
+	return global.GVA_MYSQL.Model(&system.SysUser{}).
 		Select("updated_at", "nick_name", "header_img", "phone", "email", "enable").
 		Where("id=?", req.ID).
 		Updates(map[string]interface{}{
@@ -248,7 +248,7 @@ func (userService *UserService) SetUserInfo(req system.SysUser) error {
 //@return: err error, user model.SysUser
 
 func (userService *UserService) SetSelfInfo(req system.SysUser) error {
-	return global.GVA_DB.Model(&system.SysUser{}).
+	return global.GVA_MYSQL.Model(&system.SysUser{}).
 		Where("id=?", req.ID).
 		Updates(req).Error
 }
@@ -260,7 +260,7 @@ func (userService *UserService) SetSelfInfo(req system.SysUser) error {
 //@return: err error
 
 func (userService *UserService) SetSelfSetting(req common.JSONMap, uid uint) error {
-	return global.GVA_DB.Model(&system.SysUser{}).Where("id = ?", uid).Update("origin_setting", req).Error
+	return global.GVA_MYSQL.Model(&system.SysUser{}).Where("id = ?", uid).Update("origin_setting", req).Error
 }
 
 //@author: [piexlmax](https://github.com/piexlmax)
@@ -272,7 +272,7 @@ func (userService *UserService) SetSelfSetting(req common.JSONMap, uid uint) err
 
 func (userService *UserService) GetUserInfo(uuid uuid.UUID) (user system.SysUser, err error) {
 	var reqUser system.SysUser
-	err = global.GVA_DB.Preload("Authorities").Preload("Authority").First(&reqUser, "uuid = ?", uuid).Error
+	err = global.GVA_MYSQL.Preload("Authorities").Preload("Authority").First(&reqUser, "uuid = ?", uuid).Error
 	if err != nil {
 		return reqUser, err
 	}
@@ -288,7 +288,7 @@ func (userService *UserService) GetUserInfo(uuid uuid.UUID) (user system.SysUser
 
 func (userService *UserService) FindUserById(id int) (user *system.SysUser, err error) {
 	var u system.SysUser
-	err = global.GVA_DB.Where("id = ?", id).First(&u).Error
+	err = global.GVA_MYSQL.Where("id = ?", id).First(&u).Error
 	return &u, err
 }
 
@@ -300,7 +300,7 @@ func (userService *UserService) FindUserById(id int) (user *system.SysUser, err 
 
 func (userService *UserService) FindUserByUuid(uuid string) (user *system.SysUser, err error) {
 	var u system.SysUser
-	if err = global.GVA_DB.Where("uuid = ?", uuid).First(&u).Error; err != nil {
+	if err = global.GVA_MYSQL.Where("uuid = ?", uuid).First(&u).Error; err != nil {
 		return &u, errors.New("用户不存在")
 	}
 	return &u, nil
@@ -313,6 +313,6 @@ func (userService *UserService) FindUserByUuid(uuid string) (user *system.SysUse
 //@return: err error
 
 func (userService *UserService) ResetPassword(ID uint, password string) (err error) {
-	err = global.GVA_DB.Model(&system.SysUser{}).Where("id = ?", ID).Update("password", utils.BcryptHash(password)).Error
+	err = global.GVA_MYSQL.Model(&system.SysUser{}).Where("id = ?", ID).Update("password", utils.BcryptHash(password)).Error
 	return err
 }

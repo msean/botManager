@@ -1,6 +1,6 @@
 {{- $db := "" }}
 {{- if eq .BusinessDB "" }}
- {{- $db = "global.GVA_DB" }}
+ {{- $db = "global.GVA_MYSQL" }}
 {{- else}}
  {{- $db =  printf "global.MustGetGlobalDBByDBName(\"%s\")" .BusinessDB   }}
 {{- end}}

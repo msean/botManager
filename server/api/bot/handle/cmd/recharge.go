@@ -114,7 +114,7 @@ func RechargeCancelHandler(update tgbotapi.Update, token string, botID int64) (e
 	bot, _ := tgbotapi.NewBotAPI(token)
 
 	// 修改数据库记录为【已取消】
-	err = global.GVA_DB.Model(&rechargeModel.UserRechargeRecord{}).
+	err = global.GVA_MYSQL.Model(&rechargeModel.UserRechargeRecord{}).
 		Where("id = ?", cancelRechargeID).
 		Update("status", constant.AdRechargeCancel).Error // 4 = 已取消(你自定义)
 	if err != nil {
@@ -167,7 +167,7 @@ func RechargeInputCallbackHandler(update tgbotapi.Update, token string, botID in
 func CheckRechargeAndNotify(botID, userID, chatID int64, token string) (canRecharge bool, err error) {
 	var record rechargeModel.UserRechargeRecord
 
-	err = global.GVA_DB.
+	err = global.GVA_MYSQL.
 		Where("bot_id = ? AND user_id = ? AND status = ?", botID, userID, constant.AdRechargeCreate).
 		Order("id DESC").
 		First(&record).Error

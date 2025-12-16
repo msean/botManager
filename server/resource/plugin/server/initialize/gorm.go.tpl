@@ -9,7 +9,7 @@ import (
 )
 
 func Gorm(ctx context.Context) {
-	err := global.GVA_DB.WithContext(ctx).AutoMigrate()
+	err := global.GVA_MYSQL.WithContext(ctx).AutoMigrate()
 	if err != nil {
 		err = errors.Wrap(err, "注册表失败!")
 		zap.L().Error(fmt.Sprintf("%+v", err))

@@ -11,7 +11,7 @@ import (
 )
 
 func Gorm(ctx context.Context) {
-	err := global.GVA_DB.WithContext(ctx).AutoMigrate(
+	err := global.GVA_MYSQL.WithContext(ctx).AutoMigrate(
 		new(model.Info),
 	)
 	if err != nil {

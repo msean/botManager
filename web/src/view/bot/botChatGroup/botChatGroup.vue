@@ -58,7 +58,6 @@
         <el-button type="primary" icon="plus" @click="openDialog()">新增</el-button>
         <el-button icon="delete" style="margin-left: 10px;" :disabled="!multipleSelection.length" @click="onDelete">删除</el-button>
       </div>
-
       <el-table
         ref="multipleTable"
         style="width: 100%"
@@ -68,10 +67,45 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column align="left" label="机器人名称" prop="botName" width="240" />
-        <el-table-column align="left" label="群组名称" prop="chatGroupName" width="400" />
-        <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
-          <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
+
+        <el-table-column
+          align="left"
+          label="机器人名称"
+          prop="botName"
+          width="240"
+        />
+
+        <el-table-column
+          align="left"
+          label="群组名称"
+          prop="chatGroupName"
+          width="400"
+        />
+
+        <el-table-column
+          align="left"
+          label="开启消息同步"
+          width="200"
+        >
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.syncMessage === 1"
+              active-text="开启"
+              inactive-text="关闭"
+              @change="val => onSyncChange(val, row)"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column
+          sortable
+          align="left"
+          label="日期"
+          prop="createdAt"
+          width="180"
+        >
+          <template #default="scope">
+            {{ formatDate(scope.row.createdAt) }}
+          </template>
         </el-table-column>
       </el-table>
       <div class="gva-pagination">
@@ -217,6 +251,7 @@ const getTableData = async () => {
   }
 }
 
+
 // 🔹 获取机器人列表
 const botList = ref([])
 const loadBotList = async () => {
@@ -310,18 +345,38 @@ const enterDialog = async () => {
   })
 }
 
-const getDetails = async row => {
-  const res = await findBotChatGroup({ ID: row.ID })
-  if (res.code === 0) {
-    detailForm.value = res.data
-    detailShow.value = true
+const onSyncChange = async (val, row) => {
+  // val: true / false
+  // row: 当前整行数据
+
+  const newSyncValue = val ? 1 : 2
+
+  // 组装完整更新参数（整行一起更新）
+  const payload = {
+    ID: row.ID,
+    botID: row.botID,
+    chatGroupID: row.chatGroupID,
+    chatGroupName: row.chatGroupName,
+    syncMessage: newSyncValue
+  }
+
+  try {
+    const res = await updateBotChatGroup(payload)
+    if (res.code === 0) {
+      ElMessage.success(newSyncValue === 1 ? '消息同步已开启' : '消息同步已关闭')
+      // 直接更新当前行，避免重新拉列表
+      row.syncMessage = newSyncValue
+    } else {
+      throw new Error(res.msg || '更新失败')
+    }
+  } catch (e) {
+    ElMessage.error('更新失败，已回滚')
+    // 回滚 UI
+    row.syncMessage = row.syncMessage === 1 ? 2 : 1
   }
 }
 
-const closeDetailShow = () => {
-  detailShow.value = false
-  detailForm.value = {}
-}
+
 
 onMounted(() => {
   getTableData()

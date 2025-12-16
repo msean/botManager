@@ -145,7 +145,7 @@ func (c RechargeCnfCacheList) Release() error         { return CacheDelete(c) }
 func ReleaseRechargeCnf(modelID int) (err error) {
 	var object recharge.RechargeConfig
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(modelID)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(modelID)); !has || err != nil {
 		if !has {
 			err = fmt.Errorf("record not found")
 		}

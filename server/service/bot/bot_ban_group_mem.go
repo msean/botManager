@@ -18,7 +18,7 @@ type BotBanGroupMemService struct{}
 // CreateBotBanGroupMem 创建封禁成员设置记录
 // Author [yourname](https://github.com/yourname)
 func (botBanGroupMemService *BotBanGroupMemService) CreateBotBanGroupMem(ctx context.Context, botBanGroupMem *bot.BotBanGroupMem) (err error) {
-	if err = global.GVA_DB.Create(botBanGroupMem).Error; err != nil {
+	if err = global.GVA_MYSQL.Create(botBanGroupMem).Error; err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("botBanGroupMem", botBanGroupMem), zap.Error(err))
 		return
 	}
@@ -34,11 +34,11 @@ func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMem(ctx con
 	}
 	var object bot.BotBanGroupMem
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(ID)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(ID)); !has || err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id), zap.Error(err))
 		return
 	}
-	if err = global.GVA_DB.Delete(&bot.BotBanGroupMem{}, "id = ?", ID).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&bot.BotBanGroupMem{}, "id = ?", ID).Error; err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id))
 		return
 	}
@@ -54,12 +54,12 @@ func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMem(ctx con
 func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMemByIds(ctx context.Context, IDs []string) (err error) {
 	ids := utils.StringsToIntsIgnoreError(IDs)
 	var objects []bot.BotBanGroupMem
-	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+	if err = utils.Find(global.GVA_MYSQL, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("ids", IDs), zap.Error(err))
 		return
 	}
 
-	if err = global.GVA_DB.Delete(&[]bot.BotBanGroupMem{}, "id in ?", ids).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.BotBanGroupMem{}, "id in ?", ids).Error; err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("ids", IDs))
 		return
 	}
@@ -74,7 +74,7 @@ func (botBanGroupMemService *BotBanGroupMemService) DeleteBotBanGroupMemByIds(ct
 // UpdateBotBanGroupMem 更新封禁成员设置记录
 // Author [yourname](https://github.com/yourname)
 func (botBanGroupMemService *BotBanGroupMemService) UpdateBotBanGroupMem(ctx context.Context, botBanGroupMem bot.BotBanGroupMem) (err error) {
-	if err = global.GVA_DB.Model(&bot.BotBanGroupMem{}).Where("id = ?", botBanGroupMem.ID).Updates(&botBanGroupMem).Error; err != nil {
+	if err = global.GVA_MYSQL.Model(&bot.BotBanGroupMem{}).Where("id = ?", botBanGroupMem.ID).Updates(&botBanGroupMem).Error; err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", botBanGroupMem.ID))
 		return
 	}
@@ -87,7 +87,7 @@ func (botBanGroupMemService *BotBanGroupMemService) UpdateBotBanGroupMem(ctx con
 // GetBotBanGroupMem 根据ID获取封禁成员设置记录
 // Author [yourname](https://github.com/yourname)
 func (botBanGroupMemService *BotBanGroupMemService) GetBotBanGroupMem(ctx context.Context, ID string) (botBanGroupMem bot.BotBanGroupMem, err error) {
-	err = global.GVA_DB.Where("id = ?", ID).First(&botBanGroupMem).Error
+	err = global.GVA_MYSQL.Where("id = ?", ID).First(&botBanGroupMem).Error
 	return
 }
 
@@ -97,7 +97,7 @@ func (botBanGroupMemService *BotBanGroupMemService) GetBotBanGroupMemInfoList(ct
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&bot.BotBanGroupMem{})
+	db := global.GVA_MYSQL.Model(&bot.BotBanGroupMem{})
 	var botBanGroupMems []*bot.BotBanGroupMem
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -131,11 +131,11 @@ func (botBanGroupMemService *BotBanGroupMemService) GetBotBanGroupMemInfoList(ct
 
 	var botMapper map[int64]bot.Bot
 	var chatGroupMapper map[int64]bot.BotChatGroup
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 
-	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_DB, chatGroupList); err != nil {
+	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, chatGroupList); err != nil {
 		return
 	}
 

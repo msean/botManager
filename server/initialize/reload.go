@@ -16,8 +16,8 @@ func Reload() error {
 	}
 
 	// 重新初始化数据库连接
-	if global.GVA_DB != nil {
-		db, _ := global.GVA_DB.DB()
+	if global.GVA_MYSQL != nil {
+		db, _ := global.GVA_MYSQL.DB()
 		err := db.Close()
 		if err != nil {
 			global.GVA_LOG.Error("关闭原数据库连接失败!", zap.Error(err))
@@ -26,13 +26,13 @@ func Reload() error {
 	}
 
 	// 重新建立数据库连接
-	global.GVA_DB = Gorm()
+	global.GVA_MYSQL = Gorm("mysql")
 
 	// 重新初始化其他配置
 	OtherInit()
 	DBList()
 
-	if global.GVA_DB != nil {
+	if global.GVA_MYSQL != nil {
 		// 确保数据库表结构是最新的
 		RegisterTables()
 	}

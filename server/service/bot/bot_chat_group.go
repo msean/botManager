@@ -17,7 +17,7 @@ type BotChatGroupService struct{}
 // CreateBotChatGroup 创建机器人群组列表记录
 // Author [yourname](https://github.com/yourname)
 func (botChatGroupService *BotChatGroupService) CreateBotChatGroup(ctx context.Context, botChatGroup *bot.BotChatGroup) (err error) {
-	err = global.GVA_DB.Create(botChatGroup).Error
+	err = global.GVA_MYSQL.Create(botChatGroup).Error
 	return err
 }
 
@@ -31,7 +31,7 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroup(ctx context.C
 	if err = cache.ReleaseBotChatGroup(id); err != nil {
 		return
 	}
-	if err = global.GVA_DB.Delete(&bot.BotChatGroup{}, "id = ?", id).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&bot.BotChatGroup{}, "id = ?", id).Error; err != nil {
 		return
 	}
 	return err
@@ -44,7 +44,7 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroupByIds(ctx cont
 	for _, id := range ids {
 		cache.ReleaseBotChatGroup(id)
 	}
-	if err = global.GVA_DB.Delete(&[]bot.BotChatGroup{}, "id in ?", IDs).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.BotChatGroup{}, "id in ?", IDs).Error; err != nil {
 		return
 	}
 
@@ -54,14 +54,14 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroupByIds(ctx cont
 // UpdateBotChatGroup 更新机器人群组列表记录
 // Author [yourname](https://github.com/yourname)
 func (botChatGroupService *BotChatGroupService) UpdateBotChatGroup(ctx context.Context, botChatGroup bot.BotChatGroup) (err error) {
-	err = global.GVA_DB.Model(&bot.BotChatGroup{}).Where("id = ?", botChatGroup.ID).Updates(&botChatGroup).Error
+	err = global.GVA_MYSQL.Model(&bot.BotChatGroup{}).Where("id = ?", botChatGroup.ID).Updates(&botChatGroup).Error
 	return err
 }
 
 // GetBotChatGroup 根据ID获取机器人群组列表记录
 // Author [yourname](https://github.com/yourname)
 func (botChatGroupService *BotChatGroupService) GetBotChatGroup(ctx context.Context, ID string) (botChatGroup bot.BotChatGroup, err error) {
-	err = global.GVA_DB.Where("id = ?", ID).First(&botChatGroup).Error
+	err = global.GVA_MYSQL.Where("id = ?", ID).First(&botChatGroup).Error
 	return
 }
 
@@ -71,7 +71,7 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupInfoList(ctx cont
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&bot.BotChatGroup{})
+	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{})
 	var botChatGroups []*bot.BotChatGroup
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -98,7 +98,7 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupInfoList(ctx cont
 	}
 
 	var botMapper map[int64]bot.Bot
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 	for _, object := range botChatGroups {

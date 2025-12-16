@@ -10,6 +10,8 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +38,7 @@ func (handler *BotHandler) Handle(c *gin.Context, botID int, body []byte) (err e
 		return
 	}
 
-	botModel, has, err := dao.BotDao.FromBotID(global.GVA_DB, botID)
+	botModel, has, err := dao.BotDao.FromBotID(global.GVA_MYSQL, botID)
 	if err != nil || !has {
 		global.GVA_LOG.Error("bot not found", zap.Int("botID", botID), zap.Error(err))
 		return
@@ -62,8 +64,9 @@ func (handler *BotHandler) Handle(c *gin.Context, botID int, body []byte) (err e
 		cmd.Handle(tgMsg, botModel.Token, int64(botModel.BotID))
 
 	default:
+		// 被拉入群
 		if tgMsg.MyChatMember != nil {
-			SyncChatGroup(botModel, tgMsg)
+			SyncChatGroup(botModel, tgMsg, nil, false)
 			return nil
 		}
 
@@ -88,7 +91,21 @@ func (handler *BotHandler) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update
 
 // HandelChatGroup 处理群聊消息
 func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
-	SyncChatGroup(botModel, tgMsg)
+	var has bool
+	chatGroupID := bot_handler.GetChatID(tgMsg)
+	chatGroup := cache.NewBotChatGroupCache(botModel.BotID, chatGroupID)
+	has, err = cache.CacheGetItem(chatGroup)
+	if err != nil {
+		global.GVA_LOG.Error("CacheGet failed", zap.Int64("chatID", chatGroupID), zap.Error(err))
+		return
+	}
+
+	// 需要同步群聊消息
+	if chatGroup.SyncMessage == 1 {
+		go SyncChatGroupMessage(botModel.BotID, chatGroupID, tgMsg)
+	}
+
+	SyncChatGroup(botModel, tgMsg, chatGroup, has)
 
 	// 只要消息是转发的都需要禁止
 	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {

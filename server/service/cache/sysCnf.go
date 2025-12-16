@@ -50,7 +50,7 @@ func LoadSyscnf(key string, createIfNotExist bool, defaultVal string) (sysCache 
 				Name:  key,
 				Desc:  "系统自动初始化默认参数",
 			}
-			if err = global.GVA_DB.Create(&param).Error; err != nil {
+			if err = global.GVA_MYSQL.Create(&param).Error; err != nil {
 				return
 			}
 			sysCache.Key = key
@@ -66,7 +66,7 @@ func LoadSyscnf(key string, createIfNotExist bool, defaultVal string) (sysCache 
 func ReleaseSysCnf(modelID int) (err error) {
 	var object system.SysParams
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(modelID)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(modelID)); !has || err != nil {
 		if !has {
 			err = fmt.Errorf("record not found")
 		}

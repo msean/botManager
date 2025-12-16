@@ -112,7 +112,7 @@ func (c *KvCacheObject) fromDB(obj any) (bool, error) {
 		conds = append(conds, utils.NewWhereCond(p.PKCol, p.PKVal))
 	}
 
-	has, err := utils.Get(global.GVA_DB.Table(c.table), obj, conds...)
+	has, err := utils.Get(global.GVA_MYSQL.Table(c.table), obj, conds...)
 	return has, err
 }
 
@@ -151,7 +151,7 @@ func (c *KvCacheObject) listFromDB(obj any) error {
 	}
 
 	// 查询数据库
-	err := utils.Find(global.GVA_DB.Table(c.table), sliceVal, conds...)
+	err := utils.Find(global.GVA_MYSQL.Table(c.table), sliceVal, conds...)
 	if err != nil {
 		return err
 	}

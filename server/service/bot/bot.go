@@ -34,14 +34,14 @@ func (svc *BotService) CreateBot(ctx context.Context, botModel *bot.Bot) (err er
 	botModel.BotID = botID
 
 	// 检查是否存在
-	if _, exist, err := dao.BotDao.FromBotID(global.GVA_DB, int(botID)); err != nil {
+	if _, exist, err := dao.BotDao.FromBotID(global.GVA_MYSQL, int(botID)); err != nil {
 		return err
 	} else if exist {
 		return errors.New("已经存在相同的botID")
 	}
 
 	// 创建记录
-	if err := global.GVA_DB.Create(botModel).Error; err != nil {
+	if err := global.GVA_MYSQL.Create(botModel).Error; err != nil {
 		return err
 	}
 
@@ -68,11 +68,11 @@ func (svc *BotService) DeleteBot(ctx context.Context, ID string) (err error) {
 	if id, err = strconv.Atoi(ID); err != nil {
 		return
 	}
-	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_DB, id); !has || err != nil {
+	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_MYSQL, id); !has || err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Bool("has", has), zap.Any("id", id), zap.Error(err))
 		return
 	}
-	if err = global.GVA_DB.Delete(&bot.Bot{}, "bot_id = ?", ID).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&bot.Bot{}, "bot_id = ?", ID).Error; err != nil {
 		global.GVA_LOG.Error("botBanGroupMemService", zap.Any("id", id), zap.Error(err))
 		return
 	}
@@ -90,12 +90,12 @@ func (svc *BotService) DeleteBot(ctx context.Context, ID string) (err error) {
 func (svc *BotService) DeleteBotByIds(ctx context.Context, IDs []string) (err error) {
 	ids := utils.StringsToIntsIgnoreError(IDs)
 	var objects []bot.Bot
-	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+	if err = utils.Find(global.GVA_MYSQL, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
 		global.GVA_LOG.Error("BotService", zap.Any("ids", IDs), zap.Error(err))
 		return
 	}
 
-	if err = global.GVA_DB.Delete(&[]bot.Bot{}, "bot_id in ?", IDs).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.Bot{}, "bot_id in ?", IDs).Error; err != nil {
 		global.GVA_LOG.Error("BotService", zap.Any("ids", IDs), zap.Error(err))
 		return
 	}
@@ -113,14 +113,14 @@ func (svc *BotService) DeleteBotByIds(ctx context.Context, IDs []string) (err er
 // UpdateBot 更新机器人记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotService) UpdateBot(ctx context.Context, botModel bot.Bot) (err error) {
-	err = global.GVA_DB.Model(&bot.Bot{}).Where("bot_id = ?", botModel.BotID).Updates(&botModel).Error
+	err = global.GVA_MYSQL.Model(&bot.Bot{}).Where("bot_id = ?", botModel.BotID).Updates(&botModel).Error
 	return err
 }
 
 // GetBot 根据ID获取机器人记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotService) GetBot(ctx context.Context, ID string) (bot_mgr bot.Bot, err error) {
-	err = global.GVA_DB.Where("bot_id = ?", ID).First(&bot_mgr).Error
+	err = global.GVA_MYSQL.Where("bot_id = ?", ID).First(&bot_mgr).Error
 	return
 }
 
@@ -130,7 +130,7 @@ func (svc *BotService) GetBotInfoList(ctx context.Context, info botReq.BotSearch
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&bot.Bot{})
+	db := global.GVA_MYSQL.Model(&bot.Bot{})
 	var bot_mgrs []bot.Bot
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -163,11 +163,11 @@ func (svc *BotService) GetBotPublic(ctx context.Context) {
 
 func (svc *BotService) UnbanUser(ctx context.Context, id uint) (err error) {
 	var banRecord bot.BanRecord
-	if err = global.GVA_DB.Where("id = ?", id).First(&banRecord).Error; err != nil {
+	if err = global.GVA_MYSQL.Where("id = ?", id).First(&banRecord).Error; err != nil {
 		return
 	}
 
-	botModel, has, getBotErr := dao.BotDao.FromBotID(global.GVA_DB, int(banRecord.BotID))
+	botModel, has, getBotErr := dao.BotDao.FromBotID(global.GVA_MYSQL, int(banRecord.BotID))
 	if getBotErr != nil {
 		err = getBotErr
 		return
@@ -177,7 +177,7 @@ func (svc *BotService) UnbanUser(ctx context.Context, id uint) (err error) {
 		return
 	}
 
-	err = global.GVA_DB.Model(&bot.BanRecord{}).
+	err = global.GVA_MYSQL.Model(&bot.BanRecord{}).
 		Where("id = ?", banRecord.ID).
 		Updates(map[string]interface{}{
 			"lifting_time": gorm.Expr("NULL"),

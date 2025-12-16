@@ -15,35 +15,35 @@ type BanRecordService struct{}
 // CreateBanRecord 创建封禁记录记录
 // Author [yourname](https://github.com/yourname)
 func (banRecordService *BanRecordService) CreateBanRecord(ctx context.Context, banRecord *bot.BanRecord) (err error) {
-	err = global.GVA_DB.Create(banRecord).Error
+	err = global.GVA_MYSQL.Create(banRecord).Error
 	return err
 }
 
 // DeleteBanRecord 删除封禁记录记录
 // Author [yourname](https://github.com/yourname)
 func (banRecordService *BanRecordService) DeleteBanRecord(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&bot.BanRecord{}, "id = ?", ID).Error
+	err = global.GVA_MYSQL.Delete(&bot.BanRecord{}, "id = ?", ID).Error
 	return err
 }
 
 // DeleteBanRecordByIds 批量删除封禁记录记录
 // Author [yourname](https://github.com/yourname)
 func (banRecordService *BanRecordService) DeleteBanRecordByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]bot.BanRecord{}, "id in ?", IDs).Error
+	err = global.GVA_MYSQL.Delete(&[]bot.BanRecord{}, "id in ?", IDs).Error
 	return err
 }
 
 // UpdateBanRecord 更新封禁记录记录
 // Author [yourname](https://github.com/yourname)
 func (banRecordService *BanRecordService) UpdateBanRecord(ctx context.Context, banRecord bot.BanRecord) (err error) {
-	err = global.GVA_DB.Model(&bot.BanRecord{}).Where("id = ?", banRecord.ID).Updates(&banRecord).Error
+	err = global.GVA_MYSQL.Model(&bot.BanRecord{}).Where("id = ?", banRecord.ID).Updates(&banRecord).Error
 	return err
 }
 
 // GetBanRecord 根据ID获取封禁记录记录
 // Author [yourname](https://github.com/yourname)
 func (banRecordService *BanRecordService) GetBanRecord(ctx context.Context, ID string) (banRecord bot.BanRecord, err error) {
-	err = global.GVA_DB.Where("id = ?", ID).First(&banRecord).Error
+	err = global.GVA_MYSQL.Where("id = ?", ID).First(&banRecord).Error
 	return
 }
 
@@ -53,7 +53,7 @@ func (banRecordService *BanRecordService) GetBanRecordInfoList(ctx context.Conte
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&bot.BanRecord{})
+	db := global.GVA_MYSQL.Model(&bot.BanRecord{})
 	var banRecords []*bot.BanRecord
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -87,11 +87,11 @@ func (banRecordService *BanRecordService) GetBanRecordInfoList(ctx context.Conte
 
 	var botMapper map[int64]bot.Bot
 	var chatGroupMapper map[int64]bot.BotChatGroup
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 
-	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_DB, chatGroupList); err != nil {
+	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, chatGroupList); err != nil {
 		return
 	}
 

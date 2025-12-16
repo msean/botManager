@@ -18,7 +18,7 @@ func RunServer() {
 		}
 	}
 
-	if global.GVA_DB != nil {
+	if global.GVA_MYSQL != nil {
 		system.LoadAll()
 	}
 

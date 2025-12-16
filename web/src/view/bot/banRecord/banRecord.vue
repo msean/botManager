@@ -67,7 +67,6 @@
                 {{ scope.row.banDuration }} 分钟
               </template>
             </el-table-column>
-
             <el-table-column align="left" label="备注" prop="reMark" width="300" />
             <el-table-column align="left" label="状态" prop="status" width="300">
               <template #default="scope">
@@ -91,23 +90,30 @@
               </template>
             </el-table-column>
 
+            <el-table-column  align="center" label="发送消息" prop="msg" width="120">
+              <template #default="scope">
+                <el-button type="primary" link @click="viewMsg(scope.row)">
+                  查看
+                </el-button>
+              </template>
+            </el-table-column>
             <el-table-column sortable align="left" label="创建时间" prop="createdAt" width="180">
               <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
             </el-table-column>
 
-        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
-          <template #default="scope">
-            <el-button
-              v-if="scope.row.status === 1"
-              type="danger"
-              link
-              class="table-button"
-              @click="handleUnban(scope.row)"
-            >
-              解禁
-            </el-button>
-          </template>
-        </el-table-column>
+            <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
+              <template #default="scope">
+                <el-button
+                  v-if="scope.row.status === 1"
+                  type="danger"
+                  link
+                  class="table-button"
+                  @click="handleUnban(scope.row)"
+                >
+                  解禁
+                </el-button>
+              </template>
+            </el-table-column>
         </el-table>
           <div class="gva-pagination">
               <el-pagination
@@ -120,63 +126,17 @@
               @size-change="handleSizeChange"
               />
         </div>
+        <el-dialog
+          v-model="dialogVisible"
+          title="消息内容"
+          width="600px"
+        >
+          <div style="white-space: pre-wrap;">{{ currentMsg }}</div>
+          <template #footer>
+            <el-button @click="dialogVisible = false">关闭</el-button>
+          </template>
+        </el-dialog>
     </div>
-    <!-- <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="dialogFormVisible" :show-close="false" :before-close="closeDialog">
-       <template #header>
-              <div class="flex justify-between items-center">
-                <span class="text-lg">{{type==='create'?'新增':'编辑'}}</span>
-                <div>
-                  <el-button :loading="btnLoading" type="primary" @click="enterDialog">确 定</el-button>
-                  <el-button @click="closeDialog">取 消</el-button>
-                </div>
-              </div>
-            </template>
-
-          <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
-            <el-form-item label="机器人ID:" prop="botID">
-    <el-input v-model.number="formData.botID" :clearable="true" placeholder="请输入机器人ID" />
-</el-form-item>
-            <el-form-item label="用户ID:" prop="userID">
-    <el-input v-model.number="formData.userID" :clearable="true" placeholder="请输入用户ID" />
-</el-form-item>
-            <el-form-item label="userName:" prop="userName">
-    <el-input v-model="formData.userName" :clearable="true" placeholder="请输入userName" />
-</el-form-item>
-            <el-form-item label="chatID:" prop="chatID">
-    <el-input v-model.number="formData.chatID" :clearable="true" placeholder="请输入chatID" />
-</el-form-item>
-            <el-form-item label="chatName:" prop="chatName">
-    <el-input v-model="formData.chatName" :clearable="true" placeholder="请输入chatName" />
-</el-form-item>
-            <el-form-item label="封禁时长:" prop="banDuration">
-    <el-input v-model.number="formData.banDuration" :clearable="true" placeholder="请输入封禁时长" />
-</el-form-item>
-          </el-form>
-    </el-drawer>
-
-    <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
-            <el-descriptions :column="1" border>
-                    <el-descriptions-item label="机器人ID">
-    {{ detailForm.botID }}
-</el-descriptions-item>
-                    <el-descriptions-item label="用户ID">
-    {{ detailForm.userID }}
-</el-descriptions-item>
-                    <el-descriptions-item label="userName">
-    {{ detailForm.userName }}
-</el-descriptions-item>
-                    <el-descriptions-item label="chatID">
-    {{ detailForm.chatID }}
-</el-descriptions-item>
-                    <el-descriptions-item label="chatName">
-    {{ detailForm.chatName }}
-</el-descriptions-item>
-                    <el-descriptions-item label="封禁时长">
-    {{ detailForm.banDuration }}
-</el-descriptions-item>
-            </el-descriptions>
-        </el-drawer> -->
-
   </div>
 </template>
 
@@ -191,7 +151,7 @@ import {
 } from '@/api/bot/banRecord'
 
 // 全量引入格式化工具 请按需保留
-import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
+import { formatDate} from '@/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, reactive } from 'vue'
 import { useAppStore } from "@/pinia"
@@ -201,6 +161,13 @@ defineOptions({
     name: 'BanRecord'
 })
 
+const dialogVisible = ref(false)
+const currentMsg = ref('')
+
+const viewMsg = (row) => {
+  currentMsg.value = row.msg
+  dialogVisible.value = true
+}
 // 提交按钮loading
 const btnLoading = ref(false)
 const appStore = useAppStore()

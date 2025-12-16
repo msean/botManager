@@ -112,7 +112,7 @@ func OperationRecord() gin.HandlerFunc {
 				record.Body = "超出记录长度"
 			}
 		}
-		if err := global.GVA_DB.Create(&record).Error; err != nil {
+		if err := global.GVA_MYSQL.Create(&record).Error; err != nil {
 			global.GVA_LOG.Error("create operation record error:", zap.Error(err))
 		}
 	}

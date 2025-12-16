@@ -19,7 +19,7 @@ type BotCmdConfigService struct{}
 // CreateBotCmdConfig 创建机器人命令配置记录
 // Author [yourname](https://github.com/yourname)
 func (botCmdConfigService *BotCmdConfigService) CreateBotCmdConfig(ctx context.Context, botCmdConfig *bot.BotCmdConfig) (err error) {
-	err = global.GVA_DB.Create(botCmdConfig).Error
+	err = global.GVA_MYSQL.Create(botCmdConfig).Error
 	return err
 }
 
@@ -32,7 +32,7 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.C
 	}
 	var object bot.BotCmdConfig
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(id)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(id)); !has || err != nil {
 		if !has {
 			err = fmt.Errorf("Record Not Found")
 		}
@@ -40,7 +40,7 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.C
 		return
 	}
 
-	if err = global.GVA_DB.Delete(&bot.BotCmdConfig{}, "id = ?", ID).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&bot.BotCmdConfig{}, "id = ?", ID).Error; err != nil {
 		return
 	}
 	if deleteErr := cache.NewBotCmdCacheList(object.BotID).Release(); deleteErr != nil {
@@ -57,12 +57,12 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfig(ctx context.C
 func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfigByIds(ctx context.Context, IDs []string) (err error) {
 	ids := utils.StringsToIntsIgnoreError(IDs)
 	var objects []bot.BotCmdConfig
-	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+	if err = utils.Find(global.GVA_MYSQL, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("ids", IDs), zap.Error(err))
 		return
 	}
 
-	if err = global.GVA_DB.Delete(&[]bot.BotCmdConfig{}, "id in ?", IDs).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.BotCmdConfig{}, "id in ?", IDs).Error; err != nil {
 		return
 	}
 
@@ -82,11 +82,11 @@ func (botCmdConfigService *BotCmdConfigService) DeleteBotCmdConfigByIds(ctx cont
 func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.Context, botCmdConfig bot.BotCmdConfig) (err error) {
 	var object bot.BotCmdConfig
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(botCmdConfig.ID)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(botCmdConfig.ID)); !has || err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.ID), zap.Error(err))
 		return
 	}
-	if err = global.GVA_DB.Model(&bot.BotCmdConfig{}).Where("id = ?", botCmdConfig.ID).Updates(&botCmdConfig).Error; err != nil {
+	if err = global.GVA_MYSQL.Model(&bot.BotCmdConfig{}).Where("id = ?", botCmdConfig.ID).Updates(&botCmdConfig).Error; err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botCmdConfig.BotID))
 		return
 	}
@@ -102,10 +102,10 @@ func (botCmdConfigService *BotCmdConfigService) UpdateBotCmdConfig(ctx context.C
 // GetBotCmdConfig 根据ID获取机器人命令配置记录
 // Author [yourname](https://github.com/yourname)
 func (botCmdConfigService *BotCmdConfigService) GetBotCmdConfig(ctx context.Context, ID string) (botCmdConfig bot.BotCmdConfig, err error) {
-	if err = global.GVA_DB.Where("id = ?", ID).First(&botCmdConfig).Error; err != nil {
+	if err = global.GVA_MYSQL.Where("id = ?", ID).First(&botCmdConfig).Error; err != nil {
 		return
 	}
-	botModel, _, _ := dao.BotDao.FromBotID(global.GVA_DB, int(botCmdConfig.BotID))
+	botModel, _, _ := dao.BotDao.FromBotID(global.GVA_MYSQL, int(botCmdConfig.BotID))
 	botCmdConfig.BotName = botModel.Name
 	return
 }
@@ -116,7 +116,7 @@ func (botCmdConfigService *BotCmdConfigService) GetBotCmdConfigInfoList(ctx cont
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&bot.BotCmdConfig{})
+	db := global.GVA_MYSQL.Model(&bot.BotCmdConfig{})
 	var botCmdConfigs []*bot.BotCmdConfig
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -142,7 +142,7 @@ func (botCmdConfigService *BotCmdConfigService) GetBotCmdConfigInfoList(ctx cont
 	}
 
 	var botMapper map[int64]bot.Bot
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 

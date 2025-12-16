@@ -120,13 +120,13 @@ func (g *GVAAnalyzer) Handle(ctx context.Context, request mcp.CallToolRequest) (
 func (g *GVAAnalyzer) performAnalysis(ctx context.Context, req AnalyzeRequest) (*AnalyzeResponse, error) {
 	// 1. 获取数据库中的包信息
 	var packages []model.SysAutoCodePackage
-	if err := global.GVA_DB.Find(&packages).Error; err != nil {
+	if err := global.GVA_MYSQL.Find(&packages).Error; err != nil {
 		return nil, fmt.Errorf("获取包信息失败: %v", err)
 	}
 
 	// 2. 获取历史记录
 	var histories []model.SysAutoCodeHistory
-	if err := global.GVA_DB.Find(&histories).Error; err != nil {
+	if err := global.GVA_MYSQL.Find(&histories).Error; err != nil {
 		return nil, fmt.Errorf("获取历史记录失败: %v", err)
 	}
 
@@ -155,7 +155,7 @@ func (g *GVAAnalyzer) performAnalysis(ctx context.Context, req AnalyzeRequest) (
 			}
 
 			// 删除数据库记录
-			if err := global.GVA_DB.Delete(&pkg).Error; err != nil {
+			if err := global.GVA_MYSQL.Delete(&pkg).Error; err != nil {
 				global.GVA_LOG.Warn(fmt.Sprintf("删除包数据库记录 %s 失败: %v", pkg.PackageName, err))
 			}
 
@@ -185,7 +185,7 @@ func (g *GVAAnalyzer) performAnalysis(ctx context.Context, req AnalyzeRequest) (
 
 	// 删除脏历史记录
 	if len(dirtyHistoryIDs) > 0 {
-		if err := global.GVA_DB.Delete(&model.SysAutoCodeHistory{}, "id IN ?", dirtyHistoryIDs).Error; err != nil {
+		if err := global.GVA_MYSQL.Delete(&model.SysAutoCodeHistory{}, "id IN ?", dirtyHistoryIDs).Error; err != nil {
 			global.GVA_LOG.Warn(fmt.Sprintf("删除脏历史记录失败: %v", err))
 		} else {
 			global.GVA_LOG.Info(fmt.Sprintf("成功删除 %d 条脏历史记录", len(dirtyHistoryIDs)))
@@ -251,7 +251,7 @@ func (g *GVAAnalyzer) performAnalysis(ctx context.Context, req AnalyzeRequest) (
 	}
 
 	dictionaries := []DictionaryPre{} // 这里可以根据需要填充字典信息
-	err = global.GVA_DB.Table("sys_dictionaries").Find(&dictionaries, "deleted_at is null").Error
+	err = global.GVA_MYSQL.Table("sys_dictionaries").Find(&dictionaries, "deleted_at is null").Error
 	if err != nil {
 		global.GVA_LOG.Warn(fmt.Sprintf("获取字典信息失败: %v", err))
 		dictionaries = []DictionaryPre{} // 设置为空列表，不影响主流程

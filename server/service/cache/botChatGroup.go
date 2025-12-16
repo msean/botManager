@@ -13,6 +13,7 @@ type (
 	BotChatGroupCache struct {
 		BotID         int64  `json:"botID"`
 		ChatGroupID   int64  `json:"chatGroupID"`
+		SyncMessage   int64  `json:"syncMessage"` // 是否需要同步消息
 		ChatGroupName string `json:"chatGroupName"`
 	}
 )
@@ -39,7 +40,7 @@ func (c BotChatGroupCache) Release() error   { return CacheDelete(c) }
 func ReleaseBotChatGroup(modelID int) (err error) {
 	var object bot.BotChatGroup
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &object, utils.IDCond(modelID)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(modelID)); !has || err != nil {
 		if !has {
 			err = fmt.Errorf("record not found")
 		}

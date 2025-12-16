@@ -142,7 +142,7 @@ func (a *ApiCreator) Handle(ctx context.Context, request mcp.CallToolRequest) (*
 		} else {
 			// 获取创建的API ID
 			var createdApi system.SysApi
-			err = global.GVA_DB.Where("path = ? AND method = ?", apiReq.Path, apiReq.Method).First(&createdApi).Error
+			err = global.GVA_MYSQL.Where("path = ? AND method = ?", apiReq.Path, apiReq.Method).First(&createdApi).Error
 			if err != nil {
 				global.GVA_LOG.Warn("获取创建的API ID失败", zap.Error(err))
 			}

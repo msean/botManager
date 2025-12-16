@@ -41,7 +41,7 @@ func (taskService *BotTaskService) CreateBotTask(ctx context.Context, task *bot.
 		err = fmt.Errorf("发送时间大于或者等于结束时间")
 		return
 	}
-	if err = global.GVA_DB.Create(task).Error; err != nil {
+	if err = global.GVA_MYSQL.Create(task).Error; err != nil {
 		return
 	}
 
@@ -56,7 +56,7 @@ func (taskService *BotTaskService) DeleteBotTask(ctx context.Context, ID string)
 	if idInt, err = strconv.Atoi(ID); err != nil {
 		return
 	}
-	if err = global.GVA_DB.Delete(&bot.BotTask{}, "id = ?", ID).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&bot.BotTask{}, "id = ?", ID).Error; err != nil {
 		return
 	}
 	BotTaskManager.StopTask(uint(idInt))
@@ -67,7 +67,7 @@ func (taskService *BotTaskService) DeleteBotTask(ctx context.Context, ID string)
 // Author [yourname](https://github.com/yourname)
 func (taskService *BotTaskService) DeleteBotTaskByIds(ctx context.Context, IDs []string) (err error) {
 	ids := utils.StringsToIntsIgnoreError(IDs)
-	if err = global.GVA_DB.Delete(&[]bot.BotTask{}, "id in ?", IDs).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.BotTask{}, "id in ?", IDs).Error; err != nil {
 		return
 	}
 	for _, id := range ids {
@@ -94,7 +94,7 @@ func (taskService *BotTaskService) UpdateBotTask(ctx context.Context, task *bot.
 	if task.StopTime, err = time.ParseInLocation(layout, task.StopTimeText, time.Local); err != nil {
 		return
 	}
-	if err = global.GVA_DB.Model(&bot.BotTask{}).Where("id = ?", task.ID).Updates(&task).Error; err != nil {
+	if err = global.GVA_MYSQL.Model(&bot.BotTask{}).Where("id = ?", task.ID).Updates(&task).Error; err != nil {
 		return
 	}
 	BotTaskManager.ReloadTask(task)
@@ -104,12 +104,12 @@ func (taskService *BotTaskService) UpdateBotTask(ctx context.Context, task *bot.
 // GetBotTask 根据ID获取任务列表记录
 // Author [yourname](https://github.com/yourname)
 func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (task *bot.BotTask, err error) {
-	if err = global.GVA_DB.Where("id = ?", ID).First(&task).Error; err != nil {
+	if err = global.GVA_MYSQL.Where("id = ?", ID).First(&task).Error; err != nil {
 		return
 	}
 	var botModel bot.Bot
 	var has bool
-	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_DB, int(task.BotID)); !has || err != nil {
+	if botModel, has, err = dao.BotDao.FromBotID(global.GVA_MYSQL, int(task.BotID)); !has || err != nil {
 		if !has {
 			err = fmt.Errorf("没有找到改机器人")
 		}
@@ -121,7 +121,7 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 	switch task.GroupType {
 	case constant.GroupTypeChat:
 		var botChatGroupModel bot.BotChatGroup
-		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_DB, int(task.GroupID)); !has || err != nil {
+		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_MYSQL, int(task.GroupID)); !has || err != nil {
 			if !has {
 				err = fmt.Errorf("没有找到改机器人")
 			}
@@ -131,7 +131,7 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 		task.GroupName = botChatGroupModel.ChatGroupName
 	case constant.GroupTypeChannel:
 		var botChannel bot.BotChannel
-		if botChannel, has, err = dao.BotChannelDao.FromBotID(global.GVA_DB, int(task.GroupID)); !has || err != nil {
+		if botChannel, has, err = dao.BotChannelDao.FromBotID(global.GVA_MYSQL, int(task.GroupID)); !has || err != nil {
 			if !has {
 				err = fmt.Errorf("没有找到改渠道")
 			}
@@ -152,7 +152,7 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&bot.BotTask{})
+	db := global.GVA_MYSQL.Model(&bot.BotTask{})
 	var tasks []*bot.BotTask
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -185,18 +185,18 @@ func (taskService *BotTaskService) GetBotTaskInfoList(ctx context.Context, info 
 
 	var botMapper map[int64]bot.Bot
 	var chatGroupMapper map[int64]bot.BotChatGroup
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 	var channelMapper map[int64]bot.BotChannel
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 
-	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_DB, chatGroupList); err != nil {
+	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, chatGroupList); err != nil {
 		return
 	}
-	if channelMapper, err = dao.BotChannelDao.MappByChannelIDList(global.GVA_DB, channelList); err != nil {
+	if channelMapper, err = dao.BotChannelDao.MappByChannelIDList(global.GVA_MYSQL, channelList); err != nil {
 		return
 	}
 

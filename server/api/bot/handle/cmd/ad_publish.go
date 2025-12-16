@@ -34,7 +34,7 @@ func PublishAdHandle(update tgbotapi.Update, token string, botID int64) {
 // 	// 检查用户是否最近重复下单
 // 	var has bool
 // 	var err error
-// 	if has, err = dao.RechargeDao.UserHasRecentOrder(global.GVA_DB, botID, userID); err != nil {
+// 	if has, err = dao.RechargeDao.UserHasRecentOrder(global.GVA_MYSQL, botID, userID); err != nil {
 // 		global.GVA_LOG.Error("PublishAdHandle UserHasRecentOrder", zap.Int64("botID", botID), zap.Int64("userID", userID), zap.Error(err))
 // 		return
 // 	}

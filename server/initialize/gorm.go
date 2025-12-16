@@ -11,8 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func Gorm() *gorm.DB {
-	switch global.GVA_CONFIG.System.DbType {
+func Gorm(dbType string) *gorm.DB {
+	switch dbType {
 	case "mysql":
 		global.GVA_ACTIVE_DBNAME = &global.GVA_CONFIG.Mysql.Dbname
 		return GormMysql()
@@ -40,7 +40,7 @@ func RegisterTables() {
 		return
 	}
 
-	// db := global.GVA_DB
+	// db := global.GVA_MYSQL
 	// err := db.AutoMigrate(
 
 	// 	system.SysApi{},
@@ -84,7 +84,7 @@ func RegisterTables() {
 }
 
 func bizModel() error {
-	db := global.GVA_DB
+	db := global.GVA_MYSQL
 	err := db.AutoMigrate(
 		bot.BotBanContent{},
 		bot.Bot{},

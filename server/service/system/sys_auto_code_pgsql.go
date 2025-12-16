@@ -16,9 +16,9 @@ func (a *autoCodePgsql) GetDB(businessDB string) (data []response.Db, err error)
 	var entities []response.Db
 	sql := `SELECT datname as database FROM pg_database WHERE datistemplate = false`
 	if businessDB == "" {
-		err = global.GVA_DB.Raw(sql).Scan(&entities).Error
+		err = global.GVA_MYSQL.Raw(sql).Scan(&entities).Error
 	} else {
-		err = global.GVA_DBList[businessDB].Raw(sql).Scan(&entities).Error
+		err = global.GVA_MYSQLList[businessDB].Raw(sql).Scan(&entities).Error
 	}
 
 	return entities, err
@@ -31,9 +31,9 @@ func (a *autoCodePgsql) GetTables(businessDB string, dbName string) (data []resp
 	var entities []response.Table
 	sql := `select table_name as table_name from information_schema.tables where table_catalog = ? and table_schema = ?`
 
-	db := global.GVA_DB
+	db := global.GVA_MYSQL
 	if businessDB != "" {
-		db = global.GVA_DBList[businessDB]
+		db = global.GVA_MYSQLList[businessDB]
 	}
 
 	err = db.Raw(sql, dbName, "public").Scan(&entities).Error
@@ -125,9 +125,9 @@ ORDER BY
 	var entities []response.Column
 	//sql = strings.ReplaceAll(sql, "@table_catalog", dbName)
 	//sql = strings.ReplaceAll(sql, "@table_name", tableName)
-	db := global.GVA_DB
+	db := global.GVA_MYSQL
 	if businessDB != "" {
-		db = global.GVA_DBList[businessDB]
+		db = global.GVA_MYSQLList[businessDB]
 	}
 
 	err = db.Raw(sql, dbName, tableName).Scan(&entities).Error

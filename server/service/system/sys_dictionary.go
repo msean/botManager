@@ -22,10 +22,10 @@ type DictionaryService struct{}
 var DictionaryServiceApp = new(DictionaryService)
 
 func (dictionaryService *DictionaryService) CreateSysDictionary(sysDictionary system.SysDictionary) (err error) {
-	if (!errors.Is(global.GVA_DB.First(&system.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound)) {
+	if (!errors.Is(global.GVA_MYSQL.First(&system.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound)) {
 		return errors.New("存在相同的type，不允许创建")
 	}
-	err = global.GVA_DB.Create(&sysDictionary).Error
+	err = global.GVA_MYSQL.Create(&sysDictionary).Error
 	return err
 }
 
@@ -36,20 +36,20 @@ func (dictionaryService *DictionaryService) CreateSysDictionary(sysDictionary sy
 //@return: err error
 
 func (dictionaryService *DictionaryService) DeleteSysDictionary(sysDictionary system.SysDictionary) (err error) {
-	err = global.GVA_DB.Where("id = ?", sysDictionary.ID).Preload("SysDictionaryDetails").First(&sysDictionary).Error
+	err = global.GVA_MYSQL.Where("id = ?", sysDictionary.ID).Preload("SysDictionaryDetails").First(&sysDictionary).Error
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("请不要搞事")
 	}
 	if err != nil {
 		return err
 	}
-	err = global.GVA_DB.Delete(&sysDictionary).Error
+	err = global.GVA_MYSQL.Delete(&sysDictionary).Error
 	if err != nil {
 		return err
 	}
 
 	if sysDictionary.SysDictionaryDetails != nil {
-		return global.GVA_DB.Where("sys_dictionary_id=?", sysDictionary.ID).Delete(sysDictionary.SysDictionaryDetails).Error
+		return global.GVA_MYSQL.Where("sys_dictionary_id=?", sysDictionary.ID).Delete(sysDictionary.SysDictionaryDetails).Error
 	}
 	return
 }
@@ -69,13 +69,13 @@ func (dictionaryService *DictionaryService) UpdateSysDictionary(sysDictionary *s
 		"Desc":     sysDictionary.Desc,
 		"ParentID": sysDictionary.ParentID,
 	}
-	err = global.GVA_DB.Where("id = ?", sysDictionary.ID).First(&dict).Error
+	err = global.GVA_MYSQL.Where("id = ?", sysDictionary.ID).First(&dict).Error
 	if err != nil {
 		global.GVA_LOG.Debug(err.Error())
 		return errors.New("查询字典数据失败")
 	}
 	if dict.Type != sysDictionary.Type {
-		if !errors.Is(global.GVA_DB.First(&system.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound) {
+		if !errors.Is(global.GVA_MYSQL.First(&system.SysDictionary{}, "type = ?", sysDictionary.Type).Error, gorm.ErrRecordNotFound) {
 			return errors.New("存在相同的type，不允许创建")
 		}
 	}
@@ -87,7 +87,7 @@ func (dictionaryService *DictionaryService) UpdateSysDictionary(sysDictionary *s
 		}
 	}
 
-	err = global.GVA_DB.Model(&dict).Updates(sysDictionaryMap).Error
+	err = global.GVA_MYSQL.Model(&dict).Updates(sysDictionaryMap).Error
 	return err
 }
 
@@ -104,7 +104,7 @@ func (dictionaryService *DictionaryService) GetSysDictionary(Type string, Id uin
 	} else {
 		flag = *status
 	}
-	err = global.GVA_DB.Where("(type = ? OR id = ?) and status = ?", Type, Id, flag).Preload("SysDictionaryDetails", func(db *gorm.DB) *gorm.DB {
+	err = global.GVA_MYSQL.Where("(type = ? OR id = ?) and status = ?", Type, Id, flag).Preload("SysDictionaryDetails", func(db *gorm.DB) *gorm.DB {
 		return db.Where("status = ? and deleted_at is null", true).Order("sort")
 	}).First(&sysDictionary).Error
 	return
@@ -119,7 +119,7 @@ func (dictionaryService *DictionaryService) GetSysDictionary(Type string, Id uin
 
 func (dictionaryService *DictionaryService) GetSysDictionaryInfoList(c *gin.Context, req request.SysDictionarySearch) (list interface{}, err error) {
 	var sysDictionarys []system.SysDictionary
-	query := global.GVA_DB.WithContext(c)
+	query := global.GVA_MYSQL.WithContext(c)
 	if req.Name != "" {
 		query = query.Where("name LIKE ? OR type LIKE ?", "%"+req.Name+"%", "%"+req.Name+"%")
 	}
@@ -137,7 +137,7 @@ func (dictionaryService *DictionaryService) checkCircularReference(currentID uin
 
 	// 递归检查父级链条
 	var parent system.SysDictionary
-	err := global.GVA_DB.Where("id = ?", parentID).First(&parent).Error
+	err := global.GVA_MYSQL.Where("id = ?", parentID).First(&parent).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil // 父级不存在，允许设置

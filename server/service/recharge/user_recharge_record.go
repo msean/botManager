@@ -15,35 +15,35 @@ type UserRechargeRecordService struct{}
 // CreateUserRechargeRecord 创建用户充值记录记录
 // Author [yourname](https://github.com/yourname)
 func (userRechargeRecordService *UserRechargeRecordService) CreateUserRechargeRecord(ctx context.Context, userRechargeRecord *recharge.UserRechargeRecord) (err error) {
-	err = global.GVA_DB.Create(userRechargeRecord).Error
+	err = global.GVA_MYSQL.Create(userRechargeRecord).Error
 	return err
 }
 
 // DeleteUserRechargeRecord 删除用户充值记录记录
 // Author [yourname](https://github.com/yourname)
 func (userRechargeRecordService *UserRechargeRecordService) DeleteUserRechargeRecord(ctx context.Context, ID string) (err error) {
-	err = global.GVA_DB.Delete(&recharge.UserRechargeRecord{}, "id = ?", ID).Error
+	err = global.GVA_MYSQL.Delete(&recharge.UserRechargeRecord{}, "id = ?", ID).Error
 	return err
 }
 
 // DeleteUserRechargeRecordByIds 批量删除用户充值记录记录
 // Author [yourname](https://github.com/yourname)
 func (userRechargeRecordService *UserRechargeRecordService) DeleteUserRechargeRecordByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_DB.Delete(&[]recharge.UserRechargeRecord{}, "id in ?", IDs).Error
+	err = global.GVA_MYSQL.Delete(&[]recharge.UserRechargeRecord{}, "id in ?", IDs).Error
 	return err
 }
 
 // UpdateUserRechargeRecord 更新用户充值记录记录
 // Author [yourname](https://github.com/yourname)
 func (userRechargeRecordService *UserRechargeRecordService) UpdateUserRechargeRecord(ctx context.Context, userRechargeRecord recharge.UserRechargeRecord) (err error) {
-	err = global.GVA_DB.Model(&recharge.UserRechargeRecord{}).Where("id = ?", userRechargeRecord.ID).Updates(&userRechargeRecord).Error
+	err = global.GVA_MYSQL.Model(&recharge.UserRechargeRecord{}).Where("id = ?", userRechargeRecord.ID).Updates(&userRechargeRecord).Error
 	return err
 }
 
 // GetUserRechargeRecord 根据ID获取用户充值记录记录
 // Author [yourname](https://github.com/yourname)
 func (userRechargeRecordService *UserRechargeRecordService) GetUserRechargeRecord(ctx context.Context, ID string) (userRechargeRecord recharge.UserRechargeRecord, err error) {
-	err = global.GVA_DB.Where("id = ?", ID).First(&userRechargeRecord).Error
+	err = global.GVA_MYSQL.Where("id = ?", ID).First(&userRechargeRecord).Error
 	return
 }
 
@@ -53,7 +53,7 @@ func (userRechargeRecordService *UserRechargeRecordService) GetUserRechargeRecor
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&recharge.UserRechargeRecord{})
+	db := global.GVA_MYSQL.Model(&recharge.UserRechargeRecord{})
 	var userRechargeRecords []*recharge.UserRechargeRecord
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -86,7 +86,7 @@ func (userRechargeRecordService *UserRechargeRecordService) GetUserRechargeRecor
 	}
 
 	var botMapper map[int64]bot.Bot
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 

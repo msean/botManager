@@ -55,7 +55,7 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, msgID int, us
 		UserName:    userName,
 	}
 
-	if err = global.GVA_DB.Create(&record).Error; err != nil {
+	if err = global.GVA_MYSQL.Create(&record).Error; err != nil {
 		global.GVA_LOG.Error("create recharge record failed", zap.Error(err))
 		return
 	}

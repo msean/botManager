@@ -189,7 +189,7 @@ func (api *BotApi) GetBotPublic(c *gin.Context) {
 }
 
 func (api *BotApi) All(c *gin.Context) {
-	bots, err := dao.BotDao.All(global.GVA_DB)
+	bots, err := dao.BotDao.All(global.GVA_MYSQL)
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败:"+err.Error(), c)
@@ -199,7 +199,7 @@ func (api *BotApi) All(c *gin.Context) {
 }
 
 func (api *BotApi) AllWithChatGroupAndChannel(c *gin.Context) {
-	bots, err := dao.BotDao.AllWithChatGroup(global.GVA_DB)
+	bots, err := dao.BotDao.AllWithChatGroup(global.GVA_MYSQL)
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败:"+err.Error(), c)

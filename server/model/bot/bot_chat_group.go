@@ -8,10 +8,11 @@ import (
 // 机器人群组列表 结构体  BotChatGroup
 type BotChatGroup struct {
 	global.GVA_MODEL
-	BotName       string `json:"botName" form:"botName" gorm:"-"`                                                //机器人ID
+	BotName       string `json:"botName" form:"botName" gorm:"-"`                                                //机器人名称
 	BotID         int64  `json:"botID" form:"botID" gorm:"column:bot_id;"`                                       //机器人ID
 	ChatGroupID   int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群组ID;column:chat_group_id;"`       //群组ID
 	ChatGroupName string `json:"chatGroupName" form:"chatGroupName" gorm:"comment:群组ID;column:chat_group_name;"` //群组ID
+	SyncMessage   int64  `json:"syncMessage" form:"botID" gorm:"column:syncMessage;default:1"`                   // 是否需要同步消息, 1 是 2否
 }
 
 // TableName 机器人群组列表 BotChatGroup自定义表名 bot_chat_group

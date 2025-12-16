@@ -140,7 +140,7 @@ func (d *DictionaryQuery) Handle(ctx context.Context, request mcp.CallToolReques
 	} else {
 		// 查询所有字典
 		var sysDictionaries []system.SysDictionary
-		db := global.GVA_DB.Model(&system.SysDictionary{})
+		db := global.GVA_MYSQL.Model(&system.SysDictionary{})
 
 		if !includeDisabled {
 			db = db.Where("status = ?", true)

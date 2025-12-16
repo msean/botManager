@@ -18,7 +18,7 @@ type BotBanContentService struct{}
 // CreateBotBanContent 创建机器人消息管理记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotBanContentService) CreateBotBanContent(ctx context.Context, botBanContent *bot.BotBanContent) (err error) {
-	if err = global.GVA_DB.Create(botBanContent).Error; err != nil {
+	if err = global.GVA_MYSQL.Create(botBanContent).Error; err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.ID))
 		return
 	}
@@ -34,11 +34,11 @@ func (svc *BotBanContentService) DeleteBotBanContent(ctx context.Context, ID str
 	}
 	var botContent bot.BotBanContent
 	var has bool
-	if has, err = utils.Get(global.GVA_DB, &botContent, utils.IDCond(ID)); !has || err != nil {
+	if has, err = utils.Get(global.GVA_MYSQL, &botContent, utils.IDCond(ID)); !has || err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", id), zap.Error(err))
 		return
 	}
-	if err = global.GVA_DB.Delete(&bot.BotBanContent{}, "id = ?", ID).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&bot.BotBanContent{}, "id = ?", ID).Error; err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", id))
 		return
 	}
@@ -54,12 +54,12 @@ func (svc *BotBanContentService) DeleteBotBanContent(ctx context.Context, ID str
 func (svc *BotBanContentService) DeleteBotBanContentByIds(ctx context.Context, IDs []string) (err error) {
 	ids := utils.StringsToIntsIgnoreError(IDs)
 	var objects []bot.BotBanContent
-	if err = utils.Find(global.GVA_DB, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
+	if err = utils.Find(global.GVA_MYSQL, &objects, utils.NewInCond("id", utils.IntSliceToAnySlice(ids))); err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("ids", IDs), zap.Error(err))
 		return
 	}
 
-	if err = global.GVA_DB.Delete(&[]bot.BotBanContent{}, "id in ?", ids).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.BotBanContent{}, "id in ?", ids).Error; err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("ids", IDs))
 		return
 	}
@@ -75,7 +75,7 @@ func (svc *BotBanContentService) DeleteBotBanContentByIds(ctx context.Context, I
 // UpdateBotBanContent 更新机器人消息管理记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotBanContentService) UpdateBotBanContent(ctx context.Context, botBanContent bot.BotBanContent) (err error) {
-	if err = global.GVA_DB.Model(&bot.BotBanContent{}).Where("id = ?", botBanContent.ID).Updates(&botBanContent).Error; err != nil {
+	if err = global.GVA_MYSQL.Model(&bot.BotBanContent{}).Where("id = ?", botBanContent.ID).Updates(&botBanContent).Error; err != nil {
 		global.GVA_LOG.Error("BotBanContentService", zap.Any("id", botBanContent.BotID))
 		return
 	}
@@ -88,7 +88,7 @@ func (svc *BotBanContentService) UpdateBotBanContent(ctx context.Context, botBan
 // GetBotBanContent 根据ID获取机器人消息管理记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotBanContentService) GetBotBanContent(ctx context.Context, ID string) (bot_msg_mgr bot.BotBanContent, err error) {
-	err = global.GVA_DB.Where("id = ?", ID).First(&bot_msg_mgr).Error
+	err = global.GVA_MYSQL.Where("id = ?", ID).First(&bot_msg_mgr).Error
 	return
 }
 
@@ -98,7 +98,7 @@ func (svc *BotBanContentService) GetBotBanContentInfoList(ctx context.Context, i
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
-	db := global.GVA_DB.Model(&bot.BotBanContent{})
+	db := global.GVA_MYSQL.Model(&bot.BotBanContent{})
 	var botBanContents []*bot.BotBanContent
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
@@ -131,7 +131,7 @@ func (svc *BotBanContentService) GetBotBanContentInfoList(ctx context.Context, i
 	}
 
 	var botMapper map[int64]bot.Bot
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_DB, botList); err != nil {
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
 		return
 	}
 

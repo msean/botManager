@@ -103,7 +103,7 @@ func (m *MenuLister) Handle(_ context.Context, _ mcp.CallToolRequest) (*mcp.Call
 // getAllMenus 获取所有基础菜单
 func (m *MenuLister) getAllMenus() ([]system.SysBaseMenu, error) {
 	var menus []system.SysBaseMenu
-	err := global.GVA_DB.Order("sort").Preload("Parameters").Preload("MenuBtn").Find(&menus).Error
+	err := global.GVA_MYSQL.Order("sort").Preload("Parameters").Preload("MenuBtn").Find(&menus).Error
 	if err != nil {
 		return nil, err
 	}

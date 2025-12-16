@@ -59,7 +59,7 @@ func (s *autoCodeTemplate) checkPackage(Pkg string, template string) (err error)
 func (s *autoCodeTemplate) Create(ctx context.Context, info request.AutoCode) error {
 	history := info.History()
 	var autoPkg model.SysAutoCodePackage
-	err := global.GVA_DB.WithContext(ctx).Where("package_name = ?", info.Package).First(&autoPkg).Error
+	err := global.GVA_MYSQL.WithContext(ctx).Where("package_name = ?", info.Package).First(&autoPkg).Error
 	if err != nil {
 		return errors.Wrap(err, "查询包失败!")
 	}
@@ -90,7 +90,7 @@ func (s *autoCodeTemplate) Create(ctx context.Context, info request.AutoCode) er
 	// 自动创建api
 	if info.AutoCreateApiToSql && !info.OnlyTemplate {
 		apis := info.Apis()
-		err := global.GVA_DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := global.GVA_MYSQL.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			for _, v := range apis {
 				var api model.SysApi
 				var id uint
@@ -116,7 +116,7 @@ func (s *autoCodeTemplate) Create(ctx context.Context, info request.AutoCode) er
 	if info.AutoCreateMenuToSql {
 		var entity model.SysBaseMenu
 		var id uint
-		err := global.GVA_DB.WithContext(ctx).First(&entity, "name = ?", info.Abbreviation).Error
+		err := global.GVA_MYSQL.WithContext(ctx).First(&entity, "name = ?", info.Abbreviation).Error
 		if err == nil {
 			id = entity.ID
 		} else {
@@ -138,7 +138,7 @@ func (s *autoCodeTemplate) Create(ctx context.Context, info request.AutoCode) er
 					entity.MenuBtn = append(entity.MenuBtn, excelBtn...)
 				}
 			}
-			err = global.GVA_DB.WithContext(ctx).Create(&entity).Error
+			err = global.GVA_MYSQL.WithContext(ctx).Create(&entity).Error
 			id = entity.ID
 			if err != nil {
 				return errors.Wrap(err, "创建菜单失败!")
@@ -189,7 +189,7 @@ func (s *autoCodeTemplate) Create(ctx context.Context, info request.AutoCode) er
 // Preview 预览自动化代码
 func (s *autoCodeTemplate) Preview(ctx context.Context, info request.AutoCode) (map[string]string, error) {
 	var entity model.SysAutoCodePackage
-	err := global.GVA_DB.WithContext(ctx).Where("package_name = ?", info.Package).First(&entity).Error
+	err := global.GVA_MYSQL.WithContext(ctx).Where("package_name = ?", info.Package).First(&entity).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "查询包失败!")
 	}
@@ -274,7 +274,7 @@ func (s *autoCodeTemplate) generate(ctx context.Context, info request.AutoCode, 
 
 func (s *autoCodeTemplate) AddFunc(info request.AutoFunc) error {
 	autoPkg := model.SysAutoCodePackage{}
-	err := global.GVA_DB.First(&autoPkg, "package_name = ?", info.Package).Error
+	err := global.GVA_MYSQL.First(&autoPkg, "package_name = ?", info.Package).Error
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (s *autoCodeTemplate) AddFunc(info request.AutoFunc) error {
 
 func (s *autoCodeTemplate) GetApiAndServer(info request.AutoFunc) (map[string]string, error) {
 	autoPkg := model.SysAutoCodePackage{}
-	err := global.GVA_DB.First(&autoPkg, "package_name = ?", info.Package).Error
+	err := global.GVA_MYSQL.First(&autoPkg, "package_name = ?", info.Package).Error
 	if err != nil {
 		return nil, err
 	}

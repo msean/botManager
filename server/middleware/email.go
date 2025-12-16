@@ -24,7 +24,7 @@ func ErrorToEmail() gin.HandlerFunc {
 		} else {
 			id, _ := strconv.Atoi(c.Request.Header.Get("x-user-id"))
 			var u system.SysUser
-			err := global.GVA_DB.Where("id = ?", id).First(&u).Error
+			err := global.GVA_MYSQL.Where("id = ?", id).First(&u).Error
 			if err != nil {
 				username = "Unknown"
 			}

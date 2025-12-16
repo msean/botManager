@@ -743,7 +743,7 @@ func (g *GVAExecutor) createDictionariesFromInfo(ctx context.Context, dictionari
 
 			// 获取刚创建的字典ID
 			var createdDict model.SysDictionary
-			err = global.GVA_DB.Where("type = ?", dictInfo.DictType).First(&createdDict).Error
+			err = global.GVA_MYSQL.Where("type = ?", dictInfo.DictType).First(&createdDict).Error
 			if err != nil {
 				messages = append(messages, fmt.Sprintf("获取创建的字典失败: %v; ", err))
 				continue
