@@ -9,33 +9,34 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/model/bot/request"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm/clause"
 )
 
-type BotMsgRecordSvc struct {
+type BotChatHistorySvc struct {
 	botID       int64
 	chatGroupID int64
 }
 
-func NewBotMsgRecordSvc(botID, chatGroupID int64) *BotMsgRecordSvc {
-	return &BotMsgRecordSvc{
+func NewBotChatHistorySvc(botID, chatGroupID int64) *BotChatHistorySvc {
+	return &BotChatHistorySvc{
 		botID:       botID,
 		chatGroupID: chatGroupID,
 	}
 }
 
-func (svc BotMsgRecordSvc) MessageTable() string {
+func (svc BotChatHistorySvc) MessageTable() string {
 	return fmt.Sprintf("bot_messages_%d_%d", svc.botID, svc.chatGroupID)
 }
 
-func (svc BotMsgRecordSvc) tableLockKey() string {
+func (svc BotChatHistorySvc) tableLockKey() string {
 	return fmt.Sprintf("lock:tg_msg_table:%d", svc.chatGroupID)
 }
 
-func (svc BotMsgRecordSvc) Sync() error {
-	global.GVA_LOG.Debug("BotMsgRecordSvc Sync", zap.String("table", svc.MessageTable()))
+func (svc BotChatHistorySvc) Sync() error {
+	global.GVA_LOG.Debug("BotChatHistorySvc Sync", zap.String("table", svc.MessageTable()))
 	ctx := context.Background()
 
 	cacheKey := svc.tableCacheKey()
@@ -46,7 +47,7 @@ func (svc BotMsgRecordSvc) Sync() error {
 		return nil
 	}
 
-	global.GVA_LOG.Debug("BotMsgRecordSvc Sync", zap.String("cacheKey", cacheKey))
+	global.GVA_LOG.Debug("BotChatHistorySvc Sync", zap.String("cacheKey", cacheKey))
 	// 2️⃣ 尝试加分布式锁（10 秒足够）
 	locked, err := global.GVA_REDIS.SetNX(ctx, lockKey, 1, 10*time.Second).Result()
 	if err != nil {
@@ -67,7 +68,7 @@ func (svc BotMsgRecordSvc) Sync() error {
 		return err
 	}
 
-	global.GVA_LOG.Debug("BotMsgRecordSvc Sync", zap.Bool("exists", exists))
+	global.GVA_LOG.Debug("BotChatHistorySvc Sync", zap.Bool("exists", exists))
 	if !exists {
 		if err := global.GVA_PGSQL.
 			Table(svc.MessageTable()).
@@ -96,7 +97,7 @@ func (svc BotMsgRecordSvc) Sync() error {
 	return nil
 }
 
-func (svc BotMsgRecordSvc) tableExists() (bool, error) {
+func (svc BotChatHistorySvc) tableExists() (bool, error) {
 	var exists bool
 	sql := `
 SELECT EXISTS (
@@ -110,11 +111,11 @@ SELECT EXISTS (
 	return exists, err
 }
 
-func (svc BotMsgRecordSvc) tableCacheKey() string {
+func (svc BotChatHistorySvc) tableCacheKey() string {
 	return fmt.Sprintf("tg:msg_table:exists:%d:%d", svc.botID, svc.chatGroupID)
 }
 
-func (svc BotMsgRecordSvc) SaveMessage(update tgbotapi.Update) error {
+func (svc BotChatHistorySvc) SaveMessage(update tgbotapi.Update) error {
 	if update.Message == nil {
 		return nil
 	}
@@ -205,4 +206,60 @@ func (svc BotMsgRecordSvc) SaveMessage(update tgbotapi.Update) error {
 			DoNothing: true,
 		}).
 		Create(&record).Error
+}
+
+func (svc BotChatHistorySvc) QueryMessages(req request.ChatMessageQuery) (list []bot.TgChatMessageV1, total int64, err error) {
+	table := svc.MessageTable()
+
+	quotedTable := `"` + table + `"`
+
+	db := global.GVA_PGSQL.
+		Table(quotedTable + " m").
+		Select(`
+			m.*,
+			r.id as reply_id,
+			r.user_id as reply_user_id,
+			r.username as reply_username,
+			r.text as reply_text,
+			r.message_type as reply_message_type
+		`).
+		Joins(
+			"LEFT JOIN " + quotedTable + " r ON m.reply_to_message_id = r.id",
+		)
+
+	if req.UserID != 0 {
+		db = db.Where("m.user_id = ?", req.UserID)
+	}
+	if req.Username != "" {
+		db = db.Where("m.username ILIKE ?", "%"+req.Username+"%")
+	}
+	if !req.StartTime.IsZero() {
+		db = db.Where("m.timestamp >= ?", req.StartTime)
+	}
+
+	if !req.EndTime.IsZero() {
+		db = db.Where("m.timestamp <= ?", req.EndTime)
+	}
+
+	err = db.Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	page := req.Page
+	pageSize := req.PageSize
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	err = db.
+		Order("timestamp asc").
+		Limit(pageSize).
+		Offset((page - 1) * pageSize).
+		Find(&list).Error
+
+	return
 }

@@ -154,7 +154,7 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 }
 
 func SyncChatGroupMessage(botID int64, chatGroupID int64, tgMsg tgbotapi.Update) (err error) {
-	svc := botSvc.NewBotMsgRecordSvc(botID, chatGroupID)
+	svc := botSvc.NewBotChatHistorySvc(botID, chatGroupID)
 	if err = svc.Sync(); err != nil {
 		global.GVA_LOG.Error("SyncChatGroupMessage NewBotMsgRecordSvc",
 			zap.Int64("chatID", chatGroupID),

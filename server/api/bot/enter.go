@@ -23,4 +23,5 @@ var (
 	taskService           = service.ServiceGroupApp.BotServiceGroup.BotTaskService
 	botChannelService     = service.ServiceGroupApp.BotServiceGroup.BotChannelService
 	botCmdConfigService   = service.ServiceGroupApp.BotServiceGroup.BotCmdConfigService
+	botChatHistoryService = service.ServiceGroupApp.BotServiceGroup.BotChatHistorySvc
 )

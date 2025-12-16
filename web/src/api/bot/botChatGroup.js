@@ -108,3 +108,12 @@ export const getBotChatGroupPublic = () => {
     method: 'get',
   })
 }
+
+// getChatMessageList 获取聊天消息
+export const getChatMessageList = (params) => {
+  return service({
+    url: '/botChatGroup/chatHistory',
+    method: 'get',
+    params
+  })
+}

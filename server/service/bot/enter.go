@@ -10,4 +10,5 @@ type ServiceGroup struct {
 	BotChannelService
 	BotCmdConfigService
 	BotHandlerSvc
+	BotChatHistorySvc
 }

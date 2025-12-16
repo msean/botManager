@@ -26,4 +26,13 @@ type (
 		Raw              datatypes.JSON `json:"raw" form:"raw" gorm:"type:jsonb;comment:Telegram原始JSON;column:raw"`
 		CreatedAt        time.Time      `json:"createdAt" form:"createdAt" gorm:"comment:创建时间;column:created_at"`
 	}
+
+	TgChatMessageV1 struct {
+		TGMessageRecord
+		ReplyID          *int64  `json:"replyId"`
+		ReplyUserID      *int64  `json:"replyUserId"`
+		ReplyUsername    *string `json:"replyUsername"`
+		ReplyText        *string `json:"replyText"`
+		ReplyMessageType *string `json:"replyMessageType"`
+	}
 )
