@@ -1,9 +1,12 @@
 package bot
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/model/bot/request"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
 	"github.com/msean/botmanager/server/model/common/response"
 	botService "github.com/msean/botmanager/server/service/bot"
@@ -188,25 +191,44 @@ func (botChatGroupApi *BotChatGroupApi) GetBotChatGroupPublic(c *gin.Context) {
 	}, "获取成功", c)
 }
 
-func (botChatGroupApi *BotChatGroupApi) ChatHistory(c *gin.Context) {
-	var body botReq.ChatMessageQuery
-	err := c.ShouldBind(&body)
-	if err != nil {
+func (api *BotChatGroupApi) ChatHistory(c *gin.Context) {
+	var req request.ChatMessageQuery
+	if err := c.ShouldBind(&req); err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
 
-	svc := botService.NewBotChatHistorySvc(body.BotID, body.ChatGroupID)
-	list, total, err := svc.QueryMessages(body)
-	if err != nil {
-		global.GVA_LOG.Error("获取失败!", zap.Error(err))
-		response.FailWithMessage("获取失败:"+err.Error(), c)
-		return
+	layout := "2006-01-02 15:04:05"
+	if req.SrcStartTime != "" {
+		t, err := time.ParseInLocation(layout, req.SrcStartTime, time.Local)
+		if err != nil {
+			response.FailWithMessage("startTime 格式错误", c)
+			return
+		}
+		req.StartTime = &t
 	}
-	response.OkWithDetailed(response.PageResult{
-		List:     list,
-		Total:    total,
-		Page:     body.Page,
-		PageSize: body.PageSize,
-	}, "获取成功", c)
+
+	if req.SrcEndTime != "" {
+		t, err := time.ParseInLocation(layout, req.SrcEndTime, time.Local)
+		if err != nil {
+			response.FailWithMessage("endTime 格式错误", c)
+			return
+		}
+		req.EndTime = &t
+	}
+
+	if req.Limit <= 0 || req.Limit > 200 {
+		req.Limit = 20
+	}
+
+	svc := botService.NewBotChatHistorySvc(req.BotID, req.ChatGroupID)
+	list, hasMore, err := svc.QueryMessages(req)
+	if err != nil {
+		global.GVA_LOG.Error("ChatHistory QueryMessages", zap.Error(err))
+	}
+
+	response.OkWithDetailed(gin.H{
+		"list":    list,
+		"hasMore": hasMore,
+	}, "ok", c)
 }

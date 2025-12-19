@@ -34,5 +34,6 @@ type (
 		ReplyUsername    *string `json:"replyUsername"`
 		ReplyText        *string `json:"replyText"`
 		ReplyMessageType *string `json:"replyMessageType"`
+		FileUrl          *string `json:"fileUrl" form:"fileUrl"`
 	}
 )

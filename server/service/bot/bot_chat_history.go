@@ -3,13 +3,16 @@ package bot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/service/cache"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm/clause"
@@ -111,6 +114,43 @@ SELECT EXISTS (
 	return exists, err
 }
 
+func GetTelegramFileURL(botToken, fileID string) (string, error) {
+	apiURL := fmt.Sprintf(
+		"https://api.telegram.org/bot%s/getFile?file_id=%s",
+		botToken,
+		fileID,
+	)
+
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		OK     bool `json:"ok"`
+		Result struct {
+			FilePath string `json:"file_path"`
+		} `json:"result"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	if !result.OK || result.Result.FilePath == "" {
+		return "", errors.New("getFile failed")
+	}
+
+	fileURL := fmt.Sprintf(
+		"https://api.telegram.org/file/bot%s/%s",
+		botToken,
+		result.Result.FilePath,
+	)
+
+	return fileURL, nil
+}
+
 func (svc BotChatHistorySvc) tableCacheKey() string {
 	return fmt.Sprintf("tg:msg_table:exists:%d:%d", svc.botID, svc.chatGroupID)
 }
@@ -208,13 +248,23 @@ func (svc BotChatHistorySvc) SaveMessage(update tgbotapi.Update) error {
 		Create(&record).Error
 }
 
-func (svc BotChatHistorySvc) QueryMessages(req request.ChatMessageQuery) (list []bot.TgChatMessageV1, total int64, err error) {
-	table := svc.MessageTable()
+func (svc BotChatHistorySvc) QueryMessages(
+	req request.ChatMessageQuery,
+) (
+	list []bot.TgChatMessageV1,
+	hasMore bool,
+	err error,
+) {
 
-	quotedTable := `"` + table + `"`
+	botCache := cache.NewBotCache(req.BotID)
+	var has bool
+	if has, err = cache.CacheGetItem(botCache); !has || err != nil {
+		return
+	}
+	table := `"` + svc.MessageTable() + `" m`
 
 	db := global.GVA_PGSQL.
-		Table(quotedTable + " m").
+		Table(table).
 		Select(`
 			m.*,
 			r.id as reply_id,
@@ -223,43 +273,73 @@ func (svc BotChatHistorySvc) QueryMessages(req request.ChatMessageQuery) (list [
 			r.text as reply_text,
 			r.message_type as reply_message_type
 		`).
-		Joins(
-			"LEFT JOIN " + quotedTable + " r ON m.reply_to_message_id = r.id",
-		)
+		Joins(`LEFT JOIN "` + svc.MessageTable() + `" r ON m.reply_to_message_id = r.id`)
 
-	if req.UserID != 0 {
+	// ===== 查询条件 =====
+	if req.UserID > 0 {
 		db = db.Where("m.user_id = ?", req.UserID)
 	}
 	if req.Username != "" {
 		db = db.Where("m.username ILIKE ?", "%"+req.Username+"%")
 	}
-	if !req.StartTime.IsZero() {
-		db = db.Where("m.timestamp >= ?", req.StartTime)
+	if req.Text != "" {
+		db = db.Where("(m.text ILIKE ? OR m.caption ILIKE ?)", "%"+req.Text+"%", "%"+req.Text+"%")
+	}
+	if req.StartTime != nil {
+		db = db.Where("m.timestamp >= ?", *req.StartTime)
+	}
+	if req.EndTime != nil {
+		db = db.Where("m.timestamp <= ?", *req.EndTime)
 	}
 
-	if !req.EndTime.IsZero() {
-		db = db.Where("m.timestamp <= ?", req.EndTime)
+	limit := req.Limit + 1 // 多查一条判断是否还有
+
+	// ===== 游标分页 =====
+	switch {
+	case req.BeforeID > 0:
+		// 加载更早
+		db = db.
+			Where("m.id < ?", req.BeforeID).
+			Order("m.id DESC")
+
+	case req.AfterID > 0:
+		// 加载更新
+		db = db.
+			Where("m.id > ?", req.AfterID).
+			Order("m.id ASC")
+
+	default:
+		// 初始化：最早 → 最新
+		db = db.Order("m.id ASC")
 	}
 
-	err = db.Count(&total).Error
-	if err != nil {
+	var rows []bot.TgChatMessageV1
+	if err = db.Limit(limit).Find(&rows).Error; err != nil {
 		return
 	}
 
-	page := req.Page
-	pageSize := req.PageSize
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 20
+	for i := range rows {
+		msg := &rows[i]
+		if msg.FileID != "" && msg.FileType == "photo" {
+			url, err := GetTelegramFileURL(botCache.Token, msg.FileID)
+			if err == nil {
+				msg.FileUrl = &url
+			}
+		}
 	}
 
-	err = db.
-		Order("timestamp asc").
-		Limit(pageSize).
-		Offset((page - 1) * pageSize).
-		Find(&list).Error
+	if len(rows) > req.Limit {
+		hasMore = true
+		rows = rows[:req.Limit]
+	}
 
+	// ⚠️ 只有 beforeID 需要反转
+	if req.BeforeID > 0 {
+		for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
+			rows[i], rows[j] = rows[j], rows[i]
+		}
+	}
+
+	list = rows
 	return
 }

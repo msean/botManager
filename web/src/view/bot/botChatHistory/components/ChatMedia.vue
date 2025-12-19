@@ -1,40 +1,68 @@
 <template>
   <div class="media">
+    <!-- 图片 -->
     <img
-      v-if="msg.messageType === 'photo'"
-      :src="fileUrl"
+      v-if="isPhoto"
+      :src="msg.fileUrl"
+      class="photo"
     />
 
-    <video
-      v-else-if="msg.messageType === 'video'"
-      controls
-      :src="fileUrl"
-    />
-
-    <a v-else :href="fileUrl" target="_blank">
-      📎 下载文件
-    </a>
-
-    <div v-if="msg.caption" class="caption">
-      {{ msg.caption }}
+    <!-- 表情包占位 -->
+    <div
+      v-else-if="isSticker"
+      class="sticker-placeholder"
+    >
+      &lt;表情包&gt;
     </div>
+
+    <!-- 以后要用再放开 -->
+    <!--
+    <video
+      v-else-if="isVideo"
+      :src="msg.fileUrl"
+      controls
+      class="video"
+    />
+
+    <audio
+      v-else-if="isVoice || isAudio"
+      :src="msg.fileUrl"
+      controls
+    />
+    -->
   </div>
 </template>
 
 <script setup>
-const props = defineProps({ msg: Object })
+import { computed } from 'vue'
 
-// 你后端需要提供一个 file proxy 接口
-const fileUrl = `/api/chat/file/${props.msg.fileId}`
+const props = defineProps({
+  msg: Object
+})
+
+const isPhoto = computed(() => props.msg.fileType === 'photo')
+const isVideo = computed(() => props.msg.fileType === 'video')
+const isVoice = computed(() => props.msg.fileType === 'voice')
+const isAudio = computed(() => props.msg.fileType === 'audio')
+const isSticker = computed(() => props.msg.fileType === 'sticker')
 </script>
 
 <style scoped>
-.media img {
+.photo {
   max-width: 240px;
   border-radius: 6px;
 }
-.caption {
-  margin-top: 4px;
-  font-size: 12px;
+
+.video {
+  max-width: 320px;
+}
+
+.sticker-placeholder {
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #666;
+  background: #f0f2f5;
+  border-radius: 6px;
+  display: inline-block;
 }
 </style>
