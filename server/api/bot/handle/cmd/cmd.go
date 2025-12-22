@@ -23,6 +23,7 @@ var (
 	NoticeRechargeCmd = "/noticeRecharge" // 充值按钮
 	RechargeChoiceCmd = "/rechargeChoice"
 	BalanceShowCmd    = "/balanceShow"
+	UserCenterCmd     = "/userCenter"
 	RechargeCancelCmd = "/rechargeCancel"
 )
 
@@ -146,6 +147,8 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd s
 		ReceiveAdContentHandle(update, token, botID)
 	case RechargeChoiceCmd:
 		RechargeChoiceHandler(update, token, botID)
+	case UserCenterCmd:
+		UserCenterHandler(update, token, botID)
 	default:
 	}
 }

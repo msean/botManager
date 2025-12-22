@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -191,7 +190,6 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 		}
 	}
 
-	spew.Dump(">>>>>>>>>>>>>>>>>markup", markup)
 	// ==================== 分类型发送 ====================
 	switch task.TaskSendType {
 
