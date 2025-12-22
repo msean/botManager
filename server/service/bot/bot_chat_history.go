@@ -82,32 +82,37 @@ func (svc BotChatHistorySvc) Sync() error {
 
 		if Aerr := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE UNIQUE INDEX IF NOT EXISTS idx_%d_chat_id ON "%s"(id)`,
-			svc.chatGroupID, svc.MessageTable(),
+			svc.chatGroupID,
+			svc.MessageTable(),
 		)).Error; Aerr != nil {
 			global.GVA_LOG.Error("create index chat_id err", zap.Error(Aerr))
 		}
-		if Berr := global.GVA_PGSQL.Exec(
-			fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%d_time ON %s (timestamp)`,
-				svc.chatGroupID, svc.MessageTable()),
-		).Error; Berr != nil {
+		if Berr := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_%d_time ON "%s"(timestamp)`,
+			svc.chatGroupID,
+			svc.MessageTable(),
+		)).Error; Berr != nil {
 			global.GVA_LOG.Error("create index time err", zap.Error(Berr))
 		}
-		if Cerr := global.GVA_PGSQL.Exec(
-			fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%d_user_id ON %s (user_id)`,
-				svc.chatGroupID, svc.MessageTable()),
-		).Error; Cerr != nil {
+		if Cerr := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_%d_user_id ON "%s"(user_id)`,
+			svc.chatGroupID,
+			svc.MessageTable(),
+		)).Error; Cerr != nil {
 			global.GVA_LOG.Error("create index user", zap.Error(Cerr))
 		}
 		if Derr := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_fts ON "%s"
-			 USING gin (to_tsvector('simple', coalesce(text,'') || ' ' || coalesce(caption,'')))`,
-			svc.chatGroupID, svc.MessageTable(),
+	 USING gin (to_tsvector('simple', coalesce(text,'') || ' ' || coalesce(caption,'')))`,
+			svc.chatGroupID,
+			svc.MessageTable(),
 		)).Error; Derr != nil {
 			global.GVA_LOG.Error("create index user", zap.Error(Derr))
 		}
 		if Ferr := global.GVA_PGSQL.Exec(fmt.Sprintf(
-			`CREATE INDEX IF NOT EXISTS idx_%d_user_name ON %s (lower(username))`,
-			svc.chatGroupID, svc.MessageTable(),
+			`CREATE INDEX IF NOT EXISTS idx_%d_username_lower ON "%s"(lower(username))`,
+			svc.chatGroupID,
+			svc.MessageTable(),
 		)).Error; Ferr != nil {
 			global.GVA_LOG.Error("create index user", zap.Error(Ferr))
 		}
