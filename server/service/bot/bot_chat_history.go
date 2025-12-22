@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -79,14 +80,37 @@ func (svc BotChatHistorySvc) Sync() error {
 			return err
 		}
 
-		global.GVA_PGSQL.Exec(
+		if Aerr := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_%d_chat_id ON "%s"(id)`,
+			svc.chatGroupID, svc.MessageTable(),
+		)).Error; Aerr != nil {
+			global.GVA_LOG.Error("create index chat_id err", zap.Error(Aerr))
+		}
+		if Berr := global.GVA_PGSQL.Exec(
 			fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%d_time ON %s (timestamp)`,
 				svc.chatGroupID, svc.MessageTable()),
-		)
-		global.GVA_PGSQL.Exec(
-			fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%d_user ON %s (user_id)`,
+		).Error; Berr != nil {
+			global.GVA_LOG.Error("create index time err", zap.Error(Berr))
+		}
+		if Cerr := global.GVA_PGSQL.Exec(
+			fmt.Sprintf(`CREATE INDEX IF NOT EXISTS idx_%d_user_id ON %s (user_id)`,
 				svc.chatGroupID, svc.MessageTable()),
-		)
+		).Error; Cerr != nil {
+			global.GVA_LOG.Error("create index user", zap.Error(Cerr))
+		}
+		if Derr := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_%d_fts ON "%s"
+			 USING gin (to_tsvector('simple', coalesce(text,'') || ' ' || coalesce(caption,'')))`,
+			svc.chatGroupID, svc.MessageTable(),
+		)).Error; Derr != nil {
+			global.GVA_LOG.Error("create index user", zap.Error(Derr))
+		}
+		if Ferr := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_%d_user_name ON %s (lower(username))`,
+			svc.chatGroupID, svc.MessageTable(),
+		)).Error; Ferr != nil {
+			global.GVA_LOG.Error("create index user", zap.Error(Ferr))
+		}
 	}
 
 	// 7️⃣ 写缓存
@@ -182,6 +206,7 @@ func (svc BotChatHistorySvc) SaveMessage(update tgbotapi.Update) error {
 	if msg.From != nil {
 		record.UserID = msg.From.ID
 		record.Username = msg.From.UserName
+		record.NickName = fmt.Sprintf("%s%s", msg.From.FirstName, msg.From.LastName)
 		record.FirstName = msg.From.FirstName
 		record.LastName = msg.From.LastName
 		record.IsBot = msg.From.IsBot
@@ -280,10 +305,19 @@ func (svc BotChatHistorySvc) QueryMessages(
 		db = db.Where("m.user_id = ?", req.UserID)
 	}
 	if req.Username != "" {
-		db = db.Where("m.username ILIKE ?", "%"+req.Username+"%")
+		db = db.Where("lower(m.username) LIKE ?", "%"+strings.ToLower(req.Username)+"%")
 	}
+	// if req.Text != "" {
+
+	// 	db = db.Where("(m.text ILIKE ? OR m.caption ILIKE ?)", "%"+req.Text+"%", "%"+req.Text+"%")
+	// }
 	if req.Text != "" {
-		db = db.Where("(m.text ILIKE ? OR m.caption ILIKE ?)", "%"+req.Text+"%", "%"+req.Text+"%")
+		db = db.Where(`
+			to_tsvector(
+				'simple',
+				coalesce(m.text,'') || ' ' || coalesce(m.caption,'')
+			) @@ plainto_tsquery('simple', ?)
+		`, req.Text)
 	}
 	if req.StartTime != nil {
 		db = db.Where("m.timestamp >= ?", *req.StartTime)
@@ -320,7 +354,7 @@ func (svc BotChatHistorySvc) QueryMessages(
 
 	for i := range rows {
 		msg := &rows[i]
-		if msg.FileID != "" && msg.FileType == "photo" {
+		if msg.FileID != "" && (msg.FileType == "photo" || msg.FileType == "video") {
 			url, err := GetTelegramFileURL(botCache.Token, msg.FileID)
 			if err == nil {
 				msg.FileUrl = &url

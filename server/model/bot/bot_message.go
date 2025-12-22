@@ -14,6 +14,7 @@ type (
 		Username         string         `json:"username" form:"username" gorm:"type:varchar(64);comment:用户名;column:username"`
 		FirstName        string         `json:"firstName" form:"firstName" gorm:"type:varchar(128);comment:名;column:first_name"`
 		LastName         string         `json:"lastName" form:"lastName" gorm:"type:varchar(128);comment:姓;column:last_name"`
+		NickName         string         `json:"nickName" form:"nickName" gorm:"type:varchar(64);comment:昵称;column:nick_name"`
 		IsBot            bool           `json:"isBot" form:"isBot" gorm:"comment:是否机器人;column:is_bot"`
 		ReplyToMessageID int64          `json:"replyToMessageId" form:"replyToMessageId" gorm:"comment:回复消息ID;column:reply_to_message_id"`
 		MessageType      string         `json:"messageType" form:"messageType" gorm:"type:varchar(50);comment:消息类型;text/photo/video;column:message_type"`

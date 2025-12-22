@@ -15,6 +15,14 @@
       &lt;表情包&gt;
     </div>
 
+    <video
+        v-else-if="isVideo"
+        :src="msg.fileUrl"
+        controls
+        playsinline
+        preload="metadata"
+        class="video"
+    ></video>
     <!-- 以后要用再放开 -->
     <!--
     <video
@@ -50,11 +58,15 @@ const isSticker = computed(() => props.msg.fileType === 'sticker')
 <style scoped>
 .photo {
   max-width: 240px;
+  max-height: 3200px;
   border-radius: 6px;
 }
 
 .video {
   max-width: 320px;
+  max-height: 240px;
+  border-radius: 6px;
+  background: #000;
 }
 
 .sticker-placeholder {
