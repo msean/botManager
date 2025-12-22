@@ -75,6 +75,11 @@ func (svc BotChatHistorySvc) Sync() error {
 
 	global.GVA_LOG.Debug("BotChatHistorySvc Sync", zap.Bool("exists", exists))
 	if !exists {
+		if err := global.GVA_PGSQL.
+			Table(svc.MessageTable()).
+			AutoMigrate(&bot.TGMessageRecord{}); err != nil {
+			return err
+		}
 		indexSuffix := utils.Abs(svc.chatGroupID)
 
 		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
