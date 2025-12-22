@@ -82,53 +82,53 @@ func (svc BotChatHistorySvc) Sync() error {
 		indexSuffix := utils.Abs(svc.chatGroupID)
 
 		// ===== 普通索引 =====
-		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+		if indexErr := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE UNIQUE INDEX IF NOT EXISTS idx_%d_chat_id ON "%s"(id)`,
 			indexSuffix,
 			svc.MessageTable(),
-		)).Error; err != nil {
-			global.GVA_LOG.Error("create index chat_id err", zap.Error(err))
+		)).Error; indexErr != nil {
+			global.GVA_LOG.Error("create index chat_id err", zap.Error(indexErr))
 		}
 
-		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+		if indexErr := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_time ON "%s"(timestamp)`,
 			indexSuffix,
 			svc.MessageTable(),
-		)).Error; err != nil {
-			global.GVA_LOG.Error("create index time err", zap.Error(err))
+		)).Error; indexErr != nil {
+			global.GVA_LOG.Error("create index time err", zap.Error(indexErr))
 		}
 
-		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+		if indexErr := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_user_id ON "%s"(user_id)`,
 			indexSuffix,
 			svc.MessageTable(),
-		)).Error; err != nil {
-			global.GVA_LOG.Error("create index user_id err", zap.Error(err))
+		)).Error; indexErr != nil {
+			global.GVA_LOG.Error("create index user_id err", zap.Error(indexErr))
 		}
 
 		// ===== trigram 扩展 =====
-		if err := global.GVA_PGSQL.Exec(`CREATE EXTENSION IF NOT EXISTS pg_trgm`).Error; err != nil {
-			global.GVA_LOG.Error("create pg_trgm extension err", zap.Error(err))
+		if indexErr := global.GVA_PGSQL.Exec(`CREATE EXTENSION IF NOT EXISTS pg_trgm`).Error; indexErr != nil {
+			global.GVA_LOG.Error("create pg_trgm extension err", zap.Error(indexErr))
 		}
 
 		// username trigram
-		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+		if indexErr := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_username_trgm
 			ON "%s" USING gin (username gin_trgm_ops)`,
 			indexSuffix,
 			svc.MessageTable(),
-		)).Error; err != nil {
-			global.GVA_LOG.Error("create trigram index username err", zap.Error(err))
+		)).Error; indexErr != nil {
+			global.GVA_LOG.Error("create trigram index username err", zap.Error(indexErr))
 		}
 
 		// text + caption trigram
-		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+		if indexErr := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_text_caption_trgm
 			ON "%s" USING gin ((coalesce(text,'') || ' ' || coalesce(caption,'')) gin_trgm_ops)`,
 			indexSuffix,
 			svc.MessageTable(),
-		)).Error; err != nil {
-			global.GVA_LOG.Error("create trigram index text+caption err", zap.Error(err))
+		)).Error; indexErr != nil {
+			global.GVA_LOG.Error("create trigram index text+caption err", zap.Error(indexErr))
 		}
 	}
 
