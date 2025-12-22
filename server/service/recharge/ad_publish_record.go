@@ -3,7 +3,9 @@ package recharge
 import (
 	"context"
 
+	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	rechargeReq "github.com/msean/botmanager/server/model/recharge/request"
 )
@@ -47,15 +49,19 @@ func (adPublishRecordService *AdPublishRecordService) GetAdPublishRecord(ctx con
 
 // GetAdPublishRecordInfoList 分页获取广告发布记录记录
 // Author [yourname](https://github.com/yourname)
-func (adPublishRecordService *AdPublishRecordService) GetAdPublishRecordInfoList(ctx context.Context, info rechargeReq.AdPublishRecordSearch) (list []recharge.AdPublishRecord, total int64, err error) {
+func (adPublishRecordService *AdPublishRecordService) GetAdPublishRecordInfoList(ctx context.Context, info rechargeReq.AdPublishRecordSearch) (list []*recharge.AdPublishRecord, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	// 创建db
 	db := global.GVA_MYSQL.Model(&recharge.AdPublishRecord{})
-	var adPublishRecords []recharge.AdPublishRecord
+	var adPublishRecords []*recharge.AdPublishRecord
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
 		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
+	}
+
+	if info.UserID != 0 {
+		db = db.Where("user_id = ?", info.UserID)
 	}
 
 	err = db.Count(&total).Error
@@ -67,9 +73,26 @@ func (adPublishRecordService *AdPublishRecordService) GetAdPublishRecordInfoList
 		db = db.Limit(limit).Offset(offset)
 	}
 
-	err = db.Find(&adPublishRecords).Error
+	if err = db.Find(&adPublishRecords).Error; err != nil {
+		return
+	}
+
+	var botList []int64
+	for _, object := range adPublishRecords {
+		botList = append(botList, object.BotID)
+	}
+
+	var botMapper map[int64]bot.Bot
+	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
+		return
+	}
+
+	for _, object := range adPublishRecords {
+		object.BotName = botMapper[object.BotID].Name
+	}
 	return adPublishRecords, total, err
 }
+
 func (adPublishRecordService *AdPublishRecordService) GetAdPublishRecordPublic(ctx context.Context) {
 	// 此方法为获取数据源定义的数据
 	// 请自行实现

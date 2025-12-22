@@ -22,8 +22,15 @@
             end-placeholder="结束时间"
           />
        </el-form-item>
-      
 
+       <el-form-item label="用户ID" prop="userID">
+        <el-input
+          v-model.number="searchInfo.userID"
+          clearable
+          placeholder="请输入用户ID"
+          style="width: 180px"
+        />
+      </el-form-item>
         <template v-if="showAllQuery">
           <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
         </template>
@@ -62,7 +69,7 @@
 
             <el-table-column align="left" label="余额" prop="balance" width="120" />
 
-            <el-table-column align="left" label="机器人ID" prop="botID" width="120" />
+            <el-table-column align="left" label="机器人ID" prop="botName" width="120" />
 
         <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
@@ -105,9 +112,22 @@
             <el-form-item label="余额:" prop="balance">
     <el-input-number v-model="formData.balance" style="width:100%" :precision="2" :clearable="true" />
 </el-form-item>
-            <el-form-item label="机器人ID:" prop="botID">
-    <el-input v-model.number="formData.botID" :clearable="true" placeholder="请输入机器人ID" />
-</el-form-item>
+            <el-form-item label="机器人:" prop="botID">
+            <el-select
+              v-model="formData.botID"
+              placeholder="请选择机器人"
+              clearable
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in botList"
+                :key="item.botID"
+                :label="item.name"
+                :value="item.botID"
+              />
+            </el-select>
+          </el-form-item>
+
           </el-form>
     </el-drawer>
 
@@ -142,17 +162,27 @@ import {
 } from '@/api/recharge/userWallet'
 
 // 全量引入格式化工具 请按需保留
+import { onMounted } from 'vue'
 import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, reactive } from 'vue'
 import { useAppStore } from "@/pinia"
-
-
+import { getBotChoice } from '@/api/bot/bot'
 
 
 defineOptions({
     name: 'UserWallet'
 })
+
+const botList = ref([])
+
+// ======= 获取机器人列表 =======
+const getBotList = async () => {
+  const res = await getBotChoice()
+  if (res.code === 0) {
+    botList.value = res.data || []
+  }
+}
 
 // 提交按钮loading
 const btnLoading = ref(false)
@@ -232,6 +262,10 @@ const setOptions = async () =>{
 
 // 获取需要的字典 可能为空 按需保留
 setOptions()
+
+onMounted(() => {
+  getBotList()
+})
 
 
 // 多选数据

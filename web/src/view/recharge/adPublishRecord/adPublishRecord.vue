@@ -23,6 +23,14 @@
           />
        </el-form-item>
       
+       <el-form-item label="用户ID" prop="userID">
+        <el-input
+          v-model.number="searchInfo.userID"
+          clearable
+          placeholder="请输入用户ID"
+          style="width: 180px"
+        />
+      </el-form-item>
 
         <template v-if="showAllQuery">
           <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
@@ -48,7 +56,7 @@
         <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
             <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
         </el-table-column>
-            <el-table-column align="left" label="机器人ID" prop="botID" width="120" />
+            <el-table-column align="left" label="机器人" prop="botName" width="120" />
             <el-table-column align="left" label="发布次数" prop="publishTimes" width="120" />
             <el-table-column align="left" label="发布用户ID" prop="userID" width="120" />
             <el-table-column align="left" label="发布价格" prop="price" width="120" />

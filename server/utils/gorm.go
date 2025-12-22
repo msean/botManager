@@ -259,3 +259,7 @@ func max(a, b int) int {
 	}
 	return b
 }
+
+func SoftDeleteCond() Cond {
+	return NewBaseCond("deleted_at IS NULL")
+}

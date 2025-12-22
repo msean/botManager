@@ -106,12 +106,17 @@ func (c *KvCacheObject) Get(obj any) (bool, error) {
 	return true, nil
 }
 
+func softDeleteCond() utils.Cond {
+	return utils.NewBaseCond("deleted_at IS NULL")
+}
+
 func (c *KvCacheObject) fromDB(obj any) (bool, error) {
 	conds := make([]utils.Cond, 0, len(c.pairs))
 	for _, p := range c.pairs {
 		conds = append(conds, utils.NewWhereCond(p.PKCol, p.PKVal))
 	}
 
+	conds = append(conds, softDeleteCond())
 	has, err := utils.Get(global.GVA_MYSQL.Table(c.table), obj, conds...)
 	return has, err
 }
@@ -150,6 +155,7 @@ func (c *KvCacheObject) listFromDB(obj any) error {
 		conds = append(conds, utils.NewWhereCond(p.PKCol, p.PKVal))
 	}
 
+	conds = append(conds, utils.SoftDeleteCond())
 	// 查询数据库
 	err := utils.Find(global.GVA_MYSQL.Table(c.table), sliceVal, conds...)
 	if err != nil {

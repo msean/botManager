@@ -73,6 +73,23 @@ func (dao *rechargeDao) GetUserWallet(db *gorm.DB, botID, userID int64, userName
 	return
 }
 
+func (dao *rechargeDao) WalletExist(
+	db *gorm.DB,
+	botID, userID int64,
+) (has bool, err error) {
+
+	var count int64
+	err = db.Model(&recharge.UserWallet{}).
+		Where("bot_id = ? AND user_id = ?", botID, userID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func (dao *rechargeDao) AddBalance(db *gorm.DB, botID, userID int64, amount float64) (balance float64, err error) {
 
 	err = db.Transaction(func(tx *gorm.DB) error {
