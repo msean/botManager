@@ -14,6 +14,7 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/bot/request"
 	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm/clause"
@@ -74,47 +75,42 @@ func (svc BotChatHistorySvc) Sync() error {
 
 	global.GVA_LOG.Debug("BotChatHistorySvc Sync", zap.Bool("exists", exists))
 	if !exists {
-		if err := global.GVA_PGSQL.
-			Table(svc.MessageTable()).
-			AutoMigrate(&bot.TGMessageRecord{}); err != nil {
-			return err
+		indexSuffix := utils.Abs(svc.chatGroupID)
+
+		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_%d_time ON "%s"(timestamp)`,
+			indexSuffix,
+			svc.MessageTable(),
+		)).Error; err != nil {
+			global.GVA_LOG.Error("create index time err", zap.Error(err))
 		}
 
-		if Aerr := global.GVA_PGSQL.Exec(fmt.Sprintf(
-			`CREATE UNIQUE INDEX IF NOT EXISTS idx_%d_chat_id ON "%s"(id)`,
-			svc.chatGroupID,
-			svc.MessageTable(),
-		)).Error; Aerr != nil {
-			global.GVA_LOG.Error("create index chat_id err", zap.Error(Aerr))
-		}
-		if Berr := global.GVA_PGSQL.Exec(fmt.Sprintf(
-			`CREATE INDEX IF NOT EXISTS idx_%d_time ON "%s"(timestamp)`,
-			svc.chatGroupID,
-			svc.MessageTable(),
-		)).Error; Berr != nil {
-			global.GVA_LOG.Error("create index time err", zap.Error(Berr))
-		}
-		if Cerr := global.GVA_PGSQL.Exec(fmt.Sprintf(
+		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_user_id ON "%s"(user_id)`,
-			svc.chatGroupID,
+			indexSuffix,
 			svc.MessageTable(),
-		)).Error; Cerr != nil {
-			global.GVA_LOG.Error("create index user", zap.Error(Cerr))
+		)).Error; err != nil {
+			global.GVA_LOG.Error("create index user err", zap.Error(err))
 		}
-		if Derr := global.GVA_PGSQL.Exec(fmt.Sprintf(
+
+		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_fts ON "%s"
 	 USING gin (to_tsvector('simple', coalesce(text,'') || ' ' || coalesce(caption,'')))`,
-			svc.chatGroupID,
+			indexSuffix,
 			svc.MessageTable(),
-		)).Error; Derr != nil {
-			global.GVA_LOG.Error("create index user", zap.Error(Derr))
+		)).Error; err != nil {
+			global.GVA_LOG.Error("create index fts err", zap.Error(err))
 		}
-		if Ferr := global.GVA_PGSQL.Exec(fmt.Sprintf(
-			`CREATE INDEX IF NOT EXISTS idx_%d_username_lower ON "%s"(lower(username))`,
-			svc.chatGroupID,
+		if err := global.GVA_PGSQL.Exec(`CREATE EXTENSION IF NOT EXISTS pg_trgm`).Error; err != nil {
+			global.GVA_LOG.Error("create trigram index username err", zap.Error(err))
+		}
+		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_%d_username_trgm
+     ON "%s" USING gin (username gin_trgm_ops)`,
+			indexSuffix,
 			svc.MessageTable(),
-		)).Error; Ferr != nil {
-			global.GVA_LOG.Error("create index user", zap.Error(Ferr))
+		)).Error; err != nil {
+			global.GVA_LOG.Error("create trigram index username err", zap.Error(err))
 		}
 	}
 

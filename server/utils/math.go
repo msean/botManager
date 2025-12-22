@@ -22,3 +22,10 @@ func FloatReserve(f float64, reserve uint) float64 {
 	_f, _ := strconv.ParseFloat(roundedStr, 64)
 	return _f
 }
+
+func Abs(v int64) int64 {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
