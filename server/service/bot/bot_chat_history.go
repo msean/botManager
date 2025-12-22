@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -39,7 +38,6 @@ func (svc BotChatHistorySvc) MessageTable() string {
 func (svc BotChatHistorySvc) tableLockKey() string {
 	return fmt.Sprintf("lock:tg_msg_table:%d", svc.chatGroupID)
 }
-
 func (svc BotChatHistorySvc) Sync() error {
 	global.GVA_LOG.Debug("BotChatHistorySvc Sync", zap.String("table", svc.MessageTable()))
 	ctx := context.Background()
@@ -80,7 +78,17 @@ func (svc BotChatHistorySvc) Sync() error {
 			AutoMigrate(&bot.TGMessageRecord{}); err != nil {
 			return err
 		}
+
 		indexSuffix := utils.Abs(svc.chatGroupID)
+
+		// ===== 普通索引 =====
+		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_%d_chat_id ON "%s"(id)`,
+			indexSuffix,
+			svc.MessageTable(),
+		)).Error; err != nil {
+			global.GVA_LOG.Error("create index chat_id err", zap.Error(err))
+		}
 
 		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_time ON "%s"(timestamp)`,
@@ -95,27 +103,32 @@ func (svc BotChatHistorySvc) Sync() error {
 			indexSuffix,
 			svc.MessageTable(),
 		)).Error; err != nil {
-			global.GVA_LOG.Error("create index user err", zap.Error(err))
+			global.GVA_LOG.Error("create index user_id err", zap.Error(err))
 		}
 
-		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
-			`CREATE INDEX IF NOT EXISTS idx_%d_fts ON "%s"
-	 USING gin (to_tsvector('simple', coalesce(text,'') || ' ' || coalesce(caption,'')))`,
-			indexSuffix,
-			svc.MessageTable(),
-		)).Error; err != nil {
-			global.GVA_LOG.Error("create index fts err", zap.Error(err))
-		}
+		// ===== trigram 扩展 =====
 		if err := global.GVA_PGSQL.Exec(`CREATE EXTENSION IF NOT EXISTS pg_trgm`).Error; err != nil {
-			global.GVA_LOG.Error("create trigram index username err", zap.Error(err))
+			global.GVA_LOG.Error("create pg_trgm extension err", zap.Error(err))
 		}
+
+		// username trigram
 		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
 			`CREATE INDEX IF NOT EXISTS idx_%d_username_trgm
-     ON "%s" USING gin (username gin_trgm_ops)`,
+			ON "%s" USING gin (username gin_trgm_ops)`,
 			indexSuffix,
 			svc.MessageTable(),
 		)).Error; err != nil {
 			global.GVA_LOG.Error("create trigram index username err", zap.Error(err))
+		}
+
+		// text + caption trigram
+		if err := global.GVA_PGSQL.Exec(fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_%d_text_caption_trgm
+			ON "%s" USING gin ((coalesce(text,'') || ' ' || coalesce(caption,'')) gin_trgm_ops)`,
+			indexSuffix,
+			svc.MessageTable(),
+		)).Error; err != nil {
+			global.GVA_LOG.Error("create trigram index text+caption err", zap.Error(err))
 		}
 	}
 
@@ -310,20 +323,19 @@ func (svc BotChatHistorySvc) QueryMessages(
 	if req.UserID > 0 {
 		db = db.Where("m.user_id = ?", req.UserID)
 	}
-	if req.Username != "" {
-		db = db.Where("lower(m.username) LIKE ?", "%"+strings.ToLower(req.Username)+"%")
-	}
+	// if req.Username != "" {
+	// 	db = db.Where("lower(m.username) LIKE ?", "%"+strings.ToLower(req.Username)+"%")
+	// }
 	// if req.Text != "" {
-
 	// 	db = db.Where("(m.text ILIKE ? OR m.caption ILIKE ?)", "%"+req.Text+"%", "%"+req.Text+"%")
 	// }
+
+	if req.Username != "" {
+		db = db.Where("m.username ILIKE ?", "%"+req.Username+"%")
+	}
+
 	if req.Text != "" {
-		db = db.Where(`
-			to_tsvector(
-				'simple',
-				coalesce(m.text,'') || ' ' || coalesce(m.caption,'')
-			) @@ plainto_tsquery('simple', ?)
-		`, req.Text)
+		db = db.Where("(coalesce(m.text,'') || ' ' || coalesce(m.caption,'')) ILIKE ?", "%"+req.Text+"%")
 	}
 	if req.StartTime != nil {
 		db = db.Where("m.timestamp >= ?", *req.StartTime)
