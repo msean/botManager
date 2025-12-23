@@ -45,6 +45,15 @@
           </el-select>
         </el-form-item>
 
+         <el-form-item label="用户ID" prop="userID">
+        <el-input
+          v-model.number="searchInfo.userID"
+          clearable
+          placeholder="请输入用户ID"
+          style="width: 180px"
+        />
+      </el-form-item>
+
         <el-form-item label="状态" prop="status">
           <el-select
             v-model="searchInfo.status"

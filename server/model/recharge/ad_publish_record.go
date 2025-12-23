@@ -10,6 +10,7 @@ type AdPublishRecord struct {
 	global.GVA_MODEL
 	BotID        int64   `json:"botID" form:"botID" gorm:"column:bot_id;"`                             //机器人ID
 	BotName      string  `json:"botName" form:"botName"`                                               //机器人ID
+	ChannelName  string  `json:"channelName" form:"channelName"`                                       //机器人ID
 	PublishTimes int     `json:"publishTimes" form:"publishTimes" gorm:"column:publish_times;"`        //发布次数
 	UserID       int64   `json:"userID" form:"userID" gorm:"column:user_id;"`                          //发布用户ID
 	UserName     string  `json:"userName" form:"userName" gorm:"column:user_name;size:256"`            //发布用户ID

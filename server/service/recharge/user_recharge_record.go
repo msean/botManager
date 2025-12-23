@@ -5,7 +5,6 @@ import (
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/recharge"
 	rechargeReq "github.com/msean/botmanager/server/model/recharge/request"
 )
@@ -65,6 +64,9 @@ func (userRechargeRecordService *UserRechargeRecordService) GetUserRechargeRecor
 	if info.Status != 0 {
 		db = db.Where("status=?", info.Status)
 	}
+	if info.UserID != 0 {
+		db = db.Where("user_id=?", info.UserID)
+	}
 
 	err = db.Count(&total).Error
 	if err != nil {
@@ -85,11 +87,7 @@ func (userRechargeRecordService *UserRechargeRecordService) GetUserRechargeRecor
 		botList = append(botList, object.BotID)
 	}
 
-	var botMapper map[int64]bot.Bot
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
-		return
-	}
-
+	botMapper, err := dao.BotDao.MappByIDList(global.GVA_MYSQL, botList)
 	for _, object := range userRechargeRecords {
 		object.BotName = botMapper[object.BotID].Name
 	}

@@ -5,10 +5,11 @@
     <div class="content">
       <!-- 用户名 + 时间 -->
       <div class="meta">
-        <span class="username">{{ fullName }}</span>
+        <span class="fullName">{{ fullName }}</span>
+        <span class="userName">{{ msg.username }}</span>
+        <span class="userID">{{ msg.userId }}</span>
         <span class="time">{{ formatDate(msg.timestamp) }}</span>
-      </div>
-
+    </div>
       <!-- 转发 -->
       <div v-if="forwardFrom" class="forward-bubble">
         Forwarded from {{ forwardFrom }}
@@ -96,6 +97,12 @@ const replyUsername = computed(() => props.msg.replyUsername)
   font-weight: bold;
   margin: 0 10px;
   flex-shrink: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* 想多大就多大 */
 }
 
 .content {

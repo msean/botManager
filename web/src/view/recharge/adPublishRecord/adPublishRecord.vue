@@ -61,6 +61,7 @@
             <el-table-column align="left" label="发布用户ID" prop="userID" width="120" />
             <el-table-column align="left" label="发布价格" prop="price" width="120" />
             <el-table-column align="left" label="用户名" prop="userName" width="120" />
+            <el-table-column align="left" label="频道" prop="channelName" width="120" />
             <el-table-column label="发布内容" prop="content" width="200">
                 <template #default="scope">
                   <el-button type="primary" size="mini" @click="showContent(scope.row.content)">

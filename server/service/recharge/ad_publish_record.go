@@ -77,18 +77,20 @@ func (adPublishRecordService *AdPublishRecordService) GetAdPublishRecordInfoList
 		return
 	}
 
-	var botList []int64
+	var botList, channelList []int64
 	for _, object := range adPublishRecords {
 		botList = append(botList, object.BotID)
+		channelList = append(channelList, object.ChannelID)
 	}
 
 	var botMapper map[int64]bot.Bot
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
-		return
-	}
+	var channelMapper map[int64]bot.BotChannel
+	botMapper, _ = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList)
+	channelMapper, _ = dao.BotChannelDao.MappByChannelIDList(global.GVA_MYSQL, channelList)
 
 	for _, object := range adPublishRecords {
 		object.BotName = botMapper[object.BotID].Name
+		object.ChannelName = channelMapper[object.ChannelID].ChannelName
 	}
 	return adPublishRecords, total, err
 }
