@@ -16,6 +16,10 @@ type UserWalletService struct{}
 // CreateUserWallet 创建用户钱包记录
 // Author [yourname](https://github.com/yourname)
 func (userWalletService *UserWalletService) CreateUserWallet(ctx context.Context, userWallet *recharge.UserWallet) (err error) {
+	if userWallet.BotID == 0 {
+		err = errors.New("请选择机器人")
+		return
+	}
 	var has bool
 	if has, err = dao.RechargeDao.WalletExist(global.GVA_MYSQL, userWallet.BotID, userWallet.UserID); err != nil {
 		return
