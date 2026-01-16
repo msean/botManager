@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/msean/botmanager/server/api/bot/handle/cmd"
+	"github.com/msean/botmanager/server/api/bot/handle/private"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -57,11 +57,12 @@ func (handler *BotHandler) Handle(c *gin.Context, botID int, body []byte) (err e
 	}
 
 	switch chatType {
+	// 私聊
 	case "private":
 		global.GVA_LOG.Info("BotMsgHandlerSvc received msg",
 			zap.Any("msg", getUpdateText(tgMsg))) // 修复后的取文本函数
 
-		cmd.Handle(tgMsg, botModel.Token, int64(botModel.BotID))
+		private.Handle(tgMsg, botModel.Token, int64(botModel.BotID))
 
 	default:
 		// 被拉入群

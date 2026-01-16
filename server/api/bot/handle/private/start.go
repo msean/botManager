@@ -1,4 +1,4 @@
-package cmd
+package private
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"

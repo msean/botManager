@@ -121,7 +121,7 @@ func (taskService *BotTaskService) GetBotTask(ctx context.Context, ID string) (t
 	switch task.GroupType {
 	case constant.GroupTypeChat:
 		var botChatGroupModel bot.BotChatGroup
-		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromBotID(global.GVA_MYSQL, int(task.GroupID)); !has || err != nil {
+		if botChatGroupModel, has, err = dao.BotChatGroupDao.FromID(global.GVA_MYSQL, int(task.GroupID)); !has || err != nil {
 			if !has {
 				err = fmt.Errorf("没有找到改机器人")
 			}

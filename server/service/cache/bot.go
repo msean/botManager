@@ -4,6 +4,7 @@ import "github.com/msean/botmanager/server/model/bot"
 
 type BotCache struct {
 	BotID int64  `json:"botID" form:"botID"` //机器人ID
+	Name  string `json:"name" form:"name"`
 	Token string `json:"token" form:"token"` //机器人token
 }
 

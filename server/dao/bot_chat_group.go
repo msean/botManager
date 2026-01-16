@@ -25,7 +25,7 @@ func (dao *botChatGroupDao) MappByChatGroupIDList(db *gorm.DB, chatGroupIDList [
 	return
 }
 
-func (dao *botChatGroupDao) FromBotID(db *gorm.DB, botChatGroupID int) (botChatGroupModel bot.BotChatGroup, has bool, err error) {
+func (dao *botChatGroupDao) FromID(db *gorm.DB, botChatGroupID int) (botChatGroupModel bot.BotChatGroup, has bool, err error) {
 	err = db.First(&botChatGroupModel, "chat_group_id = ?", botChatGroupID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

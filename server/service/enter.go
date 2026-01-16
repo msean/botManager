@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -15,9 +13,11 @@ import (
 	"github.com/msean/botmanager/server/service/cache"
 	rechargeSrv "github.com/msean/botmanager/server/service/recharge"
 	"github.com/msean/botmanager/server/service/system"
+	"github.com/msean/botmanager/server/service/usage"
 	"github.com/msean/botmanager/server/utils"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
+	"time"
 )
 
 var ServiceGroupApp = new(ServiceGroup)
@@ -26,6 +26,7 @@ type ServiceGroup struct {
 	SystemServiceGroup   system.ServiceGroup
 	BotServiceGroup      botSrv.ServiceGroup
 	RechargeServiceGroup rechargeSrv.ServiceGroup
+	UsageServiceGroup    usage.ServiceGroup
 }
 
 func Init() {
@@ -60,7 +61,6 @@ func Init() {
 		}
 	}()
 }
-
 func CheckExpiredOrders() {
 	deadline := time.Now().Add(-constant.OrderMatchAgo * time.Minute)
 	err := global.GVA_MYSQL.Model(&recharge.UserRechargeRecord{}).Where("status = ?", constant.AdRechargeCreate).Where("created_at <= ?", deadline).Updates(map[string]any{"status": constant.AdRechargeTimeout, "updated_at": time.Now()}).Error
@@ -114,19 +114,12 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
-	trxResp.Data = append(trxResp.Data, utils.TronResponseData{
-		TransactionID:  "mock_tx_1001",
-		BlockTimestamp: 1764746290000,
-		From:           "TEST_FROM_ADDRESS",
-		To:             "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E",
-		Type:           "Transfer",
-		Value:          "10004000",
-		TokenInfo: struct {
-			Symbol   string `json:"symbol"`
-			Address  string `json:"address"`
-			Decimals int    `json:"decimals"`
-			Name     string `json:"name"`
-		}{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
+	trxResp.Data = append(trxResp.Data, utils.TronResponseData{TransactionID: "mock_tx_1001", BlockTimestamp: 1764746290000, From: "TEST_FROM_ADDRESS", To: "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E", Type: "Transfer", Value: "10004000", TokenInfo: struct {
+		Symbol   string `json:"symbol"`
+		Address  string `json:"address"`
+		Decimals int    `json:"decimals"`
+		Name     string `json:"name"`
+	}{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
 	var orders []recharge.UserRechargeRecord
 	err = global.GVA_MYSQL.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
 	if err != nil {
@@ -160,36 +153,19 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 					var cnf cache.RechargeCnfObj
 					var has bool
 					if cnf, has, err = cache.NewRechargeCnfListCache(botID).WherePublishTimes(order.PublishTimes); !has || err != nil {
-						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID),
-							zap.String("userName", order.UserName),
-							zap.Int64("userID", order.UserID),
-							zap.Bool("has", has),
-							zap.Error(err),
-						)
+						global.GVA_LOG.Error("HandleAdConfirm RechargeCnfListCache", zap.Int64("botID", botID), zap.String("userName", order.UserName), zap.Int64("userID", order.UserID), zap.Bool("has", has), zap.Error(err))
 						continue
 					}
 					if balance < order.Price {
 						continue
 					}
-
 					hook := func(channels []cache.BotChannelCache) error {
 						go func() {
 							var channelIDList []int64
 							for _, channel := range channels {
 								channelIDList = append(channelIDList, channel.ChannelID)
 							}
-							err := dao.RechargeDao.CreatePublishRecords(
-								global.GVA_MYSQL,
-								recharge.AdPublishRecord{
-									BotID:        botID,
-									PublishTimes: 1,
-									UserID:       order.UserID,
-									UserName:     order.UserName,
-									Price:        cnf.Price,
-									Content:      order.PublishContent,
-								},
-								channelIDList,
-							)
+							err := dao.RechargeDao.CreatePublishRecords(global.GVA_MYSQL, recharge.AdPublishRecord{BotID: botID, PublishTimes: 1, UserID: order.UserID, UserName: order.UserName, Price: cnf.Price, Content: order.PublishContent}, channelIDList)
 							if err != nil {
 								global.GVA_LOG.Error("保存发布记录失败", zap.Error(err))
 							}
@@ -208,7 +184,6 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 						global.GVA_LOG.Error("HandleAdConfirm ReduceBalance", zap.Int64("botID", botID), zap.Int64("userID", order.UserID), zap.Any("price", cnf.Price), zap.Error(err))
 						continue
 					}
-
 				}
 			}
 		}

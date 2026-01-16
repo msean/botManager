@@ -2,10 +2,13 @@ package cache
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/utils"
 	"go.uber.org/zap"
@@ -55,6 +58,12 @@ type (
 		BotID   int64            `json:"botID"`
 		Objects []RechargeCnfObj `json:"objects"`
 	}
+	LedgerPermissionCache struct {
+		global.GVA_MODEL
+		BotID       int64  `json:"botID"`
+		ChatGroupID int64  `json:"chatGroupID"`
+		OprUsers    string `json:"oprUsers"`
+	}
 )
 
 func NewBotBanContentListCache(botID int64) *BotBanContentListCache {
@@ -90,11 +99,19 @@ func NewRechargeCnfListCache(botID int64) *RechargeCnfCacheList {
 	}
 }
 
+func NewLedgerPermissionCache(botID int64, chatGroupID int64) *LedgerPermissionCache {
+	return &LedgerPermissionCache{
+		BotID:       botID,
+		ChatGroupID: chatGroupID,
+	}
+}
+
 func (BotChatGroupBanMemCListCache) TableName() string { return bot.BotBanGroupMem{}.TableName() }
 func (BotBanContentListCache) TableName() string       { return bot.BotBanContent{}.TableName() }
 func (BotCmdCache) TableName() string                  { return bot.BotCmdConfig{}.TableName() }
 func (BotCmdCacheList) TableName() string              { return bot.BotCmdConfig{}.TableName() }
 func (RechargeCnfCacheList) TableName() string         { return recharge.RechargeConfig{}.TableName() }
+func (LedgerPermissionCache) TableName() string        { return ledger.LedgerPermission{}.TableName() }
 
 func (c BotChatGroupBanMemCListCache) Pairs() []KvPkPair {
 	return []KvPkPair{
@@ -130,17 +147,26 @@ func (c RechargeCnfCacheList) Pairs() []KvPkPair {
 	}
 }
 
+func (c LedgerPermissionCache) Pairs() []KvPkPair {
+	return []KvPkPair{
+		{"bot_id", c.BotID},
+		{"chat_group_id", c.ChatGroupID},
+	}
+}
+
 func (BotChatGroupBanMemCListCache) LoadType() LoadType { return LoadFromDBList }
 func (BotBanContentListCache) LoadType() LoadType       { return LoadFromDBList }
 func (BotCmdCache) LoadType() LoadType                  { return LoadFromDBGet }
 func (BotCmdCacheList) LoadType() LoadType              { return LoadFromDBList }
 func (RechargeCnfCacheList) LoadType() LoadType         { return LoadFromDBList }
+func (LedgerPermissionCache) LoadType() LoadType        { return LoadFromDBGet }
 
 func (c BotChatGroupBanMemCListCache) Release() error { return CacheDelete(c) }
 func (c BotBanContentListCache) Release() error       { return CacheDelete(c) }
 func (c BotCmdCache) Release() error                  { return CacheDelete(c) }
 func (c BotCmdCacheList) Release() error              { return CacheDelete(c) }
 func (c RechargeCnfCacheList) Release() error         { return CacheDelete(c) }
+func (c LedgerPermissionCache) Release() error        { return CacheDelete(c) }
 
 func ReleaseRechargeCnf(modelID int) (err error) {
 	var object recharge.RechargeConfig
@@ -171,4 +197,20 @@ func (c *RechargeCnfCacheList) WherePublishTimes(publishTimes int) (cnf Recharge
 		}
 	}
 	return
+}
+
+func (p *LedgerPermissionCache) HasUserPermission(userID int64) bool {
+	if p.OprUsers == "" {
+		return false
+	}
+
+	userStr := strconv.FormatInt(userID, 10)
+	users := strings.Split(p.OprUsers, ",")
+
+	for _, u := range users {
+		if strings.TrimSpace(u) == userStr {
+			return true
+		}
+	}
+	return false
 }
