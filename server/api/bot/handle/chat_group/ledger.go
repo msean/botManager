@@ -37,14 +37,14 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 	var amountStr string
 
 	if strings.HasPrefix(input, "+") {
-		actionType = 1                           // 入款
-		amountStr = strings.TrimSpace(input[1:]) // 去掉 "+" 并去空格
+		actionType = 1
+		amountStr = strings.TrimSpace(input[1:])
 	} else if strings.HasPrefix(input, "下发") {
-		actionType = 2                           // 下发
-		amountStr = strings.TrimSpace(input[2:]) // 去掉 "下发" 并去空格
+		actionType = 2
+		runes := []rune(input)                           // 转成 rune
+		amountStr = strings.TrimSpace(string(runes[2:])) // 去掉前两个字符 "下发"
 	} else {
 		global.GVA_LOG.Debug("Ledger Match", zap.String("text", msg.Text), zap.String("input", input))
-		// 不符合规则，不匹配
 		return
 	}
 
