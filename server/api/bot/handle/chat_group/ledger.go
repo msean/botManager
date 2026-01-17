@@ -11,7 +11,6 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/service/cache"
-	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -118,19 +117,35 @@ func (l *Ledger) Handle() (err error) {
 		return
 	}
 
-	var reply string
-	if reply, err = l.BuildReply(global.GVA_MYSQL); err != nil {
+	var reply, url string
+	if reply, url, err = l.BuildReply(global.GVA_MYSQL); err != nil {
 		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
 	}
 
-	var botHandler *bot_handler.Bot
-	if botHandler, err = bot_handler.NewBot(l.botModel.Token); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
+	// var botHandler *bot_handler.Bot
+	// if botHandler, err = bot_handler.NewBot(l.botModel.Token); err != nil {
+	// 	global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
+	// 	return
+	// }
+
+	var botSender *tgbotapi.BotAPI
+	if botSender, err = tgbotapi.NewBotAPI(l.botModel.Token); err != nil {
 		return
 	}
-	if err = botHandler.SendTextMessage(l.chatGroupID, reply); err != nil {
+
+	msg := tgbotapi.NewMessage(l.chatGroupID, reply)
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("📊 点击查看完整账单", url),
+		),
+	)
+	if _, err = botSender.Send(msg); err != nil {
 		global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
 	}
+	// if _, err = botHandler.TgSend(l.chatGroupID, nil, reply); err != nil {
+	// 	global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
+	// }
+
 	return
 }
 
@@ -140,7 +155,7 @@ func (l *Ledger) Create() error {
 	})
 }
 
-func (l *Ledger) BuildReply(db *gorm.DB) (string, error) {
+func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error) {
 	bot := cache.NewBotCache(l.botModel.BotID)
 	if _has, getErr := cache.CacheGetItem(bot); !_has || getErr != nil {
 		global.GVA_LOG.Error("Ledger BuildReply", zap.Int64("botID", l.botModel.BotID), zap.Bool("_has", _has))
@@ -151,13 +166,17 @@ func (l *Ledger) BuildReply(db *gorm.DB) (string, error) {
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
 	var records []ledger.Ledger
-	err := db.
+	err = db.
 		Where("chat_group_id = ?", l.chatGroupID).
 		Where("created_at >= ? AND created_at < ?", startOfDay, endOfDay).
-		Order("created_at asc").
+		Order("id asc").
 		Find(&records).Error
 	if err != nil {
-		return "", err
+		return
+	}
+
+	if len(records) == 0 {
+		return
 	}
 
 	var (
@@ -189,6 +208,15 @@ func (l *Ledger) BuildReply(db *gorm.DB) (string, error) {
 	shouldPayout := totalIncome
 	unpaid := totalIncome - totalPayout
 
+	url = fmt.Sprintf(
+		"%s/ledger/full?bot_id=%d&chat_group_id=%d&idmin=%d&idmax=%d",
+		global.GVA_CONFIG.System.Domain,
+		l.botModel.BotID,
+		l.chatGroupID,
+		records[0].ID,
+		records[len(records)-1].ID,
+	)
+
 	return fmt.Sprintf(
 		`%s（%s）
 
@@ -210,5 +238,5 @@ func (l *Ledger) BuildReply(db *gorm.DB) (string, error) {
 		shouldPayout,
 		totalPayout,
 		unpaid,
-	), nil
+	), url, nil
 }

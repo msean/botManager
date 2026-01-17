@@ -186,3 +186,49 @@ func (ledgerApi *LedgerApi) GetLedgerPublic(c *gin.Context) {
 		"info": "不需要鉴权的帐薄接口信息",
 	}, "获取成功", c)
 }
+
+func (ledgerApi *LedgerApi) Full(c *gin.Context) {
+	var req struct {
+		BotID       int64 `form:"bot_id" binding:"required"`
+		ChatGroupID int64 `form:"chat_group_id" binding:"required"`
+		IDMin       int64 `form:"idmin" binding:"required"`
+		IDMax       int64 `form:"idmax" binding:"required"`
+	}
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(400, gin.H{"msg": "参数错误"})
+		return
+	}
+
+	var list []ledger.Ledger
+	err := global.GVA_MYSQL.
+		Where("bot_id = ?", req.BotID).
+		Where("chat_group_id = ?", req.ChatGroupID).
+		Where("id BETWEEN ? AND ?", req.IDMin, req.IDMax).
+		Order("id asc").
+		Find(&list).Error
+	if err != nil {
+		c.JSON(500, gin.H{"msg": "查询失败"})
+		return
+	}
+
+	// 汇总
+	var income, payout float64
+	for _, v := range list {
+		if v.ActionType == 1 {
+			income += v.Amount
+		} else if v.ActionType == 2 {
+			payout += v.Amount
+		}
+	}
+
+	// 渲染 HTML
+	c.HTML(200, "full.html", gin.H{
+		"list": list,
+		"summary": gin.H{
+			"income": income,
+			"payout": payout,
+			"unpaid": income - payout,
+		},
+	})
+}

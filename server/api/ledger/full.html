@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ledger Full</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>Ledger List</h1>
+
+    <h2>Summary</h2>
+    <ul>
+        <li>Income: {{ .summary.income }}</li>
+        <li>Payout: {{ .summary.payout }}</li>
+        <li>Unpaid: {{ .summary.unpaid }}</li>
+    </ul>
+
+    <h2>Details</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>操作用户</th>
+                <th>昵称</th>
+                <th>类型</th>
+                <th>金额</th>
+                <th>消息ID</th>
+                <th>原始输入</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .list }}
+            <tr>
+                <td>{{ .ID }}</td>
+                <td>{{ .OprUserFirstName }} {{ .OprUserLastName }}</td>
+                <td>{{ .OprUserNickname }}</td>
+                <td>{{ if eq .ActionType 1 }}入款{{ else if eq .ActionType 2 }}下发{{ else }}未知{{ end }}</td>
+                <td>{{ .Amount }}</td>
+                <td>{{ .MessageID }}</td>
+                <td>{{ .RawInput }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+</body>
+</html>

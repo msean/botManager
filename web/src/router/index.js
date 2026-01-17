@@ -5,6 +5,7 @@ const routes = [
     path: '/',
     redirect: '/login'
   },
+ 
   {
     path: '/init',
     name: 'Init',
