@@ -2,10 +2,11 @@ package chat_group
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/msean/botmanager/server/model/bot"
 )
 
 type MessageParser interface {
-	Match(botID int64, update tgbotapi.Update) bool
+	Match(botModel bot.Bot, update tgbotapi.Update) bool
 	Handle() error
 }
 
@@ -13,9 +14,9 @@ type ParserChain struct {
 	parsers []MessageParser
 }
 
-func (c *ParserChain) Handle(botID int64, update tgbotapi.Update) error {
+func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 	for _, parser := range c.parsers {
-		if parser.Match(botID, update) {
+		if parser.Match(botModel, update) {
 			return parser.Handle()
 		}
 	}
@@ -28,10 +29,10 @@ func NewParserChain(parsers ...MessageParser) *ParserChain {
 	}
 }
 
-func Handle(botID int64, tgMsg tgbotapi.Update) (err error) {
+func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 	chain := NewParserChain(
 		&Ledger{},
 	)
 
-	return chain.Handle(botID, tgMsg)
+	return chain.Handle(botModel, tgMsg)
 }

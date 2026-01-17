@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/msean/botmanager/server/api/bot/handle/chat_group"
 	"github.com/msean/botmanager/server/api/bot/handle/private"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -102,6 +103,9 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Upda
 	}
 
 	global.GVA_LOG.Debug("HandelChatGroup Sync", zap.Int64("SyncMessage", chatGroup.SyncMessage))
+
+	SyncChatGroup(botModel, tgMsg, chatGroup, has)
+
 	// 需要同步群聊消息
 	go func() {
 		defer func() {
@@ -118,7 +122,20 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Upda
 		SyncChatGroupMessage(botModel.BotID, chatGroupID, tgMsg)
 	}()
 
-	SyncChatGroup(botModel, tgMsg, chatGroup, has)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				global.GVA_LOG.Error(
+					"panic in chat_group Handle",
+					zap.Any("recover", r),
+					zap.Int64("chatGroupID", chatGroupID),
+					zap.Stack("stack"),
+				)
+			}
+		}()
+
+		chat_group.Handle(botModel, tgMsg)
+	}()
 
 	// 只要消息是转发的都需要禁止
 	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {

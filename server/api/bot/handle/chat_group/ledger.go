@@ -8,6 +8,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
+	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/service/cache"
 	"go.uber.org/zap"
@@ -16,18 +17,18 @@ import (
 
 type Ledger struct {
 	model       ledger.Ledger
-	botID       int64
+	botModel    bot.Bot
 	chatGroupID int64
 }
 
-func (l *Ledger) Match(botID int64, update tgbotapi.Update) (match bool) {
+func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 	if update.Message == nil {
 		return
 	}
 
 	msg := update.Message
 	input := strings.TrimSpace(msg.Text)
-	l.botID = botID
+	l.botModel = botModel
 	l.chatGroupID = msg.Chat.ID
 
 	if input == "" {
@@ -69,7 +70,7 @@ func (l *Ledger) Match(botID int64, update tgbotapi.Update) (match bool) {
 		ActionType: actionType,
 		Amount:     finalAmount,
 
-		BotID:       botID,
+		BotID:       l.botModel.BotID,
 		ChatGroupID: msg.Chat.ID,
 		MessageID:   int64(msg.MessageID),
 		RawInput:    rawInput,
@@ -80,18 +81,18 @@ func (l *Ledger) Match(botID int64, update tgbotapi.Update) (match bool) {
 }
 
 func (l *Ledger) HasPerMission() (permit bool, err error) {
-	ledgerPermission := cache.NewLedgerPermissionCache(l.botID, l.chatGroupID)
+	ledgerPermission := cache.NewLedgerPermissionCache(l.botModel.BotID, l.chatGroupID)
 	var has bool
 	if has, err = cache.CacheGetItem(ledgerPermission); err != nil {
-		global.GVA_LOG.Error("Ledger HasPerMission", zap.Int64("botID", l.botID), zap.Int64("chatGroupID", l.chatGroupID), zap.Error(err))
+		global.GVA_LOG.Error("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Error(err))
 		return
 	}
 	if !has {
-		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botID), zap.Int64("chatGroupID", l.chatGroupID))
+		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID))
 		return
 	}
 	if !ledgerPermission.HasUserPermission(l.model.OprUserID) {
-		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
+		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
 		return
 	}
 	permit = true
@@ -102,11 +103,11 @@ func (l *Ledger) Handle() (err error) {
 	// 是否有权限
 	var permit bool
 	if permit, err = l.HasPerMission(); err != nil {
-		global.GVA_LOG.Error("Ledger HasPerMission", zap.Int64("botID", l.botID), zap.Int64("chatGroupID", l.chatGroupID), zap.Error(err))
+		global.GVA_LOG.Error("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Error(err))
 		return
 	}
 	if !permit {
-		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
+		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
 		return
 	}
 
@@ -127,9 +128,9 @@ func (l *Ledger) Create() error {
 }
 
 func (l *Ledger) BuildReply(db *gorm.DB) (string, error) {
-	bot := cache.NewBotCache(l.botID)
+	bot := cache.NewBotCache(l.botModel.BotID)
 	if _has, getErr := cache.CacheGetItem(bot); !_has || getErr != nil {
-		global.GVA_LOG.Error("Ledger BuildReply", zap.Int64("botID", l.botID), zap.Bool("_has", _has))
+		global.GVA_LOG.Error("Ledger BuildReply", zap.Int64("botID", l.botModel.BotID), zap.Bool("_has", _has))
 	}
 
 	now := time.Now()
