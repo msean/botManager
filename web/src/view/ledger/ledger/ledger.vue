@@ -51,34 +51,29 @@
         @selection-change="handleSelectionChange"
         >
         <el-table-column type="selection" width="55" />
-        
-        <el-table-column sortable align="left" label="日期" prop="CreatedAt" width="180">
-            <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
-        </el-table-column>
-        
             <el-table-column align="left" label="操作用户ID" prop="oprUserID" width="120" />
-
             <el-table-column align="left" label="操作人的用户名称" prop="oprUsername" width="120" />
-
             <el-table-column align="left" label="操作人昵称" prop="oprUserNickname" width="120" />
-
-            <el-table-column align="left" label="操作类型" prop="actionType" width="120" />
-
+            <el-table-column align="left" label="操作类型" width="120">
+              <template #default="scope">
+                {{ scope.row.actionType === 1 ? '入款' : scope.row.actionType === 2 ? '下发' : '未知' }}
+              </template>
+            </el-table-column>
             <el-table-column align="left" label="操作金额" prop="amount" width="120" />
-
-            <el-table-column align="left" label="所在群组" prop="chatGroupID" width="120" />
-
-            <el-table-column align="left" label="消息ID" prop="messageID" width="120" />
-
+            <el-table-column align="left" label="机器人" prop="botName" width="120" />
+            <el-table-column align="left" label="群组" prop="chatGroupName" width="120" />
+            <!-- <el-table-column align="left" label="消息ID" prop="messageID" width="120" /> -->
             <el-table-column align="left" label="原始输入" prop="rawInput" width="120" />
-
-        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
+            <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
+                <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
+            </el-table-column>
+        <!-- <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
             <el-button  type="primary" link icon="edit" class="table-button" @click="updateLedgerFunc(scope.row)">编辑</el-button>
             <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
             </template>
-        </el-table-column>
+        </el-table-column> -->
         </el-table>
         <div class="gva-pagination">
             <el-pagination

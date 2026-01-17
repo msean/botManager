@@ -8,6 +8,8 @@ import (
 // 帐薄 结构体  Ledger
 type Ledger struct {
 	global.GVA_MODEL
+	BotName          string  `json:"botName" form:"botName" gorm:"-;"`
+	ChatGroupName    string  `json:"chatGroupName" form:"chatGroupName" gorm:"-;"`
 	OprUserID        int64   `json:"oprUserID" form:"oprUserID" gorm:"comment:操作用户ID;column:opr_user_id;"`                   //操作用户ID
 	OprUserFirstName string  `json:"oprUsername" form:"oprUsername" gorm:"column:opr_first_name;"`                           //操作人的用户名称
 	OprUserLastName  string  `json:"OprUserLastName" form:"OprUserLastName" gorm:"column:opr_last_name;"`                    //操作人的用户名称

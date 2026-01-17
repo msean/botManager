@@ -41,7 +41,7 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 	if strings.HasPrefix(input, "+") {
 		actionType = 1
 		input = input[1:]
-	} else if strings.HasPrefix(input, "-") {
+	} else if strings.HasPrefix(input, "下发") {
 		actionType = 2
 		input = input[1:]
 	}
