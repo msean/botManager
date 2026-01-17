@@ -10,7 +10,7 @@ const routes = [
     name: "Ledger",
     component: () => import('@/view/ledger/ledger/Full.vue'),
     meta: {
-      title: '扫码上传',
+      title: '记账',
       client: true
     },
   },
