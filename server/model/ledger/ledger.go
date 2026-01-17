@@ -14,7 +14,7 @@ type Ledger struct {
 	OprUserNickname  string  `json:"oprUserNickname" form:"oprUserNickname" gorm:"comment:操作人昵称;column:opr_user_nick_name;"` //操作人昵称
 	ActionType       int     `json:"actionType" form:"actionType" gorm:"comment:操作类型;column:action_type;"`                   //操作类型 1 入款 2 下发
 	Amount           float64 `json:"amount" form:"amount" gorm:"comment:操作金额;type:decimal(32,2);column:amount;"`             //操作金额
-	BotID            int64   `json:"botID" form:"botID" gorm:"comment:机器人ID;type:decimal(32,2);column:botID;"`
+	BotID            int64   `json:"botID" form:"botID" gorm:"comment:机器人ID;column:botID;"`
 	ChatGroupID      int64   `json:"chatGroupID" form:"chatGroupID" gorm:"comment:所在群组;column:chat_group_id;"` //所在群组
 	MessageID        int64   `json:"messageID" form:"messageID" gorm:"index;comment:消息ID;column:message_id;"`  //消息ID
 	RawInput         string  `json:"rawInput" form:"rawInput" gorm:"comment:原始输入;column:raw_input;"`           //原始输入
