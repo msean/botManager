@@ -22,7 +22,7 @@ type Ledger struct {
 }
 
 func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
-	if update.Message == nil {
+	if update.Message == nil || update.Message.Text == "" {
 		return
 	}
 
@@ -31,35 +31,26 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 	l.botModel = botModel
 	l.chatGroupID = msg.Chat.ID
 
-	if input == "" {
+	rawInput := input
+
+	var actionType int
+	var amountStr string
+
+	if strings.HasPrefix(input, "+") {
+		actionType = 1                           // 入款
+		amountStr = strings.TrimSpace(input[1:]) // 去掉 "+" 并去空格
+	} else if strings.HasPrefix(input, "下发") {
+		actionType = 2                           // 下发
+		amountStr = strings.TrimSpace(input[2:]) // 去掉 "下发" 并去空格
+	} else {
+		// 不符合规则，不匹配
 		return
 	}
 
-	rawInput := input
-
-	actionType := 1
-	if strings.HasPrefix(input, "+") {
-		actionType = 1
-		input = input[1:]
-	} else if strings.HasPrefix(input, "下发") {
-		actionType = 2
-		input = input[2:]
-	}
-
-	sign := 1.0
-	if strings.HasPrefix(input, "+") {
-		input = input[1:]
-	} else if strings.HasPrefix(input, "-") {
-		sign = -1
-		input = input[1:]
-	}
-
-	amount, err := strconv.ParseFloat(input, 64)
+	amount, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil {
 		return
 	}
-
-	finalAmount := sign * amount
 
 	_ledger := ledger.Ledger{
 		OprUserID:        msg.From.ID,
@@ -68,7 +59,7 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 		OprUserNickname:  msg.From.UserName,
 
 		ActionType: actionType,
-		Amount:     finalAmount,
+		Amount:     amount,
 
 		BotID:       l.botModel.BotID,
 		ChatGroupID: msg.Chat.ID,
