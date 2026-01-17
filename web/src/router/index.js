@@ -5,7 +5,15 @@ const routes = [
     path: '/',
     redirect: '/login'
   },
- 
+  {
+    path: '/ledger/full',
+    name: "Ledger",
+    component: () => import('@/view/ledger/ledger/Full.vue'),
+    meta: {
+      title: '扫码上传',
+      client: true
+    },
+  },
   {
     path: '/init',
     name: 'Init',

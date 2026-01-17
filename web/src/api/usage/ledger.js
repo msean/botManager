@@ -108,3 +108,12 @@ export const getLedgerPublic = () => {
     method: 'get',
   })
 }
+
+
+export const getLedgerFull = (params) => {
+  return service({
+    url: '/ledger/full',
+    method: 'get',
+    params
+  })
+}

@@ -212,23 +212,41 @@ func (ledgerApi *LedgerApi) Full(c *gin.Context) {
 		return
 	}
 
-	// 汇总
-	var income, payout float64
+	var incomeList, payoutList []gin.H
+	var totalIncome, totalPayout float64
+
 	for _, v := range list {
+		row := gin.H{
+			"time":      v.CreatedAt.Format("15:04:05"),
+			"amount":    v.Amount,
+			"remark":    "",
+			"replyUser": "",
+			"operator":  v.OprUserNickname,
+			"afterNote": "",
+		}
+
 		if v.ActionType == 1 {
-			income += v.Amount
+			incomeList = append(incomeList, row)
+			totalIncome += v.Amount
 		} else if v.ActionType == 2 {
-			payout += v.Amount
+			payoutList = append(payoutList, row)
+			totalPayout += v.Amount
 		}
 	}
 
-	// 渲染 HTML
-	c.HTML(200, "full.html", gin.H{
-		"list": list,
+	c.JSON(200, gin.H{
+		"income": gin.H{
+			"list":  incomeList,
+			"count": len(incomeList),
+		},
+		"payout": gin.H{
+			"list":  payoutList,
+			"count": len(payoutList),
+		},
 		"summary": gin.H{
-			"income": income,
-			"payout": payout,
-			"unpaid": income - payout,
+			"totalIncome": totalIncome,
+			"totalPayout": totalPayout,
+			"unpaid":      totalIncome - totalPayout,
 		},
 	})
 }
