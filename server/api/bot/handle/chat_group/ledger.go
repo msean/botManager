@@ -209,7 +209,7 @@ func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error)
 	unpaid := totalIncome - totalPayout
 
 	url = fmt.Sprintf(
-		"%s/ledger/full?bot_id=%d&chat_group_id=%d&idmin=%d&idmax=%d",
+		"%s/#/ledger/full?bot_id=%d&chat_group_id=%d&idmin=%d&idmax=%d",
 		global.GVA_CONFIG.System.Domain,
 		l.botModel.BotID,
 		l.chatGroupID,
