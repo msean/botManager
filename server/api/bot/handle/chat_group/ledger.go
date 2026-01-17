@@ -43,10 +43,12 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 		actionType = 2                           // 下发
 		amountStr = strings.TrimSpace(input[2:]) // 去掉 "下发" 并去空格
 	} else {
+		global.GVA_LOG.Debug("Ledger Match", zap.String("text", msg.Text), zap.String("input", input))
 		// 不符合规则，不匹配
 		return
 	}
 
+	global.GVA_LOG.Debug("Ledger Match", zap.Int("actionType", actionType), zap.String("amountStr", amountStr))
 	amount, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil {
 		return
