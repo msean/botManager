@@ -11,6 +11,7 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -117,7 +118,19 @@ func (l *Ledger) Handle() (err error) {
 		return
 	}
 
-	l.BuildReply(global.GVA_MYSQL)
+	var reply string
+	if reply, err = l.BuildReply(global.GVA_MYSQL); err != nil {
+		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
+	}
+
+	var botHandler *bot_handler.Bot
+	if botHandler, err = bot_handler.NewBot(l.botModel.Token); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
+		return
+	}
+	if err = botHandler.SendTextMessage(l.chatGroupID, reply); err != nil {
+		global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
+	}
 	return
 }
 
