@@ -31,7 +31,9 @@ func NewParserChain(parsers ...MessageParser) *ParserChain {
 
 func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 	chain := NewParserChain(
-		&Ledger{},
+		&LedgerHandler{},
+		&LedgerShowFeeRateHandler{},
+		&LedgerSetFeeRateHandler{},
 	)
 
 	return chain.Handle(botModel, tgMsg)

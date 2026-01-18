@@ -19,9 +19,10 @@ type (
 		BanMemContent string `json:"banMemContent"`
 	}
 	BotChatGroupBanMemCListCache struct {
-		BotID       int64                     `json:"botID"`
-		ChatGroupID int64                     `json:"chatGroupID"`
-		Objects     []BotChatGroupBanMemCache `json:"objects"`
+		BotID          int64                     `json:"botID"`
+		ChatGroupID    int64                     `json:"chatGroupID"`
+		Objects        []BotChatGroupBanMemCache `json:"objects"`
+		CurrentFeeRate float64                   `json:"current_fee_rate"` // 当前费率
 	}
 
 	BotBanContentCache struct {
@@ -60,9 +61,10 @@ type (
 	}
 	LedgerPermissionCache struct {
 		global.GVA_MODEL
-		BotID       int64  `json:"botID"`
-		ChatGroupID int64  `json:"chatGroupID"`
-		OprUsers    string `json:"oprUsers"`
+		BotID          int64   `json:"botID"`
+		ChatGroupID    int64   `json:"chatGroupID"`
+		OprUsers       string  `json:"oprUsers"`
+		CurrentFeeRate float64 `json:"current_fee_rate"`
 	}
 )
 

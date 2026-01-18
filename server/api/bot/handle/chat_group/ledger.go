@@ -11,17 +11,19 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
-type Ledger struct {
+type LedgerHandler struct {
 	model       ledger.Ledger
 	botModel    bot.Bot
 	chatGroupID int64
+	confModel   cache.LedgerPermissionCache
 }
 
-func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
+func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 	if update.Message == nil || update.Message.Text == "" {
 		return
 	}
@@ -84,9 +86,11 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 		OprUserLastName:  msg.From.LastName,
 		OprUserNickname:  msg.From.UserName,
 
-		ActionType: actionType,
-		Amount:     amount,
-		Remark:     remark,
+		CurrentFeeRate: l.confModel.CurrentFeeRate,
+		ActionType:     actionType,
+		Amount:         amount,
+		AmountWithFee:  utils.FloatReserve((100-l.confModel.CurrentFeeRate)*amount/100, 2),
+		Remark:         remark,
 
 		BotID:       l.botModel.BotID,
 		ChatGroupID: msg.Chat.ID,
@@ -97,7 +101,7 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 	return true
 }
 
-func (l *Ledger) HasPerMission() (permit bool, err error) {
+func (l *LedgerHandler) HasPerMission() (permit bool, err error) {
 	ledgerPermission := cache.NewLedgerPermissionCache(l.botModel.BotID, l.chatGroupID)
 	var has bool
 	if has, err = cache.CacheGetItem(ledgerPermission); err != nil {
@@ -111,10 +115,11 @@ func (l *Ledger) HasPerMission() (permit bool, err error) {
 		return
 	}
 	permit = true
+	l.confModel = *ledgerPermission
 	return
 }
 
-func (l *Ledger) Handle() (err error) {
+func (l *LedgerHandler) Handle() (err error) {
 	var permit bool
 	if permit, err = l.HasPerMission(); err != nil || !permit {
 		return
@@ -145,13 +150,13 @@ func (l *Ledger) Handle() (err error) {
 	return
 }
 
-func (l *Ledger) Create() error {
+func (l *LedgerHandler) Create() error {
 	return global.GVA_MYSQL.Transaction(func(tx *gorm.DB) error {
 		return tx.Create(&l.model).Error
 	})
 }
 
-func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error) {
+func (l *LedgerHandler) BuildReply(db *gorm.DB) (content string, url string, err error) {
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	endOfDay := startOfDay.Add(24 * time.Hour)
@@ -167,30 +172,32 @@ func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error)
 	}
 
 	var (
-		incomeLines []string
-		payoutLines []string
-		totalIncome float64
-		totalPayout float64
+		incomeLines        []string
+		payoutLines        []string
+		totalIncome        float64
+		totalPayout        float64
+		totalAmountWithFee float64
 	)
 
 	for _, r := range records {
-		var showRemark string
-		if r.ActionType == 1 {
-			showRemark = r.Remark
-		} else {
-			showRemark = r.OprUserNickname
-		}
+		// var showRemark string
+		// if r.ActionType == 1 {
+		// 	showRemark = r.Remark
+		// } else {
+		// 	showRemark = r.OprUserNickname
+		// }
 
 		line := fmt.Sprintf(
 			"%s %.2f %s",
 			r.CreatedAt.Format("15:04:05"),
 			r.Amount,
-			strings.TrimSpace(showRemark),
+			strings.TrimSpace(r.Remark),
 		)
 
 		if r.ActionType == 1 {
 			incomeLines = append(incomeLines, line)
 			totalIncome += r.Amount
+			totalAmountWithFee += r.AmountWithFee
 		} else {
 			payoutLines = append(payoutLines, line)
 			totalPayout += r.Amount
@@ -215,6 +222,8 @@ func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error)
 下发（%d笔）：
 %s
 
+当前费率：%.2f
+
 总入款：%.2f
 应下发：%.2f
 总下发：%.2f
@@ -222,10 +231,11 @@ func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error)
 		startOfDay.Format("2006-01-02"),
 		len(incomeLines), strings.Join(incomeLines, "\n"),
 		len(payoutLines), strings.Join(payoutLines, "\n"),
+		l.confModel.CurrentFeeRate,
 		totalIncome,
-		totalIncome,
+		totalAmountWithFee,
 		totalPayout,
-		totalIncome-totalPayout,
+		totalAmountWithFee-totalPayout,
 	), url, nil
 }
 
