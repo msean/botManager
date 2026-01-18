@@ -199,7 +199,8 @@ func (c *RechargeCnfCacheList) WherePublishTimes(publishTimes int) (cnf Recharge
 	return
 }
 
-func (p *LedgerPermissionCache) HasUserPermission(userID int64) bool {
+// 是否有权限
+func (p *LedgerPermissionCache) HasUserPermission(userID int64, userNickName string) bool {
 	if p.OprUsers == "" {
 		return false
 	}
@@ -208,7 +209,7 @@ func (p *LedgerPermissionCache) HasUserPermission(userID int64) bool {
 	users := strings.Split(p.OprUsers, ",")
 
 	for _, u := range users {
-		if strings.TrimSpace(u) == userStr {
+		if strings.TrimSpace(u) == userStr || strings.TrimSpace(u) == userNickName {
 			return true
 		}
 	}

@@ -2,12 +2,16 @@ package usage
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	ledgerReq "github.com/msean/botmanager/server/model/ledger/request"
+	"github.com/msean/botmanager/server/service/cache"
+	"github.com/msean/botmanager/server/utils"
+	"go.uber.org/zap"
 )
 
 type LedgerPermissionService struct{}
@@ -22,7 +26,22 @@ func (ledgerPermissionService *LedgerPermissionService) CreateLedgerPermission(c
 // DeleteLedgerPermission 删除帐薄权限管理记录
 // Author [yourname](https://github.com/yourname)
 func (ledgerPermissionService *LedgerPermissionService) DeleteLedgerPermission(ctx context.Context, ID string) (err error) {
-	err = global.GVA_MYSQL.Delete(&ledger.LedgerPermission{}, "id = ?", ID).Error
+	var id int
+	if id, err = strconv.Atoi(ID); err != nil {
+		return
+	}
+	var object ledger.Ledger
+	var has bool
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(ID)); !has || err != nil {
+		global.GVA_LOG.Error("ledgerPermissionService", zap.Any("id", id), zap.Error(err))
+		return
+	}
+	if err = global.GVA_MYSQL.Delete(&ledger.LedgerPermission{}, "id = ?", ID).Error; err != nil {
+		return
+	}
+	if deleteErr := cache.NewLedgerPermissionCache(object.BotID, object.ChatGroupID).Release(); deleteErr != nil {
+		global.GVA_LOG.Error("ledgerPermissionService", zap.Any("BotID", object.BotID), zap.Int64("ChatGroupID", object.ChatGroupID), zap.Error(deleteErr))
+	}
 	return err
 }
 
@@ -36,7 +55,18 @@ func (ledgerPermissionService *LedgerPermissionService) DeleteLedgerPermissionBy
 // UpdateLedgerPermission 更新帐薄权限管理记录
 // Author [yourname](https://github.com/yourname)
 func (ledgerPermissionService *LedgerPermissionService) UpdateLedgerPermission(ctx context.Context, ledgerPermission ledger.LedgerPermission) (err error) {
-	err = global.GVA_MYSQL.Model(&ledger.LedgerPermission{}).Where("id = ?", ledgerPermission.ID).Updates(&ledgerPermission).Error
+	var object ledger.Ledger
+	var has bool
+	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(ledgerPermission.ID)); !has || err != nil {
+		global.GVA_LOG.Error("ledgerPermissionService", zap.Any("id", ledgerPermission.ID), zap.Error(err))
+		return
+	}
+	if err = global.GVA_MYSQL.Model(&ledger.LedgerPermission{}).Where("id = ?", ledgerPermission.ID).Updates(&ledgerPermission).Error; err != nil {
+		return
+	}
+	if deleteErr := cache.NewLedgerPermissionCache(object.BotID, object.ChatGroupID).Release(); deleteErr != nil {
+		global.GVA_LOG.Error("ledgerPermissionService", zap.Any("BotID", object.BotID), zap.Int64("ChatGroupID", object.ChatGroupID), zap.Error(deleteErr))
+	}
 	return err
 }
 

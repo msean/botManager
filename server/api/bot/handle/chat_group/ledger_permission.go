@@ -15,13 +15,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type Ledger struct {
-	model       ledger.Ledger
+type LedgerPermission struct {
+	model       ledger.LedgerPermission
 	botModel    bot.Bot
 	chatGroupID int64
 }
 
-func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
+func (l *LedgerPermission) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 	if update.Message == nil || update.Message.Text == "" {
 		return
 	}
@@ -33,19 +33,8 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 
 	rawInput := input
 
-	var actionType int
-	var amountStr string
+	if strings.HasPrefix(input, "addOprUser") {
 
-	if strings.HasPrefix(input, "+") {
-		actionType = 1
-		amountStr = strings.TrimSpace(input[1:])
-	} else if strings.HasPrefix(input, "下发") {
-		actionType = 2
-		runes := []rune(input)                           // 转成 rune
-		amountStr = strings.TrimSpace(string(runes[2:])) // 去掉前两个字符 "下发"
-	} else {
-		global.GVA_LOG.Debug("Ledger Match", zap.String("text", msg.Text), zap.String("input", input))
-		return
 	}
 
 	global.GVA_LOG.Debug("Ledger Match", zap.Int("actionType", actionType), zap.String("amountStr", amountStr))
