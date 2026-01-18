@@ -116,6 +116,7 @@ func (l *LedgerHandler) HasPerMission() (permit bool, err error) {
 		return
 	}
 	permit = true
+	l.model.AmountWithFee = utils.FloatReserve((100-l.confModel.CurrentFeeRate)*l.model.Amount/100, 2)
 	l.confModel = *ledgerPermission
 	return
 }
