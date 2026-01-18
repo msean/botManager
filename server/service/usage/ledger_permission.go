@@ -30,7 +30,7 @@ func (ledgerPermissionService *LedgerPermissionService) DeleteLedgerPermission(c
 	if id, err = strconv.Atoi(ID); err != nil {
 		return
 	}
-	var object ledger.Ledger
+	var object ledger.LedgerPermission
 	var has bool
 	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(ID)); !has || err != nil {
 		global.GVA_LOG.Error("ledgerPermissionService", zap.Any("id", id), zap.Error(err))
@@ -55,7 +55,7 @@ func (ledgerPermissionService *LedgerPermissionService) DeleteLedgerPermissionBy
 // UpdateLedgerPermission 更新帐薄权限管理记录
 // Author [yourname](https://github.com/yourname)
 func (ledgerPermissionService *LedgerPermissionService) UpdateLedgerPermission(ctx context.Context, ledgerPermission ledger.LedgerPermission) (err error) {
-	var object ledger.Ledger
+	var object ledger.LedgerPermission
 	var has bool
 	if has, err = utils.Get(global.GVA_MYSQL, &object, utils.IDCond(ledgerPermission.ID)); !has || err != nil {
 		global.GVA_LOG.Error("ledgerPermissionService", zap.Any("id", ledgerPermission.ID), zap.Error(err))
