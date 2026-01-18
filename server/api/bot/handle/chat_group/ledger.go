@@ -28,33 +28,57 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 
 	msg := update.Message
 	input := strings.TrimSpace(msg.Text)
+
 	l.botModel = botModel
 	l.chatGroupID = msg.Chat.ID
 
 	rawInput := input
 
-	var actionType int
-	var amountStr string
+	var (
+		actionType int
+		body       string
+	)
 
+	// 判断操作类型
 	if strings.HasPrefix(input, "+") {
 		actionType = 1
-		amountStr = strings.TrimSpace(input[1:])
+		body = strings.TrimSpace(input[1:])
 	} else if strings.HasPrefix(input, "下发") {
 		actionType = 2
-		runes := []rune(input)                           // 转成 rune
-		amountStr = strings.TrimSpace(string(runes[2:])) // 去掉前两个字符 "下发"
+		body = strings.TrimSpace(string([]rune(input)[2:]))
 	} else {
-		global.GVA_LOG.Debug("Ledger Match", zap.String("text", msg.Text), zap.String("input", input))
 		return
 	}
 
-	global.GVA_LOG.Debug("Ledger Match", zap.Int("actionType", actionType), zap.String("amountStr", amountStr))
-	amount, err := strconv.ParseFloat(amountStr, 64)
+	if body == "" {
+		return
+	}
+
+	// body 示例：
+	// "8000 aa"
+	// "-8000    aa"
+	// "1000*7.8 aa"
+	parts := strings.Fields(body)
+	if len(parts) == 0 {
+		return
+	}
+
+	amountExpr := parts[0]
+	remark := ""
+	if len(parts) > 1 {
+		remark = strings.TrimSpace(body[len(amountExpr):])
+	}
+
+	amount, err := parseAmount(amountExpr)
 	if err != nil {
+		global.GVA_LOG.Warn("Ledger parse amount failed",
+			zap.String("expr", amountExpr),
+			zap.Error(err),
+		)
 		return
 	}
 
-	_ledger := ledger.Ledger{
+	l.model = ledger.Ledger{
 		OprUserID:        msg.From.ID,
 		OprUserFirstName: msg.From.FirstName,
 		OprUserLastName:  msg.From.LastName,
@@ -62,6 +86,7 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 
 		ActionType: actionType,
 		Amount:     amount,
+		Remark:     remark,
 
 		BotID:       l.botModel.BotID,
 		ChatGroupID: msg.Chat.ID,
@@ -69,7 +94,6 @@ func (l *Ledger) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
 		RawInput:    rawInput,
 	}
 
-	l.model = _ledger
 	return true
 }
 
@@ -77,15 +101,13 @@ func (l *Ledger) HasPerMission() (permit bool, err error) {
 	ledgerPermission := cache.NewLedgerPermissionCache(l.botModel.BotID, l.chatGroupID)
 	var has bool
 	if has, err = cache.CacheGetItem(ledgerPermission); err != nil {
-		global.GVA_LOG.Error("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Error(err))
+		global.GVA_LOG.Error("Ledger HasPerMission", zap.Error(err))
 		return
 	}
 	if !has {
-		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID))
 		return
 	}
 	if !ledgerPermission.HasUserPermission(l.model.OprUserID, l.model.OprUserNickname) {
-		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
 		return
 	}
 	permit = true
@@ -93,36 +115,23 @@ func (l *Ledger) HasPerMission() (permit bool, err error) {
 }
 
 func (l *Ledger) Handle() (err error) {
-	// 是否有权限
 	var permit bool
-	if permit, err = l.HasPerMission(); err != nil {
-		global.GVA_LOG.Error("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Error(err))
-		return
-	}
-	if !permit {
-		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
+	if permit, err = l.HasPerMission(); err != nil || !permit {
 		return
 	}
 
-	// 创建记账
 	if err = l.Create(); err != nil {
-		global.GVA_LOG.Error("Ledger Handle", zap.Error(err))
+		global.GVA_LOG.Error("Ledger Create", zap.Error(err))
 		return
 	}
 
 	var reply, url string
 	if reply, url, err = l.BuildReply(global.GVA_MYSQL); err != nil {
-		global.GVA_LOG.Info("Ledger HasPerMission", zap.Int64("botID", l.botModel.BotID), zap.Int64("chatGroupID", l.chatGroupID), zap.Int64("userID", l.model.OprUserID))
+		return
 	}
 
-	// var botHandler *bot_handler.Bot
-	// if botHandler, err = bot_handler.NewBot(l.botModel.Token); err != nil {
-	// 	global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
-	// 	return
-	// }
-
-	var botSender *tgbotapi.BotAPI
-	if botSender, err = tgbotapi.NewBotAPI(l.botModel.Token); err != nil {
+	botSender, err := tgbotapi.NewBotAPI(l.botModel.Token)
+	if err != nil {
 		return
 	}
 
@@ -132,13 +141,7 @@ func (l *Ledger) Handle() (err error) {
 			tgbotapi.NewInlineKeyboardButtonURL("📊 点击查看完整账单", url),
 		),
 	)
-	if _, err = botSender.Send(msg); err != nil {
-		global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
-	}
-	// if _, err = botHandler.TgSend(l.chatGroupID, nil, reply); err != nil {
-	// 	global.GVA_LOG.Error("HandleAdConfirm SendTextMessage", zap.Int64("botID", l.botModel.BotID), zap.Error(err))
-	// }
-
+	_, err = botSender.Send(msg)
 	return
 }
 
@@ -149,11 +152,6 @@ func (l *Ledger) Create() error {
 }
 
 func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error) {
-	bot := cache.NewBotCache(l.botModel.BotID)
-	if _has, getErr := cache.CacheGetItem(bot); !_has || getErr != nil {
-		global.GVA_LOG.Error("Ledger BuildReply", zap.Int64("botID", l.botModel.BotID), zap.Bool("_has", _has))
-	}
-
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	endOfDay := startOfDay.Add(24 * time.Hour)
@@ -164,42 +162,40 @@ func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error)
 		Where("created_at >= ? AND created_at < ?", startOfDay, endOfDay).
 		Order("id asc").
 		Find(&records).Error
-	if err != nil {
-		return
-	}
-
-	if len(records) == 0 {
+	if err != nil || len(records) == 0 {
 		return
 	}
 
 	var (
 		incomeLines []string
 		payoutLines []string
-
 		totalIncome float64
 		totalPayout float64
 	)
 
 	for _, r := range records {
+		var showRemark string
+		if r.ActionType == 1 {
+			showRemark = r.Remark
+		} else {
+			showRemark = r.OprUserNickname
+		}
+
 		line := fmt.Sprintf(
-			"%s %0.2f",
+			"%s %.2f %s",
 			r.CreatedAt.Format("15:04:05"),
 			r.Amount,
+			strings.TrimSpace(showRemark),
 		)
 
-		switch r.ActionType {
-		case 1: // 入款
+		if r.ActionType == 1 {
 			incomeLines = append(incomeLines, line)
 			totalIncome += r.Amount
-
-		case 2: // 下发
+		} else {
 			payoutLines = append(payoutLines, line)
 			totalPayout += r.Amount
 		}
 	}
-
-	shouldPayout := totalIncome
-	unpaid := totalIncome - totalPayout
 
 	url = fmt.Sprintf(
 		"%s/#/ledger/full?bot_id=%d&chat_group_id=%d&idmin=%d&idmax=%d",
@@ -211,7 +207,7 @@ func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error)
 	)
 
 	return fmt.Sprintf(
-		`%s（%s）
+		`账单（%s）
 
 入款（%d笔）：
 %s
@@ -223,13 +219,42 @@ func (l *Ledger) BuildReply(db *gorm.DB) (content string, url string, err error)
 应下发：%.2f
 总下发：%.2f
 未下发：%.2f`,
-		bot.Name,
 		startOfDay.Format("2006-01-02"),
 		len(incomeLines), strings.Join(incomeLines, "\n"),
 		len(payoutLines), strings.Join(payoutLines, "\n"),
 		totalIncome,
-		shouldPayout,
+		totalIncome,
 		totalPayout,
-		unpaid,
+		totalIncome-totalPayout,
 	), url, nil
+}
+
+// ----------------- 工具函数 -----------------
+
+// 支持：
+// 8000
+// -8000
+// 1000*7.8
+func parseAmount(expr string) (float64, error) {
+	expr = strings.TrimSpace(expr)
+
+	if !strings.Contains(expr, "*") {
+		return strconv.ParseFloat(expr, 64)
+	}
+
+	parts := strings.Split(expr, "*")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("invalid amount expr: %s", expr)
+	}
+
+	a, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	if err != nil {
+		return 0, err
+	}
+	b, err := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return a * b, nil
 }

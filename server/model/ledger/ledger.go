@@ -20,6 +20,7 @@ type Ledger struct {
 	ChatGroupID      int64   `json:"chatGroupID" form:"chatGroupID" gorm:"comment:所在群组;column:chat_group_id;"` //所在群组
 	MessageID        int64   `json:"messageID" form:"messageID" gorm:"index;comment:消息ID;column:message_id;"`  //消息ID
 	RawInput         string  `json:"rawInput" form:"rawInput" gorm:"comment:原始输入;column:raw_input;"`           //原始输入
+	Remark           string  `json:"remark" form:"remark" gorm:"comment:备注;column:remark;"`                    //原始输入
 }
 
 type LedgerPermission struct {
