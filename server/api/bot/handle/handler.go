@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/msean/botmanager/server/api/bot/handle/chat_group"
+	"github.com/msean/botmanager/server/api/bot/handle/chat_group/ledger"
 	"github.com/msean/botmanager/server/api/bot/handle/private"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -134,7 +134,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Upda
 			}
 		}()
 
-		chat_group.Handle(botModel, tgMsg)
+		ledger.Handle(botModel, tgMsg)
 	}()
 
 	// 只要消息是转发的都需要禁止

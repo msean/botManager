@@ -1,4 +1,4 @@
-package chat_group
+package ledger
 
 import (
 	"errors"
@@ -16,12 +16,10 @@ import (
 type LedgerShowFeeRateHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
+	ShouldPermissionAware
 }
 
 func (l *LedgerShowFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
-	if update.Message == nil || update.Message.Text == "" {
-		return false
-	}
 
 	text := strings.TrimSpace(update.Message.Text)
 

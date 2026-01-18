@@ -1,4 +1,4 @@
-package chat_group
+package ledger
 
 import (
 	"fmt"
@@ -10,7 +10,6 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
-	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -20,14 +19,10 @@ type LedgerHandler struct {
 	model       ledger.Ledger
 	botModel    bot.Bot
 	chatGroupID int64
-	confModel   cache.LedgerPermissionCache
+	ShouldPermissionAware
 }
 
 func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
-	if update.Message == nil || update.Message.Text == "" {
-		return
-	}
-
 	msg := update.Message
 	input := strings.TrimSpace(msg.Text)
 
@@ -102,31 +97,9 @@ func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match b
 	return true
 }
 
-func (l *LedgerHandler) HasPerMission() (permit bool, err error) {
-	ledgerPermission := cache.NewLedgerPermissionCache(l.botModel.BotID, l.chatGroupID)
-	var has bool
-	if has, err = cache.CacheGetItem(ledgerPermission); err != nil {
-		global.GVA_LOG.Error("Ledger HasPerMission", zap.Error(err))
-		return
-	}
-	if !has {
-		return
-	}
-	if !ledgerPermission.HasUserPermission(l.model.OprUserID, l.model.OprUserNickname) {
-		return
-	}
-	permit = true
-	l.confModel = *ledgerPermission
-	l.model.AmountWithFee = utils.FloatReserve((100-l.confModel.CurrentFeeRate)*l.model.Amount/100, 2)
-	return
-}
-
 func (l *LedgerHandler) Handle() (err error) {
-	var permit bool
-	if permit, err = l.HasPerMission(); err != nil || !permit {
-		return
-	}
 
+	l.model.AmountWithFee = utils.FloatReserve((100-l.confModel.CurrentFeeRate)*l.model.Amount/100, 2)
 	if err = l.Create(); err != nil {
 		global.GVA_LOG.Error("Ledger Create", zap.Error(err))
 		return

@@ -1,4 +1,4 @@
-package chat_group
+package ledger
 
 import (
 	"errors"
@@ -20,13 +20,10 @@ type LedgerSetFeeRateHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
 	feeRate     float64
+	ShouldPermissionAware
 }
 
 func (l *LedgerSetFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
-	if update.Message == nil || update.Message.Text == "" {
-		return false
-	}
-
 	text := strings.TrimSpace(update.Message.Text)
 
 	// 必须以「费率设置」开头
