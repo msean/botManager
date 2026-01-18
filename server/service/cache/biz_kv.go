@@ -64,7 +64,7 @@ type (
 		BotID          int64   `json:"botID"`
 		ChatGroupID    int64   `json:"chatGroupID"`
 		OprUsers       string  `json:"oprUsers"`
-		CurrentFeeRate float64 `json:"current_fee_rate"`
+		CurrentFeeRate float64 `json:"currentFeeRate"`
 	}
 )
 
