@@ -76,6 +76,21 @@ func (l *LedgerSetFeeRateHandler) Handle() (err error) {
 	}
 
 	// 更新费率
-	return global.GVA_MYSQL.Model(&permission).
-		Update("current_fee_rate", l.feeRate).Error
+	if err = global.GVA_MYSQL.Model(&permission).
+		Update("current_fee_rate", l.feeRate).Error; err != nil {
+		return
+	}
+	l.reply("费率设置成功")
+	return
+}
+
+func (l *LedgerSetFeeRateHandler) reply(text string) (err error) {
+	var botSender *tgbotapi.BotAPI
+	botSender, err = tgbotapi.NewBotAPI(l.botModel.Token)
+	if err != nil {
+		return
+	}
+	msg := tgbotapi.NewMessage(l.chatGroupID, text)
+	_, err = botSender.Send(msg)
+	return err
 }
