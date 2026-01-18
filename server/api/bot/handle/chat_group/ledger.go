@@ -80,6 +80,7 @@ func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match b
 		return
 	}
 
+	global.GVA_LOG.Debug("LedgerHandler", zap.Any("l.confModel.CurrentFeeRate", l.confModel.CurrentFeeRate), zap.Any("AmountWithFee", utils.FloatReserve((100-l.confModel.CurrentFeeRate)*amount/100, 2)))
 	l.model = ledger.Ledger{
 		OprUserID:        msg.From.ID,
 		OprUserFirstName: msg.From.FirstName,
