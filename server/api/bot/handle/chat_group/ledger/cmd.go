@@ -87,10 +87,7 @@ func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 	return chain.Handle(botModel, tgMsg)
 }
 
-func HasPerMission(
-	botModel bot.Bot,
-	tgMsg tgbotapi.Update,
-) (ledgerPermission *cache.LedgerPermissionCache, permit bool, err error) {
+func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update) (ledgerPermission *cache.LedgerPermissionCache, permit bool, err error) {
 
 	chatGroupID := tgMsg.Message.Chat.ID
 	userID := tgMsg.Message.From.ID

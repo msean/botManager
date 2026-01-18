@@ -19,10 +19,12 @@ type LedgerHandler struct {
 	model       ledger.Ledger
 	botModel    bot.Bot
 	chatGroupID int64
+	msg         tgbotapi.Update
 	ShouldPermissionAware
 }
 
 func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
+
 	msg := update.Message
 	input := strings.TrimSpace(msg.Text)
 
@@ -75,18 +77,15 @@ func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match b
 		return
 	}
 
-	global.GVA_LOG.Debug("LedgerHandler", zap.Any("l.confModel.CurrentFeeRate", l.confModel.CurrentFeeRate), zap.Any("AmountWithFee", utils.FloatReserve((100-l.confModel.CurrentFeeRate)*amount/100, 2)))
 	l.model = ledger.Ledger{
 		OprUserID:        msg.From.ID,
 		OprUserFirstName: msg.From.FirstName,
 		OprUserLastName:  msg.From.LastName,
 		OprUserNickname:  msg.From.UserName,
 
-		CurrentFeeRate: l.confModel.CurrentFeeRate,
-		ActionType:     actionType,
-		Amount:         amount,
-		AmountWithFee:  utils.FloatReserve((100-l.confModel.CurrentFeeRate)*amount/100, 2),
-		Remark:         remark,
+		ActionType: actionType,
+		Amount:     amount,
+		Remark:     remark,
 
 		BotID:       l.botModel.BotID,
 		ChatGroupID: msg.Chat.ID,
@@ -99,6 +98,7 @@ func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match b
 
 func (l *LedgerHandler) Handle() (err error) {
 
+	l.model.CurrentFeeRate = l.confModel.CurrentFeeRate
 	l.model.AmountWithFee = utils.FloatReserve((100-l.confModel.CurrentFeeRate)*l.model.Amount/100, 2)
 	if err = l.Create(); err != nil {
 		global.GVA_LOG.Error("Ledger Create", zap.Error(err))
