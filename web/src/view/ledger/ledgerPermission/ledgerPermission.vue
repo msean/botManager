@@ -51,10 +51,11 @@
         @selection-change="handleSelectionChange"
         >
         <el-table-column type="selection" width="55" />
-            <el-table-column align="left" label="机器人" prop="botName" width="160" />
-            <el-table-column align="left" label="群聊" prop="chatGroupName" width="160" />
-
+            <el-table-column label="机器人" prop="botName" width="160" />
+            <el-table-column  label="群聊" prop="chatGroupName" width="160" />
             <el-table-column label="允许操作用户" prop="oprUsers" width="400"></el-table-column>
+            <el-table-column label="当前费率" prop="currentFeeRate" width="120"></el-table-column>
+
             <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
                 <template #default="scope">
                 <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>

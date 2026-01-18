@@ -90,7 +90,7 @@ func (l *LedgerSetFeeRateHandler) Handle() (err error) {
 			zap.Error(e),
 		)
 	}
-	l.reply(fmt.Sprintf("费率设置成功 当前费率为%f", formatFeeRate(l.feeRate)))
+	l.reply(fmt.Sprintf("费率设置成功 当前费率为%s", formatFeeRate(l.feeRate)))
 	return
 }
 

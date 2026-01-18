@@ -27,7 +27,7 @@ type Ledger struct {
 
 type LedgerPermission struct {
 	global.GVA_MODEL
-	CurrentFeeRate float64 `json:"current_fee_rate" form:"current_fee_rate" gorm:"comment:当前费率;column:current_fee_rate"`
+	CurrentFeeRate float64 `json:"currentFeeRate" form:"currentFeeRate" gorm:"comment:当前费率;column:current_fee_rate"`
 	BotName        string  `json:"botName" form:"botName" gorm:"-;"`
 	ChatGroupName  string  `json:"chatGroupName" form:"chatGroupName" gorm:"-;"`
 	BotID          int64   `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id"`
