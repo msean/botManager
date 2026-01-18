@@ -2,15 +2,18 @@ package chat_group
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
+	"github.com/msean/botmanager/server/service/cache"
 )
 
 type LedgerSetFeeRateHandler struct {
@@ -80,7 +83,14 @@ func (l *LedgerSetFeeRateHandler) Handle() (err error) {
 		Update("current_fee_rate", l.feeRate).Error; err != nil {
 		return
 	}
-	l.reply("费率设置成功")
+	if e := cache.NewLedgerPermissionCache(l.botModel.BotID, l.chatGroupID).Release(); e != nil {
+		global.GVA_LOG.Error("Ledger parse amount failed",
+			zap.Int64("botID", l.botModel.BotID),
+			zap.Int64("chatGroupID", l.chatGroupID),
+			zap.Error(e),
+		)
+	}
+	l.reply(fmt.Sprintf("费率设置成功 当前费率为%f", formatFeeRate(l.feeRate)))
 	return
 }
 

@@ -73,7 +73,7 @@ func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match b
 
 	amount, err := parseAmount(amountExpr)
 	if err != nil {
-		global.GVA_LOG.Warn("Ledger parse amount failed",
+		global.GVA_LOG.Error("Ledger parse amount failed",
 			zap.String("expr", amountExpr),
 			zap.Error(err),
 		)
