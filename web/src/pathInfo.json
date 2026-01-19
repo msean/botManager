@@ -62,7 +62,7 @@
   "/src/view/layout/setting/modules/layout/index.vue": "LayoutSettings",
   "/src/view/layout/tabs/index.vue": "HistoryComponent",
   "/src/view/ledger/index.vue": "Ledger",
-  "/src/view/ledger/ledger/Full.vue": "Full",
+  "/src/view/ledger/ledger/full.vue": "Full",
   "/src/view/ledger/ledger/ledger.vue": "Ledger",
   "/src/view/ledger/ledger/ledgerForm.vue": "LedgerForm",
   "/src/view/ledger/ledgerPermission/ledgerPermission.vue": "LedgerPermission",

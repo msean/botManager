@@ -213,13 +213,13 @@ func (ledgerApi *LedgerApi) Full(c *gin.Context) {
 	}
 
 	var incomeList, payoutList []gin.H
-	var totalIncome, totalPayout float64
+	var totalIncome, totalPayout, totalPaid float64
 
 	for _, v := range list {
 		row := gin.H{
 			"time":      v.CreatedAt.Format("15:04:05"),
 			"amount":    v.Amount,
-			"remark":    "",
+			"remark":    v.Remark,
 			"replyUser": "",
 			"operator":  v.OprUserNickname,
 			"afterNote": "",
@@ -228,6 +228,7 @@ func (ledgerApi *LedgerApi) Full(c *gin.Context) {
 		if v.ActionType == 1 {
 			incomeList = append(incomeList, row)
 			totalIncome += v.Amount
+			totalPaid += v.AmountWithFee
 		} else if v.ActionType == 2 {
 			payoutList = append(payoutList, row)
 			totalPayout += v.Amount
@@ -247,6 +248,7 @@ func (ledgerApi *LedgerApi) Full(c *gin.Context) {
 			"totalIncome": totalIncome,
 			"totalPayout": totalPayout,
 			"unpaid":      totalIncome - totalPayout,
+			"shouldPaid":  totalPaid,
 		},
 	})
 }

@@ -22,6 +22,7 @@
 
     <h3>总计</h3>
     <p>总入款: {{ summary.totalIncome }}</p>
+    <p>应下发: {{ summary.shouldPaid }}</p>
     <p>总下发: {{ summary.totalPayout }}</p>
     <p>未下发: {{ summary.unpaid }}</p>
   </div>

@@ -8,7 +8,7 @@ const routes = [
   {
     path: '/ledger/full',
     name: "Ledger",
-    component: () => import('@/view/ledger/ledger/Full.vue'),
+    component: () => import('@/view/ledger/ledger/full.vue'),
     meta: {
       title: '记账',
       client: true
