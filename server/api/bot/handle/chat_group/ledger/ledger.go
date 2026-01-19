@@ -106,7 +106,7 @@ func (l *LedgerHandler) Handle() (err error) {
 	}
 
 	var reply, url string
-	if reply, url, err = l.BuildReply(global.GVA_MYSQL); err != nil {
+	if reply, url, err = l.BuildReply(); err != nil {
 		return
 	}
 
@@ -131,13 +131,14 @@ func (l *LedgerHandler) Create() error {
 	})
 }
 
-func (l *LedgerHandler) BuildReply(db *gorm.DB) (content string, url string, err error) {
+func (l *LedgerHandler) BuildReply() (content string, url string, err error) {
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
 	var records []ledger.Ledger
-	err = db.
+	err = global.GVA_MYSQL.
+		Where("bot_id=?", l.botModel.BotID).
 		Where("chat_group_id = ?", l.chatGroupID).
 		Where("created_at >= ? AND created_at < ?", startOfDay, endOfDay).
 		Order("id asc").
