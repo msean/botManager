@@ -123,6 +123,7 @@ func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 		&LedgerShowFeeRateHandler{},
 		&LedgerSetFeeRateHandler{},
 		&AddOprUserHandler{},
+		&CleanHandler{},
 	)
 
 	return chain.Handle(botModel, tgMsg)
