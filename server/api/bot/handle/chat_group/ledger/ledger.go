@@ -141,6 +141,7 @@ func (l *LedgerHandler) BuildReply(db *gorm.DB) (content string, url string, err
 		Where("chat_group_id = ?", l.chatGroupID).
 		Where("created_at >= ? AND created_at < ?", startOfDay, endOfDay).
 		Order("id asc").
+		Where("deleted_at IS NULL").
 		Find(&records).Error
 	if err != nil || len(records) == 0 {
 		return

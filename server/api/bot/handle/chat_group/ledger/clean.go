@@ -34,6 +34,7 @@ func (l *CleanHandler) Match(botModel bot.Bot, update tgbotapi.Update) bool {
 	l.chatGroupID = update.Message.Chat.ID
 	return true
 }
+
 func (l *CleanHandler) Handle() error {
 
 	now := time.Now()
