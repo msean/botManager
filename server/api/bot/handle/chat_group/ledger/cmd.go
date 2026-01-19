@@ -37,11 +37,11 @@ func (l *ShouldPermissionAwareWithOutAdmin) SetPermission(p *cache.LedgerPermiss
 }
 
 func (l *ShouldPermissionAwareWithOutAdmin) NeedPermission() bool {
-	return false
+	return true
 }
 
 func (l *ShouldPermissionAwareWithOutAdmin) NeedAdmin() bool {
-	return true
+	return false
 }
 
 func (l *NotPermissionAwareWithAdmin) NeedPermission() bool {
