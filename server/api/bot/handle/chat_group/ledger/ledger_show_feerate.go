@@ -16,7 +16,7 @@ import (
 type LedgerShowFeeRateHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
-	ShouldPermissionAware
+	ShouldPermissionAwareWithOutAdmin
 }
 
 func (l *LedgerShowFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {

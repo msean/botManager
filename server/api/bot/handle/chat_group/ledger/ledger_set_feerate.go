@@ -20,7 +20,7 @@ type LedgerSetFeeRateHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
 	feeRate     float64
-	ShouldPermissionAware
+	ShouldPermissionAwareWithOutAdmin
 }
 
 func (l *LedgerSetFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {

@@ -20,7 +20,7 @@ type LedgerHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
 	msg         tgbotapi.Update
-	ShouldPermissionAware
+	ShouldPermissionAwareWithOutAdmin
 }
 
 func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {

@@ -15,6 +15,7 @@ type (
 	}
 	PermissionAware interface {
 		NeedPermission() bool
+		NeedAdmin() bool
 		SetPermission(*cache.LedgerPermissionCache)
 	}
 )
@@ -23,30 +24,37 @@ type (
 	ParserChain struct {
 		parsers []MessageParser
 	}
-	ShouldPermissionAware struct {
+	ShouldPermissionAwareWithOutAdmin struct {
 		confModel *cache.LedgerPermissionCache
 	}
-	NotPermissionAware struct {
+	NotPermissionAwareWithAdmin struct {
 		confModel *cache.LedgerPermissionCache
 	}
 )
 
-func (l *ShouldPermissionAware) NeedPermission() bool {
-	return true
-}
-
-func (l *ShouldPermissionAware) SetPermission(p *cache.LedgerPermissionCache) {
+func (l *ShouldPermissionAwareWithOutAdmin) SetPermission(p *cache.LedgerPermissionCache) {
 	l.confModel = p
 }
 
-func (l *NotPermissionAware) NeedPermission() bool {
+func (l *ShouldPermissionAwareWithOutAdmin) NeedPermission() bool {
 	return false
 }
 
-func (l *NotPermissionAware) SetPermission(p *cache.LedgerPermissionCache) {
-	l.confModel = p
+func (l *ShouldPermissionAwareWithOutAdmin) NeedAdmin() bool {
+	return true
 }
 
+func (l *NotPermissionAwareWithAdmin) NeedPermission() bool {
+	return false
+}
+
+func (l *NotPermissionAwareWithAdmin) NeedAdmin() bool {
+	return true
+}
+
+func (l *NotPermissionAwareWithAdmin) SetPermission(p *cache.LedgerPermissionCache) {
+	l.confModel = p
+}
 func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 
 	for _, parser := range c.parsers {
@@ -54,17 +62,34 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			continue
 		}
 
-		// 是否需要权限
-		if p, ok := parser.(PermissionAware); ok && p.NeedPermission() {
-			permission, permit, err := HasPerMission(botModel, update)
-			if err != nil || !permit {
-				return err
+		// 权限感知
+		if p, ok := parser.(PermissionAware); ok {
+
+			// 管理员权限（最高优先级）
+			if p.NeedAdmin() {
+				ok, err := IsChatAdmin(
+					botModel.Token,
+					update.Message.Chat.ID,
+					update.Message.From.ID,
+				)
+				if err != nil || !ok {
+					return nil // 静默失败，不给回复
+				}
 			}
-			p.SetPermission(permission)
+
+			// 业务权限（Ledger 操作人）
+			if p.NeedPermission() {
+				permission, permit, err := HasPerMission(botModel, update)
+				if err != nil || !permit {
+					return nil
+				}
+				p.SetPermission(permission)
+			}
 		}
 
 		return parser.Handle()
 	}
+
 	return nil
 }
 
@@ -110,4 +135,31 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update) (ledgerPermission *c
 
 	permit = true
 	return
+}
+
+// 是否是admin 用户
+func IsChatAdmin(botToken string, chatID int64, userID int64) (bool, error) {
+	bot, err := tgbotapi.NewBotAPI(botToken)
+	if err != nil {
+		return false, err
+	}
+
+	cfg := tgbotapi.GetChatMemberConfig{
+		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
+			ChatID: chatID,
+			UserID: userID,
+		},
+	}
+
+	member, err := bot.GetChatMember(cfg)
+	if err != nil {
+		return false, err
+	}
+
+	switch member.Status {
+	case "creator", "administrator":
+		return true, nil
+	default:
+		return false, nil
+	}
 }
