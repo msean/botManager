@@ -79,7 +79,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			}
 
 			// 管理员权限（最高优先级）
-			if p.NeedAdmin() || !isAdminUser {
+			if p.NeedAdmin() && !isAdminUser {
 				return nil
 			}
 
