@@ -79,17 +79,21 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			}
 
 			// 管理员权限（最高优先级）
-			if p.NeedAdmin() && !isAdminUser {
+			if p.NeedAdmin() || !isAdminUser {
 				return nil
 			}
 
 			// 业务权限（Ledger 操作人）
 			if p.NeedPermission() {
-				permission, permit, err := HasPerMission(botModel, update, isAdminUser)
+				permission, has, permit, err := HasPerMission(botModel, update, isAdminUser)
+				// 没有的话直接返回
+				if !has {
+					return nil
+				}
 				if err != nil {
 					return nil
 				}
-				if !permit {
+				if !isAdminUser && !permit {
 					return nil
 				}
 
@@ -123,7 +127,7 @@ func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 	return chain.Handle(botModel, tgMsg)
 }
 
-func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledgerPermission *cache.LedgerPermissionCache, permit bool, err error) {
+func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledgerPermission *cache.LedgerPermissionCache, has bool, permit bool, err error) {
 
 	chatGroupID := tgMsg.Message.Chat.ID
 	userID := tgMsg.Message.From.ID
@@ -131,7 +135,6 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledge
 
 	ledgerPermission = cache.NewLedgerPermissionCache(botModel.BotID, chatGroupID)
 
-	var has bool
 	if has, err = cache.CacheGetItem(ledgerPermission); err != nil {
 		global.GVA_LOG.Error("Ledger HasPerMission", zap.Error(err))
 		return
@@ -152,7 +155,10 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledge
 		if err = ledgerPermission.Release(); err != nil {
 			global.GVA_LOG.Warn("Ledger CacheDelItem failed", zap.Error(err))
 		}
-		return
+		permit = true
+		if _, err = cache.CacheGetItem(ledgerPermission); err != nil {
+			return
+		}
 	}
 
 	if !ledgerPermission.HasUserPermission(userID, userName) {
