@@ -27,7 +27,7 @@ func (l *LedgerSetFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Update
 	text := strings.TrimSpace(update.Message.Text)
 
 	// 必须以「费率设置」开头
-	if !strings.HasPrefix(text, "setFeeRate") {
+	if !strings.HasPrefix(text, "设置费率") {
 		return false
 	}
 

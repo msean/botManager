@@ -27,7 +27,7 @@ func (l *AddOprUserHandler) Match(botModel bot.Bot, update tgbotapi.Update) bool
 
 	text := strings.TrimSpace(update.Message.Text)
 
-	if !strings.HasPrefix(text, "addOprUser") {
+	if !strings.HasPrefix(text, "增加操作人") {
 		return false
 	}
 
