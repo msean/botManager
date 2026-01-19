@@ -89,7 +89,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 				if err != nil {
 					return nil
 				}
-				if !isAdminUser && !permit {
+				if !permit {
 					return nil
 				}
 
@@ -152,7 +152,7 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledge
 		if err = ledgerPermission.Release(); err != nil {
 			global.GVA_LOG.Warn("Ledger CacheDelItem failed", zap.Error(err))
 		}
-		permit = true
+		return
 	}
 
 	if !ledgerPermission.HasUserPermission(userID, userName) {
