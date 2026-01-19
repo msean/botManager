@@ -23,7 +23,7 @@ func (l *LedgerShowFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Updat
 
 	text := strings.TrimSpace(update.Message.Text)
 
-	if text != "费率查看" && text != "当前费率" {
+	if text != "showFeeRate" {
 		return false
 	}
 
