@@ -7,6 +7,7 @@
       <el-table-column prop="remark" label="备注" />
       <el-table-column prop="replyUser" label="回复人" />
       <el-table-column prop="operator" label="操作人" />
+      <el-table-column prop="currentFeeRate" label="费率" />
       <el-table-column prop="afterNote" label="后备注" />
     </el-table>
 

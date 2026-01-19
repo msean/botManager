@@ -217,12 +217,13 @@ func (ledgerApi *LedgerApi) Full(c *gin.Context) {
 
 	for _, v := range list {
 		row := gin.H{
-			"time":      v.CreatedAt.Format("15:04:05"),
-			"amount":    v.Amount,
-			"remark":    v.Remark,
-			"replyUser": "",
-			"operator":  v.OprUserNickname,
-			"afterNote": "",
+			"time":           v.CreatedAt.Format("15:04:05"),
+			"amount":         v.Amount,
+			"remark":         v.Remark,
+			"replyUser":      "",
+			"operator":       v.OprUserNickname,
+			"afterNote":      "",
+			"currentFeeRate": v.CurrentFeeRate,
 		}
 
 		if v.ActionType == 1 {
