@@ -85,7 +85,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			}
 
 			// 业务权限（Ledger 操作人）
-			if p.NeedPermission() {
+			if p.NeedPermission() && !isAdminUser {
 				permission, has, permit, err := HasPerMission(botModel, update, isAdminUser)
 				// 没有的话直接返回
 				if !has {
@@ -98,6 +98,17 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 					return nil
 				}
 
+				p.SetPermission(permission)
+			}
+
+			if isAdminUser {
+				permission, has, _, err := HasPerMission(botModel, update, isAdminUser)
+				if err != nil {
+					return nil
+				}
+				if !has {
+					return nil
+				}
 				p.SetPermission(permission)
 			}
 		}
