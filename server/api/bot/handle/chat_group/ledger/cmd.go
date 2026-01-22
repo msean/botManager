@@ -141,6 +141,8 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledge
 		global.GVA_LOG.Error("Ledger HasPerMission", zap.Error(err))
 		return
 	}
+
+	global.GVA_LOG.Debug("Ledger HasPerMission", zap.Any("has", has), zap.Error(err), zap.Any("ledgerPermission", ledgerPermission))
 	if !has {
 		return
 	}
