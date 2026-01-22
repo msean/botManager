@@ -84,7 +84,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 				return nil
 			}
 
-			// 业务权限（Ledger 操作人）
+			// 业务权限（Ledger 操作人） 非管理员用户 管理员用户可以操作任何
 			if p.NeedPermission() && !isAdminUser {
 				permission, has, permit, err := HasPerMission(botModel, update, isAdminUser)
 				// 没有的话直接返回
@@ -158,23 +158,23 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledge
 		return
 	}
 
-	if isAdmin && ledgerPermission.OprUsers == "" {
-		if err = initAdminOprUser(
-			botModel.BotID,
-			chatGroupID,
-			userID,
-		); err != nil {
-			global.GVA_LOG.Error("initAdminOprUser", zap.Error(err))
-			return
-		}
-		if err = ledgerPermission.Release(); err != nil {
-			global.GVA_LOG.Warn("Ledger CacheDelItem failed", zap.Error(err))
-		}
-		permit = true
-		if _, err = cache.CacheGetItem(ledgerPermission); err != nil {
-			return
-		}
-	}
+	// if isAdmin && ledgerPermission.OprUsers == "" {
+	// 	if err = initAdminOprUser(
+	// 		botModel.BotID,
+	// 		chatGroupID,
+	// 		userID,
+	// 	); err != nil {
+	// 		global.GVA_LOG.Error("initAdminOprUser", zap.Error(err))
+	// 		return
+	// 	}
+	// 	if err = ledgerPermission.Release(); err != nil {
+	// 		global.GVA_LOG.Warn("Ledger CacheDelItem failed", zap.Error(err))
+	// 	}
+	// 	permit = true
+	// 	if _, err = cache.CacheGetItem(ledgerPermission); err != nil {
+	// 		return
+	// 	}
+	// }
 
 	if !ledgerPermission.HasUserPermission(userID, userName) {
 		return

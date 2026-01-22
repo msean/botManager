@@ -1,11 +1,10 @@
 package ledger
 
 import (
-	"errors"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"gorm.io/gorm"
+	"go.uber.org/zap"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -53,19 +52,21 @@ func (l *AddOprUserHandler) Handle() error {
 	).First(&permission).Error
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 不存在就创建
-			permission = ledger.LedgerPermission{
-				BotID:       l.botModel.BotID,
-				ChatGroupID: l.chatGroupID,
-				OprUsers:    l.userID,
-			}
-			if err = global.GVA_MYSQL.Create(&permission).Error; err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
+		global.GVA_LOG.Error("AddOprUserHandler Handle", zap.Any("bot", l.botModel), zap.Error(err))
+		// if errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+		// 不存在就创建
+		// permission = ledger.LedgerPermission{
+		// 	BotID:       l.botModel.BotID,
+		// 	ChatGroupID: l.chatGroupID,
+		// 	OprUsers:    l.userID,
+		// }
+		// if err = global.GVA_MYSQL.Create(&permission).Error; err != nil {
+		// 	return err
+		// 	// }
+		// } else {
+		// 	return err
+		// }
 	} else {
 		// 已存在，追加 opr user（去重）
 		if !hasOprUser(permission.OprUsers, l.userID) {
