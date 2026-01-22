@@ -13,6 +13,7 @@ import (
 
 type BotMsgHandler struct{}
 
+// 机器人消息处理总入口
 func (api *BotMsgHandler) Handle(c *gin.Context) {
 	var body []byte
 	var botID int

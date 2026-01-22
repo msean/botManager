@@ -153,6 +153,7 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 	}
 }
 
+// 同步群消息
 func SyncChatGroupMessage(botID int64, chatGroupID int64, tgMsg tgbotapi.Update) (err error) {
 	svc := botSvc.NewBotChatHistorySvc(botID, chatGroupID)
 	if err = svc.Sync(); err != nil {
