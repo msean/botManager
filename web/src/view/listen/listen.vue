@@ -206,7 +206,7 @@ const onExport = async () => {
     const res = await exportListen(params)
 
     if (res.code === 0 && res.data?.file) {
-      const downloadUrl = `/api/public/download?file=${res.data.file}`
+      const downloadUrl = `/public/download?file=${res.data.file}`
 
       const a = document.createElement('a')
       a.href = downloadUrl
