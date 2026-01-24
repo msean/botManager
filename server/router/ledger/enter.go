@@ -1,4 +1,4 @@
-package usage
+package ledger
 
 import (
 	api "github.com/msean/botmanager/server/api"

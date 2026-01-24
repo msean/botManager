@@ -1,3 +1,4 @@
+// service/listen/listen.go
 package listen
 
 import (
@@ -14,15 +15,16 @@ import (
 
 type ListenSvc struct{}
 
+/* ===== 群 / 频道选项 ===== */
 func (svc *ListenSvc) Choice(ctx context.Context) (list []listen.BotChatMap, err error) {
-	err = global.GVA_MYSQL.
+	err = global.GVA_PGSQL.
 		Model(&listen.BotChatMap{}).
 		Order("updated_at desc").
 		Find(&list).Error
-
 	return
 }
 
+/* ===== 查询 ===== */
 func (svc *ListenSvc) Query(
 	ctx context.Context,
 	req listen.ListenQueryReq,
@@ -30,6 +32,65 @@ func (svc *ListenSvc) Query(
 
 	table := fmt.Sprintf(`bot_messages_%d`, abs(req.GroupID))
 	offset := (req.Page - 1) * req.PageSize
+
+	where := "1=1"
+	args := []interface{}{}
+
+	if req.Keyword != "" {
+		where += " AND (m.text ILIKE ? OR m.caption ILIKE ?)"
+		args = append(args, "%"+req.Keyword+"%", "%"+req.Keyword+"%")
+	}
+
+	if req.StartTime != nil {
+		where += " AND m.timestamp >= ?"
+		args = append(args, *req.StartTime)
+	}
+
+	if req.EndTime != nil {
+		where += " AND m.timestamp <= ?"
+		args = append(args, *req.EndTime)
+	}
+
+	/* ===== count ===== */
+	countSQL := fmt.Sprintf(`SELECT count(*) FROM "%s" m WHERE %s`, table, where)
+	if err = global.GVA_PGSQL.Raw(countSQL, args...).Scan(&total).Error; err != nil {
+		return
+	}
+
+	/* ===== list ===== */
+	sql := fmt.Sprintf(`
+		SELECT
+			m.id,
+			m.user_id,
+			m.username,
+			m.nick_name,
+			m.message_type,
+			m.text,
+			m.caption,
+			m.timestamp,
+			c.group_name
+		FROM "%s" m
+		LEFT JOIN bot_chat_map c ON c.group_id = ?
+		WHERE %s
+		ORDER BY m.timestamp DESC
+		LIMIT ? OFFSET ?
+	`, table, where)
+
+	queryArgs := []interface{}{req.GroupID}
+	queryArgs = append(queryArgs, args...)
+	queryArgs = append(queryArgs, req.PageSize, offset)
+
+	err = global.GVA_PGSQL.Raw(sql, queryArgs...).Scan(&list).Error
+	return
+}
+
+/* ===== 导出 ===== */
+func (svc *ListenSvc) Export(
+	ctx context.Context,
+	req listen.ListenQueryReq,
+) (string, error) {
+
+	table := fmt.Sprintf(`bot_messages_%d`, abs(req.GroupID))
 
 	where := "1=1"
 	args := []interface{}{}
@@ -49,56 +110,6 @@ func (svc *ListenSvc) Query(
 		args = append(args, *req.EndTime)
 	}
 
-	// ===== count =====
-	countSQL := fmt.Sprintf(`SELECT count(*) FROM "%s" WHERE %s`, table, where)
-	if err = global.GVA_MYSQL.Raw(countSQL, args...).Scan(&total).Error; err != nil {
-		return
-	}
-
-	// ===== list =====
-	sql := fmt.Sprintf(`
-		SELECT
-			m.id,
-			? AS group_id,
-			c.group_name,
-			m.user_id,
-			m.username,
-			m.nick_name,
-			m.message_type,
-			m.text,
-			m.caption,
-			m.timestamp
-		FROM "%s" m
-		LEFT JOIN bot_chat_map c ON c.group_id = ?
-		WHERE %s
-		ORDER BY m.timestamp DESC
-		LIMIT ? OFFSET ?
-	`, table, where)
-
-	queryArgs := append(
-		[]interface{}{req.GroupID, req.GroupID},
-		append(args, req.PageSize, offset)...,
-	)
-
-	err = global.GVA_MYSQL.Raw(sql, queryArgs...).Scan(&list).Error
-	return
-}
-
-func (svc *ListenSvc) Export(
-	ctx context.Context,
-	req listen.ListenQueryReq,
-) (string, error) {
-
-	table := fmt.Sprintf(`bot_messages_%d`, abs(req.GroupID))
-
-	where := "1=1"
-	args := []interface{}{}
-
-	if req.Keyword != "" {
-		where += " AND (text ILIKE ? OR caption ILIKE ?)"
-		args = append(args, "%"+req.Keyword+"%", "%"+req.Keyword+"%")
-	}
-
 	sql := fmt.Sprintf(`
 		SELECT
 			id,
@@ -113,14 +124,15 @@ func (svc *ListenSvc) Export(
 		LIMIT 50000
 	`, table, where)
 
-	rows, err := global.GVA_MYSQL.Raw(sql, args...).Rows()
+	rows, err := global.GVA_PGSQL.Raw(sql, args...).Rows()
 	if err != nil {
 		return "", err
 	}
 	defer rows.Close()
 
-	file := fmt.Sprintf("export_%d_%d.csv", req.GroupID, time.Now().Unix())
-	f, _ := os.Create(file)
+	fileSuffix := fmt.Sprintf("listen_export_%d_%d.csv", req.GroupID, time.Now().Unix())
+	filePath, fileUrl := global.DDD(fileSuffix)
+	f, _ := os.Create(filePath)
 	defer f.Close()
 
 	writer := csv.NewWriter(f)
@@ -128,7 +140,7 @@ func (svc *ListenSvc) Export(
 
 	for rows.Next() {
 		var r listen.BotMessageVO
-		global.GVA_MYSQL.ScanRows(rows, &r)
+		global.GVA_PGSQL.ScanRows(rows, &r)
 
 		writer.Write([]string{
 			strconv.FormatInt(r.ID, 10),
@@ -141,7 +153,7 @@ func (svc *ListenSvc) Export(
 	}
 
 	writer.Flush()
-	return file, nil
+	return fileUrl, nil
 }
 
 func abs(v int64) int64 {

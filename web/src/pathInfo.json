@@ -67,6 +67,8 @@
   "/src/view/ledger/ledger/ledgerForm.vue": "LedgerForm",
   "/src/view/ledger/ledgerPermission/ledgerPermission.vue": "LedgerPermission",
   "/src/view/ledger/ledgerPermission/ledgerPermissionForm.vue": "LedgerPermissionForm",
+  "/src/view/listen/index.vue": "Listen",
+  "/src/view/listen/listen.vue": "TelegramListen",
   "/src/view/login/index.vue": "Login",
   "/src/view/person/person.vue": "Person",
   "/src/view/recharge/adPublishRecord/adPublishRecord.vue": "AdPublishRecord",

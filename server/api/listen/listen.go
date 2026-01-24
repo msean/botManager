@@ -2,8 +2,8 @@ package listen
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/msean/botmanager/server/api/listen"
 	"github.com/msean/botmanager/server/model/common/response"
+	"github.com/msean/botmanager/server/model/listen"
 )
 
 type ListenApi struct{}
@@ -15,7 +15,6 @@ func (api *ListenApi) Choice(c *gin.Context) {
 		return
 	}
 	response.OkWithDetailed(list, "获取成功", c)
-	return
 }
 
 func (api *ListenApi) Query(c *gin.Context) {

@@ -1,4 +1,4 @@
-package usage
+package ledger
 
 import (
 	"github.com/msean/botmanager/server/middleware"

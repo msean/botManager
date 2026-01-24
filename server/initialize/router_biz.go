@@ -34,8 +34,12 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		rechargeRouter.InitAdPublishRecordRouter(privateGroup, publicGroup)
 	}
 	{
-		usageRouter := router.RouterGroupApp.Usage
-		usageRouter.InitLedgerRouter(privateGroup, publicGroup)
-		usageRouter.InitLedgerPermissionRouter(privateGroup, publicGroup)
+		ledgerRouter := router.RouterGroupApp.Ledger
+		ledgerRouter.InitLedgerRouter(privateGroup, publicGroup)
+		ledgerRouter.InitLedgerPermissionRouter(privateGroup, publicGroup)
+	}
+	{
+		listenRouter := router.RouterGroupApp.Listen
+		listenRouter.InitListenRouter(privateGroup, publicGroup)
 	}
 }

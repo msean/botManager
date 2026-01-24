@@ -32,20 +32,20 @@ type BotMessageVO struct {
 
 type ListenQueryReq struct {
 	// ===== 群 / 频道 =====
-	GroupID   int64 `json:"group_id" form:"group_id" binding:"required"`
-	GroupType int16 `json:"group_type" form:"group_type"` // 可选，1=群 2=频道
+	GroupID   int64 `json:"groupId" form:"groupId" binding:"required"`
+	GroupType int16 `json:"groupType" form:"groupType"` // 可选，1=群 2=频道
 
 	// ===== 内容搜索 =====
 	Keyword string `json:"keyword" form:"keyword"`
 
 	// ===== 时间范围 =====
-	StartTime *time.Time `json:"start_time" form:"start_time"`
-	EndTime   *time.Time `json:"end_time" form:"end_time"`
+	StartTime *time.Time `json:"startTime" form:"startTime"`
+	EndTime   *time.Time `json:"endTime" form:"endTime"`
 
 	// ===== 分页 =====
 	Page     int `json:"page" form:"page"`
-	PageSize int `json:"page_size" form:"page_size"`
+	PageSize int `json:"pageSize" form:"pageSize"`
 
 	// ===== 导出专用 =====
-	IsExport bool `json:"is_export" form:"is_export"`
+	IsExport bool `json:"isExport" form:"isExport"`
 }

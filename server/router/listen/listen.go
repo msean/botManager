@@ -7,15 +7,11 @@ import (
 
 type ListenRoter struct{}
 
-// InitBotRouter 初始化 机器人 路由信息
-func (s *ListenRoter) InitBotRouter(Router *gin.RouterGroup, PublicRouter *gin.RouterGroup) {
+func (s *ListenRoter) InitListenRouter(Router *gin.RouterGroup, PublicRouter *gin.RouterGroup) {
 	botMgrRouter := Router.Group("listen").Use(middleware.OperationRecord())
-	// botMgrRouterWithoutRecord := Router.Group("listen")
-	// botMgrRouterWithoutAuth := PublicRouter.Group("listen")
 	{
-		botMgrRouter.GET("create", botApi.CreateBot) // 新建机器人
+		botMgrRouter.GET("choice", listenApi.Choice)
+		botMgrRouter.GET("query", listenApi.Query)
+		botMgrRouter.POST("export", listenApi.Export)
 	}
-
-	botHandlerRouter := PublicRouter.Group("bot")
-	botHandlerRouter.POST("/webhook/:botUUID", botMsgHandler.Handle)
 }
