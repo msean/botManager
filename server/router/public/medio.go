@@ -11,5 +11,6 @@ func (s *PublicRouter) InitMedioRouter(Router *gin.RouterGroup, PublicRouter *gi
 	routerWithoutAuth := PublicRouter.Group("public")
 	{
 		routerWithoutAuth.POST("/uploadMedia", medioApi.UploadMedia)
+		routerWithoutAuth.POST("/download", medioApi.Download)
 	}
 }

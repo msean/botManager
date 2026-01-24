@@ -191,51 +191,6 @@ const handleSizeChange = val => {
 /* ================= 导出 ================= */
 const exportLoading = ref(false)
 
-// const onExport = async () => {
-//   if (!searchInfo.value.groupId) {
-//     ElMessage.warning('请选择群 / 频道')
-//     return
-//   }
-
-//   exportLoading.value = true
-//   try {
-//     const params = buildParams()
-//     delete params.page
-//     delete params.pageSize
-
-//     const res = await exportListen(params)
-//     if (res.code === 0 && res.data?.url) {
-//       downloadByUrl('https://bot.eesjjss.vip/assets/bots/listen_export_3297745928_1769243951.csv')
-//       ElMessage.success('开始下载')
-//     }
-//   } finally {
-//     exportLoading.value = false
-//   }
-// }
-
-// const onExport = async () => {
-//   if (!searchInfo.value.groupId) {
-//     ElMessage.warning('请选择群 / 频道')
-//     return
-//   }
-
-//   exportLoading.value = true
-//   try {
-//     const params = buildParams()
-//     delete params.page
-//     delete params.pageSize
-
-//     const res = await exportListen(params)
-//     if (res.code === 0 && res.data?.url) {
-//       // ✅ 核心：用 location.href
-//       window.location.href = res.data.url
-//       ElMessage.success('开始下载')
-//     }
-//   } finally {
-//     exportLoading.value = false
-//   }
-// }
-
 const onExport = async () => {
   if (!searchInfo.value.groupId) {
     ElMessage.warning('请选择群 / 频道')
@@ -249,19 +204,24 @@ const onExport = async () => {
     delete params.pageSize
 
     const res = await exportListen(params)
-    if (res.code === 0 && res.data?.url) {
+
+    if (res.code === 0 && res.data?.file) {
+      const downloadUrl = `/api/public/download?file=${res.data.file}`
+
       const a = document.createElement('a')
-      a.href = res.data.url
-      a.download = ''
+      a.href = downloadUrl
+      a.download = res.data.file
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
+
       ElMessage.success('开始下载')
     }
   } finally {
     exportLoading.value = false
   }
 }
+
 
 
 /* 🔥 关键：用 <a download> 触发浏览器下载 */
