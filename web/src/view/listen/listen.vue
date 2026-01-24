@@ -2,7 +2,8 @@
   <div>
     <!-- 搜索 -->
     <div class="gva-search-box">
-      <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo">
+      <el-form :inline="true" :model="searchInfo">
+        <!-- 群 / 频道 -->
         <el-form-item label="群 / 频道">
           <el-select
             v-model="searchInfo.groupId"
@@ -20,26 +21,35 @@
           </el-select>
         </el-form-item>
 
+        <!-- 关键词 -->
         <el-form-item label="关键词">
           <el-input
             v-model="searchInfo.keyword"
             clearable
+            placeholder="关键词 / 文本"
             style="width:200px"
           />
         </el-form-item>
 
+        <!-- 时间 -->
         <el-form-item label="时间">
           <el-date-picker
             v-model="searchInfo.timeRange"
             type="datetimerange"
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
             class="!w-380px"
           />
         </el-form-item>
 
+        <!-- 操作 -->
         <el-form-item>
           <el-button type="primary" @click="onSubmit">查询</el-button>
           <el-button @click="onReset">重置</el-button>
-          <el-button type="success" @click="onExport">导出</el-button>
+          <el-button type="success" :loading="exportLoading" @click="onExport">
+            导出
+          </el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -47,7 +57,7 @@
     <!-- 表格 -->
     <div class="gva-table-box">
       <el-table :data="tableData" style="width:100%">
-        <el-table-column label="群" prop="groupName" width="160" />
+        <el-table-column label="群 / 频道" prop="groupName" width="160" />
 
         <el-table-column label="用户" width="160">
           <template #default="scope">
@@ -65,11 +75,13 @@
         </el-table-column>
       </el-table>
 
+      <!-- 分页 -->
       <div class="gva-pagination">
         <el-pagination
           layout="total, sizes, prev, pager, next"
           :current-page="page"
           :page-size="pageSize"
+          :page-sizes="[10, 30, 50, 100]"
           :total="total"
           @current-change="handleCurrentChange"
           @size-change="handleSizeChange"
@@ -83,30 +95,37 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { formatDate } from '@/utils/format'
-import { getListenChoice, getListenList, exportListen } from '@/api/listen/listen'
+import {
+  getListenChoice,
+  getListenList,
+  exportListen
+} from '@/api/listen/listen'
 
-defineOptions({ name: 'TelegramListen' })
+defineOptions({
+  name: 'TelegramListen'
+})
 
-/* ===== 搜索条件 ===== */
+/* ================= 搜索条件 ================= */
 const searchInfo = ref({
   groupId: null,
   keyword: '',
   timeRange: []
 })
 
-/* ===== 群 / 频道 ===== */
+/* ================= 群 / 频道 ================= */
 const chatOptions = ref([])
+
 const loadChatOptions = async () => {
   const res = await getListenChoice()
   if (res.code === 0) {
-    chatOptions.value = res.data.map(i => ({
-      groupId: i.group_id,
-      groupName: i.group_name
+    chatOptions.value = res.data.map(item => ({
+      groupId: item.group_id,
+      groupName: item.group_name
     }))
   }
 }
 
-/* ===== 表格 ===== */
+/* ================= 表格 ================= */
 const tableData = ref([])
 const page = ref(1)
 const pageSize = ref(10)
@@ -114,10 +133,10 @@ const total = ref(0)
 
 const buildParams = () => {
   const params = {
-    groupId: searchInfo.value.groupId,
-    keyword: searchInfo.value.keyword || '',
     page: page.value,
-    pageSize: pageSize.value
+    pageSize: pageSize.value,
+    groupId: searchInfo.value.groupId,
+    keyword: searchInfo.value.keyword
   }
 
   if (searchInfo.value.timeRange?.length === 2) {
@@ -138,14 +157,22 @@ const getTableData = async () => {
   }
 }
 
-/* ===== 事件 ===== */
+/* ================= 事件 ================= */
 const onSubmit = () => {
+  if (!searchInfo.value.groupId) {
+    ElMessage.warning('请选择群 / 频道')
+    return
+  }
   page.value = 1
   getTableData()
 }
 
 const onReset = () => {
-  searchInfo.value = { groupId: null, keyword: '', timeRange: [] }
+  searchInfo.value = {
+    groupId: null,
+    keyword: '',
+    timeRange: []
+  }
   tableData.value = []
   total.value = 0
 }
@@ -161,23 +188,93 @@ const handleSizeChange = val => {
   getTableData()
 }
 
-/* ===== 导出 ===== */
+/* ================= 导出 ================= */
+const exportLoading = ref(false)
+
+// const onExport = async () => {
+//   if (!searchInfo.value.groupId) {
+//     ElMessage.warning('请选择群 / 频道')
+//     return
+//   }
+
+//   exportLoading.value = true
+//   try {
+//     const params = buildParams()
+//     delete params.page
+//     delete params.pageSize
+
+//     const res = await exportListen(params)
+//     if (res.code === 0 && res.data?.url) {
+//       downloadByUrl('https://bot.eesjjss.vip/assets/bots/listen_export_3297745928_1769243951.csv')
+//       ElMessage.success('开始下载')
+//     }
+//   } finally {
+//     exportLoading.value = false
+//   }
+// }
+
+// const onExport = async () => {
+//   if (!searchInfo.value.groupId) {
+//     ElMessage.warning('请选择群 / 频道')
+//     return
+//   }
+
+//   exportLoading.value = true
+//   try {
+//     const params = buildParams()
+//     delete params.page
+//     delete params.pageSize
+
+//     const res = await exportListen(params)
+//     if (res.code === 0 && res.data?.url) {
+//       // ✅ 核心：用 location.href
+//       window.location.href = res.data.url
+//       ElMessage.success('开始下载')
+//     }
+//   } finally {
+//     exportLoading.value = false
+//   }
+// }
+
 const onExport = async () => {
   if (!searchInfo.value.groupId) {
     ElMessage.warning('请选择群 / 频道')
     return
   }
 
-  const params = buildParams()
-  delete params.page
-  delete params.pageSize
+  exportLoading.value = true
+  try {
+    const params = buildParams()
+    delete params.page
+    delete params.pageSize
 
-  const res = await exportListen(params)
-  if (res.code === 0 && res.data?.url) {
-    window.open(res.data.url)
-    ElMessage.success('开始下载')
+    const res = await exportListen(params)
+    if (res.code === 0 && res.data?.url) {
+      const a = document.createElement('a')
+      a.href = res.data.url
+      a.download = ''
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      ElMessage.success('开始下载')
+    }
+  } finally {
+    exportLoading.value = false
   }
 }
 
+
+/* 🔥 关键：用 <a download> 触发浏览器下载 */
+// const downloadByUrl = (url) => {
+//   const a = document.createElement('a')
+//   a.href = url
+//   a.download = ''
+//   a.target = '_self'
+//   document.body.appendChild(a)
+//   a.click()
+//   document.body.removeChild(a)
+// }
+
+/* ================= 初始化 ================= */
 loadChatOptions()
 </script>

@@ -65,3 +65,22 @@ func (api *MedioApi) UploadMedia(c *gin.Context) {
 		"url": fileURL,
 	})
 }
+
+func (api *MedioApi) Download(c *gin.Context) {
+	file := c.Query("file")
+	if file == "" {
+		c.AbortWithStatusJSON(400, gin.H{"msg": "file required"})
+		return
+	}
+
+	// filePat := global.DDD(file)
+	// filePath := path.Join(global.AssetsPath, "bots", file)
+	filePath, _ := global.DDD(file)
+
+	c.Header("Content-Type", "text/csv")
+	c.Header(
+		"Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s"`, file),
+	)
+	c.File(filePath)
+}

@@ -130,8 +130,8 @@ func (svc *ListenSvc) Export(
 	}
 	defer rows.Close()
 
-	fileSuffix := fmt.Sprintf("listen_export_%d_%d.csv", req.GroupID, time.Now().Unix())
-	filePath, fileUrl := global.DDD(fileSuffix)
+	fileName := fmt.Sprintf("listen_export_%d_%d.csv", req.GroupID, time.Now().Unix())
+	filePath, _ := global.DDD(fileName)
 	f, _ := os.Create(filePath)
 	defer f.Close()
 
@@ -153,7 +153,7 @@ func (svc *ListenSvc) Export(
 	}
 
 	writer.Flush()
-	return fileUrl, nil
+	return fileName, nil
 }
 
 func abs(v int64) int64 {
