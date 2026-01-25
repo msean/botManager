@@ -77,6 +77,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			continue
 		}
 
+		global.GVA_LOG.Debug("ParserChain Handle5", zap.Any("parser", parser))
 		// 权限感知
 		if p, ok := parser.(PermissionAware); ok {
 
