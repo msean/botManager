@@ -60,6 +60,7 @@ func (l *NotPermissionAwareWithAdmin) SetPermission(p *cache.LedgerPermissionCac
 }
 func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 
+	global.GVA_LOG.Debug("ParserChain Handle", zap.Any("bot", botModel))
 	// 判断 机器人是不是有 记账标记
 	if botModel.IsForLedger != 1 {
 		return nil
