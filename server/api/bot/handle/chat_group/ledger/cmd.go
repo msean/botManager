@@ -60,6 +60,13 @@ func (l *NotPermissionAwareWithAdmin) SetPermission(p *cache.LedgerPermissionCac
 }
 func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 
+	// 判断 机器人是不是有 记账标记
+	if botModel.IsForLedger != 1 {
+		return nil
+	}
+
+	chatGroupID := update.Message.Chat.ID
+
 	for _, parser := range c.parsers {
 		if !parser.Match(botModel, update) {
 			continue
@@ -72,7 +79,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			isAdminUser, err := IsChatAdmin(
 				botModel.Token,
 				update.Message.Chat.ID,
-				update.Message.From.ID,
+				chatGroupID,
 				update.Message.From.UserName,
 			)
 			if err != nil || !ok {
@@ -108,7 +115,16 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 					return nil
 				}
 				if !has {
-					return nil
+					// 不存在就创建
+					permissionModel := ledger.LedgerPermission{
+						BotID:       botModel.BotID,
+						ChatGroupID: chatGroupID,
+					}
+					if err = global.GVA_MYSQL.Create(&permissionModel).Error; err != nil {
+						return err
+						// }
+					}
+					permission = cache.NewLedgerPermissionCache(botModel.BotID, chatGroupID)
 				}
 				p.SetPermission(permission)
 			}
