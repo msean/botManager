@@ -66,9 +66,13 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 		return nil
 	}
 
+	global.GVA_LOG.Debug("ParserChain Handle2", zap.Any("bot", botModel))
 	chatGroupID := update.Message.Chat.ID
 
+	global.GVA_LOG.Debug("ParserChain Handle3", zap.Any("bot", botModel))
+
 	for _, parser := range c.parsers {
+		global.GVA_LOG.Debug("ParserChain Handle4", zap.Any("bot", botModel))
 		if !parser.Match(botModel, update) {
 			continue
 		}
