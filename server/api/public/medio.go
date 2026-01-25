@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/global"
+	"go.uber.org/zap"
 )
 
 type MedioApi struct{}
@@ -76,6 +77,7 @@ func (api *MedioApi) Download(c *gin.Context) {
 	// filePat := global.DDD(file)
 	// filePath := path.Join(global.AssetsPath, "bots", file)
 	filePath, _ := global.DDD(file)
+	global.GVA_LOG.Debug("ListenSvc filePath", zap.Any("filePath", filePath), zap.Any("fileName", filePath))
 
 	c.Header("Content-Type", "text/csv")
 	c.Header(
