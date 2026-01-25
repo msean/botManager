@@ -85,8 +85,8 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			var isAdminUser bool
 			isAdminUser, err := IsChatAdmin(
 				botModel.Token,
-				update.Message.Chat.ID,
 				chatGroupID,
+				update.Message.From.ID,
 				update.Message.From.UserName,
 			)
 			global.GVA_LOG.Debug("ParserChain Handle7", zap.Any("err", err), zap.Any("ok", ok))
