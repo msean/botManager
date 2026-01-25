@@ -87,6 +87,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 				return nil // 静默失败，不给回复
 			}
 
+			global.GVA_LOG.Debug("ParserChain Handle", zap.Any("isAdminUser", isAdminUser))
 			// 管理员权限（最高优先级）
 			if p.NeedAdmin() && !isAdminUser {
 				global.GVA_LOG.Info("ParserChain not isAdminUser", zap.Any("user", update.Message.Chat.UserName))
@@ -112,9 +113,11 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 
 			if isAdminUser {
 				permission, has, _, err := HasPerMission(botModel, update, isAdminUser)
+				global.GVA_LOG.Debug("ParserChain Handle", zap.Any("has", has), zap.Any("err", err), zap.Any("permission", permission))
 				if err != nil {
 					return nil
 				}
+
 				if !has {
 					// 不存在就创建
 					permissionModel := ledger.LedgerPermission{
