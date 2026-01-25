@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import yaml
 import psycopg2
 import logging
 import logging.handlers
@@ -13,7 +14,7 @@ from telethon.tl.types import Message
 api_id = 21561671
 api_hash = "d007b96854cc2ba7b4e0776e90705fea"
 
-PG_DSN = "dbname=bot_manager user=admin password=123456 host=16.162.105.189 port=5432"
+CONFIG_FILE = "../../../config.yaml"
 
 SESSION_NAME = "session"
 LOG_FILE = "tg_listener.log"
@@ -39,14 +40,44 @@ formatter = logging.Formatter(
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
+
+# ================== 读取 YAML ==================
+def load_config(path: str) -> dict:
+    if not os.path.exists(path):
+        raise RuntimeError(f"配置文件不存在: {path}")
+
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def build_pg_dsn(cfg: dict) -> str:
+    pg = cfg.get("pgsql")
+    if not pg:
+        raise RuntimeError("配置文件中缺少 pgsql 节点")
+
+    dsn = (
+        f"dbname={pg['db-name']} "
+        f"user={pg['username']} "
+        f"password={pg['password']} "
+        f"host={pg['path']} "
+        f"port={pg['port']} "
+        f"sslmode=disable "
+        f"options='-c timezone=Asia/Shanghai'"
+    )
+    return dsn
+
 # ================== PostgreSQL ==================
 try:
+    config = load_config(CONFIG_FILE)
+    PG_DSN = build_pg_dsn(config)
+
     conn = psycopg2.connect(PG_DSN)
     conn.autocommit = True
     logger.info("PostgreSQL 连接成功")
 except Exception as e:
     logger.error("PostgreSQL 连接失败: %s", e)
     raise
+
 
 # ================== Telegram ==================
 client = TelegramClient(SESSION_NAME, api_id, api_hash)
@@ -61,7 +92,6 @@ LAST_KEYWORD_CHECK = 0
 
 
 def load_keywords(force=False):
-    """关键词热加载"""
     global KEYWORDS, KEYWORD_FILE_MTIME, LAST_KEYWORD_CHECK
 
     now = time.time()
@@ -88,7 +118,7 @@ def load_keywords(force=False):
             }
 
         KEYWORD_FILE_MTIME = mtime
-        logger.info("关键词加载成功 count=%d keywords=%s", len(KEYWORDS), list(KEYWORDS))
+        logger.info("关键词加载成功 count=%d", len(KEYWORDS))
 
     except Exception as e:
         logger.error("关键词加载失败: %s", e)
@@ -101,7 +131,6 @@ def message_table(group_id: int) -> str:
 
 
 def ensure_chat_map_table(cur):
-    """群/频道 映射表（只启动时一次）"""
     cur.execute("""
     CREATE TABLE IF NOT EXISTS bot_chat_map (
         group_id BIGINT PRIMARY KEY,
@@ -143,30 +172,27 @@ def ensure_message_table(cur, table: str):
 
 
 def ensure_indexes(cur, table: str):
-    """索引（完全对齐你 Go 里的那套）"""
-    index_suffix = abs(hash(table)) % 100000
+    idx = abs(hash(table)) % 100000
 
     cur.execute(f"""
-        CREATE INDEX IF NOT EXISTS idx_{index_suffix}_time
+        CREATE INDEX IF NOT EXISTS idx_{idx}_time
         ON "{table}"(timestamp)
     """)
 
     cur.execute(f"""
-        CREATE INDEX IF NOT EXISTS idx_{index_suffix}_user_id
+        CREATE INDEX IF NOT EXISTS idx_{idx}_user_id
         ON "{table}"(user_id)
     """)
 
-    cur.execute("""
-        CREATE EXTENSION IF NOT EXISTS pg_trgm
-    """)
+    cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
     cur.execute(f"""
-        CREATE INDEX IF NOT EXISTS idx_{index_suffix}_username_trgm
+        CREATE INDEX IF NOT EXISTS idx_{idx}_username_trgm
         ON "{table}" USING gin (username gin_trgm_ops)
     """)
 
     cur.execute(f"""
-        CREATE INDEX IF NOT EXISTS idx_{index_suffix}_text_caption_trgm
+        CREATE INDEX IF NOT EXISTS idx_{idx}_text_trgm
         ON "{table}" USING gin (
             (coalesce(text,'') || ' ' || coalesce(caption,'')) gin_trgm_ops
         )
@@ -188,12 +214,7 @@ async def handler(event):
 
         load_keywords()
 
-        hit = None
-        for kw in KEYWORDS:
-            if kw in content:
-                hit = kw
-                break
-
+        hit = next((kw for kw in KEYWORDS if kw in content), None)
         if not hit:
             return
 
@@ -207,7 +228,6 @@ async def handler(event):
         table = message_table(group_id)
         cur = conn.cursor()
 
-        # ===== 群映射表 =====
         cur.execute("""
             INSERT INTO bot_chat_map (group_id, group_type, group_name)
             VALUES (%s,%s,%s)
@@ -216,37 +236,24 @@ async def handler(event):
                 updated_at = NOW()
         """, (group_id, group_type, group_name))
 
-        # ===== 消息表 + 索引 =====
         if table not in MESSAGE_TABLE_READY:
             ensure_message_table(cur, table)
             ensure_indexes(cur, table)
             MESSAGE_TABLE_READY.add(table)
             logger.info("消息表初始化完成 table=%s", table)
 
-        raw_json = json.dumps(
-            msg.to_dict(),
-            ensure_ascii=False,
-            default=str  # 解决 datetime 序列化问题
-        )
+        raw_json = json.dumps(msg.to_dict(), ensure_ascii=False, default=str)
 
         cur.execute(
             f"""
             INSERT INTO "{table}" (
-                id,
-                user_id, username, first_name, last_name, nick_name, is_bot,
+                id, user_id, username, first_name, last_name, nick_name, is_bot,
                 reply_to_message_id,
                 message_type, text, caption,
                 file_id, file_unique_id, file_type,
                 timestamp, raw
             )
-            VALUES (
-                %s,
-                %s,%s,%s,%s,%s,%s,
-                %s,
-                %s,%s,%s,
-                %s,%s,%s,
-                %s,%s
-            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (id) DO NOTHING
             """,
             (
@@ -257,24 +264,17 @@ async def handler(event):
                 getattr(sender, "last_name", None),
                 f"{getattr(sender, 'first_name', '')}{getattr(sender, 'last_name', '')}",
                 getattr(sender, "bot", False),
-
                 msg.reply_to_msg_id,
-
                 msg.__class__.__name__,
                 text,
                 caption,
-
                 None, None, None,
-
-                msg.date.replace(tzinfo=None),  # ✅ UTC 原样入库
+                msg.date.replace(tzinfo=None),
                 raw_json
             )
         )
 
-        logger.info(
-            "命中关键词=%s group_id=%s msg_id=%s",
-            hit, group_id, msg.id
-        )
+        logger.info("命中关键词=%s group_id=%s msg_id=%s", hit, group_id, msg.id)
 
     except Exception:
         logger.error("消息处理异常\n%s", traceback.format_exc())

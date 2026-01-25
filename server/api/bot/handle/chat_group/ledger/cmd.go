@@ -1,8 +1,6 @@
 package ledger
 
 import (
-	"strconv"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -103,7 +101,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 
 			// 业务权限（Ledger 操作人） 非管理员用户 管理员用户可以操作任何
 			if p.NeedPermission() && !isAdminUser {
-				permission, has, permit, err := HasPerMission(botModel, update, isAdminUser)
+				permission, has, permit, err := HasPerMission(botModel, update)
 				// 没有的话直接返回
 				if !has {
 					return nil
@@ -119,7 +117,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
 			}
 
 			if isAdminUser {
-				permission, has, _, err := HasPerMission(botModel, update, isAdminUser)
+				permission, has, _, err := HasPerMission(botModel, update)
 				global.GVA_LOG.Debug("ParserChain Handle", zap.Any("has", has), zap.Any("err", err), zap.Any("permission", permission))
 				if err != nil {
 					return nil
@@ -168,7 +166,8 @@ func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 	return chain.Handle(botModel, tgMsg)
 }
 
-func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledgerPermission *cache.LedgerPermissionCache, has bool, permit bool, err error) {
+// 检测非admin用户是否有权限
+func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update) (ledgerPermission *cache.LedgerPermissionCache, has bool, permit bool, err error) {
 
 	chatGroupID := tgMsg.Message.Chat.ID
 	userID := tgMsg.Message.From.ID
@@ -186,24 +185,6 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledge
 		return
 	}
 
-	// if isAdmin && ledgerPermission.OprUsers == "" {
-	// 	if err = initAdminOprUser(
-	// 		botModel.BotID,
-	// 		chatGroupID,
-	// 		userID,
-	// 	); err != nil {
-	// 		global.GVA_LOG.Error("initAdminOprUser", zap.Error(err))
-	// 		return
-	// 	}
-	// 	if err = ledgerPermission.Release(); err != nil {
-	// 		global.GVA_LOG.Warn("Ledger CacheDelItem failed", zap.Error(err))
-	// 	}
-	// 	permit = true
-	// 	if _, err = cache.CacheGetItem(ledgerPermission); err != nil {
-	// 		return
-	// 	}
-	// }
-
 	if !ledgerPermission.HasUserPermission(userID, userName) {
 		return
 	}
@@ -214,11 +195,8 @@ func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update, isAdmin bool) (ledge
 
 // 是否是admin 用户
 func IsChatAdmin(botToken string, chatID int64, userID int64, userName string) (bool, error) {
-	if userID == 7449031746 || userID == 8099503790 {
-		return true, nil
-	}
-
-	if userName == "xmpaymo" {
+	// 写死
+	if userID == 7449031746 || userID == 8099503790 || userName == "xmpaymo" {
 		return true, nil
 	}
 
@@ -245,16 +223,4 @@ func IsChatAdmin(botToken string, chatID int64, userID int64, userName string) (
 	default:
 		return false, nil
 	}
-}
-
-func initAdminOprUser(
-	botID int64,
-	chatGroupID int64,
-	userID int64,
-) error {
-	return global.GVA_MYSQL.Model(&ledger.LedgerPermission{}).
-		Where("bot_id = ? AND chat_group_id = ?", botID, chatGroupID).
-		Where("(opr_users IS NULL OR opr_users = '')").
-		Update("opr_users", strconv.FormatInt(userID, 10)).
-		Error
 }

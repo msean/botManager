@@ -222,19 +222,6 @@ const onExport = async () => {
   }
 }
 
-
-
-/* 🔥 关键：用 <a download> 触发浏览器下载 */
-// const downloadByUrl = (url) => {
-//   const a = document.createElement('a')
-//   a.href = url
-//   a.download = ''
-//   a.target = '_self'
-//   document.body.appendChild(a)
-//   a.click()
-//   document.body.removeChild(a)
-// }
-
 /* ================= 初始化 ================= */
 loadChatOptions()
 </script>

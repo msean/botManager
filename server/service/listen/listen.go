@@ -11,6 +11,7 @@ import (
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/listen"
+	"go.uber.org/zap"
 )
 
 type ListenSvc struct{}
@@ -133,6 +134,7 @@ func (svc *ListenSvc) Export(
 	fileName := fmt.Sprintf("listen_export_%d_%d.csv", req.GroupID, time.Now().Unix())
 	filePath, _ := global.DDD(fileName)
 	f, _ := os.Create(filePath)
+
 	defer f.Close()
 
 	writer := csv.NewWriter(f)
@@ -153,6 +155,8 @@ func (svc *ListenSvc) Export(
 	}
 
 	writer.Flush()
+
+	global.GVA_LOG.Debug("ListenSvc filePath", zap.Any("filePath", filePath), zap.Any("fileName", fileName))
 	return fileName, nil
 }
 
