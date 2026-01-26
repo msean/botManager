@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
-func getTelegramUser(update tgbotapi.Update) *tgbotapi.User {
+func getTelegramUser(update botapi.Update) *botapi.User {
 	if update.Message != nil {
 		return update.Message.From
 	}
@@ -20,7 +20,7 @@ func getTelegramUser(update tgbotapi.Update) *tgbotapi.User {
 	return nil
 }
 
-func UserCenterHandler(update tgbotapi.Update, token string, botID int64) (err error) {
+func UserCenterHandler(update botapi.Update, token string, botID int64) (err error) {
 	user := getTelegramUser(update)
 	if user == nil {
 		return fmt.Errorf("无法获取 Telegram 用户信息")

@@ -1,17 +1,17 @@
 package ledger
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/service/cache"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
 type (
 	MessageParser interface {
-		Match(botModel bot.Bot, update tgbotapi.Update) bool
+		Match(botModel bot.Bot, update botapi.Update) bool
 		Handle() error
 	}
 	PermissionAware interface {
@@ -56,7 +56,7 @@ func (l *NotPermissionAwareWithAdmin) NeedAdmin() bool {
 func (l *NotPermissionAwareWithAdmin) SetPermission(p *cache.LedgerPermissionCache) {
 	l.confModel = p
 }
-func (c *ParserChain) Handle(botModel bot.Bot, update tgbotapi.Update) error {
+func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 
 	global.GVA_LOG.Debug("ParserChain Handle", zap.Any("bot", botModel))
 	// 判断 机器人是不是有 记账标记
@@ -151,7 +151,7 @@ func NewParserChain(parsers ...MessageParser) *ParserChain {
 	}
 }
 
-func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
+func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 	if tgMsg.Message == nil || tgMsg.Message.Text == "" {
 		return
 	}
@@ -167,7 +167,7 @@ func Handle(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
 }
 
 // 检测非admin用户是否有权限
-func HasPerMission(botModel bot.Bot, tgMsg tgbotapi.Update) (ledgerPermission *cache.LedgerPermissionCache, has bool, permit bool, err error) {
+func HasPerMission(botModel bot.Bot, tgMsg botapi.Update) (ledgerPermission *cache.LedgerPermissionCache, has bool, permit bool, err error) {
 
 	chatGroupID := tgMsg.Message.Chat.ID
 	userID := tgMsg.Message.From.ID
@@ -200,13 +200,13 @@ func IsChatAdmin(botToken string, chatID int64, userID int64, userName string) (
 		return true, nil
 	}
 
-	bot, err := tgbotapi.NewBotAPI(botToken)
+	bot, err := botapi.NewBotAPI(botToken)
 	if err != nil {
 		return false, err
 	}
 
-	cfg := tgbotapi.GetChatMemberConfig{
-		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
+	cfg := botapi.GetChatMemberConfig{
+		ChatConfigWithUser: botapi.ChatConfigWithUser{
 			ChatID: chatID,
 			UserID: userID,
 		},

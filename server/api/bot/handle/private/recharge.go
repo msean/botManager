@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	rechargeModel "github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/service/recharge"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -36,7 +36,7 @@ func Recharge(chatID int64, userID int64, token string, botID int64, msgID int, 
 	return
 }
 
-func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (err error) {
+func RechargeChoiceHandler(update botapi.Update, token string, botID int64) (err error) {
 	ctx := context.Background()
 	key := cache.RechargeTryCountKey(botID, update.Message.From.ID)
 	// 当前次数
@@ -49,11 +49,11 @@ func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (e
 			key,
 		)
 
-		reply := tgbotapi.NewMessage(
+		reply := botapi.NewMessage(
 			update.Message.Chat.ID,
 			"❌ 输入错误次数过多，请重新点击充值按钮",
 		)
-		bot, _ := tgbotapi.NewBotAPI(token)
+		bot, _ := botapi.NewBotAPI(token)
 		bot.Send(reply)
 		return
 	}
@@ -68,12 +68,12 @@ func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (e
 
 		left := 2 - (tryCount + 1)
 
-		reply := tgbotapi.NewMessage(
+		reply := botapi.NewMessage(
 			update.Message.Chat.ID,
 			fmt.Sprintf("❌ 金额无效(输入必须为数字，默认单位是USDT)，你还有 %d 次输入机会", left),
 		)
 
-		bot, _ := tgbotapi.NewBotAPI(token)
+		bot, _ := botapi.NewBotAPI(token)
 		bot.Send(reply)
 		return
 	}
@@ -87,7 +87,7 @@ func RechargeChoiceHandler(update tgbotapi.Update, token string, botID int64) (e
 	return
 }
 
-func RechargeCancelHandler(update tgbotapi.Update, token string, botID int64) (err error) {
+func RechargeCancelHandler(update botapi.Update, token string, botID int64) (err error) {
 	data := update.CallbackQuery.Data
 	parts := strings.Split(data, ":")
 	if len(parts) != 2 {
@@ -111,27 +111,27 @@ func RechargeCancelHandler(update tgbotapi.Update, token string, botID int64) (e
 	chatID := update.CallbackQuery.Message.Chat.ID
 	msgID := update.CallbackQuery.Message.MessageID
 
-	bot, _ := tgbotapi.NewBotAPI(token)
+	bot, _ := botapi.NewBotAPI(token)
 
 	// 修改数据库记录为【已取消】
 	err = global.GVA_MYSQL.Model(&rechargeModel.UserRechargeRecord{}).
 		Where("id = ?", cancelRechargeID).
 		Update("status", constant.AdRechargeCancel).Error // 4 = 已取消(你自定义)
 	if err != nil {
-		bot.Send(tgbotapi.NewMessage(chatID, "❌ 取消失败，请稍后重试"))
+		bot.Send(botapi.NewMessage(chatID, "❌ 取消失败，请稍后重试"))
 		return
 	}
 
 	// 删除原消息
-	bot.Send(tgbotapi.NewDeleteMessage(chatID, msgID))
+	bot.Send(botapi.NewDeleteMessage(chatID, msgID))
 
 	// 提示用户
-	bot.Send(tgbotapi.NewMessage(chatID, "✅ 充值已取消"))
+	bot.Send(botapi.NewMessage(chatID, "✅ 充值已取消"))
 
 	return nil
 }
 
-func RechargeInputCallbackHandler(update tgbotapi.Update, token string, botID int64) (err error) {
+func RechargeInputCallbackHandler(update botapi.Update, token string, botID int64) (err error) {
 	data := update.CallbackQuery.Data
 	parts := strings.Split(data, "_")
 	if len(parts) == 1 {
@@ -189,29 +189,29 @@ func CheckRechargeAndNotify(botID, userID, chatID int64, token string) (canRecha
 	)
 
 	// // 取消按钮
-	// btnCancel := tgbotapi.NewInlineKeyboardButtonData(
+	// btnCancel := botapi.NewInlineKeyboardButtonData(
 	// 	"❌ 取消当前订单",
 	// 	fmt.Sprintf("recharge_cancel:%d", record.ID),
 	// )
 
 	// // 显示金额按钮（可选）
-	// btnAmount := tgbotapi.NewInlineKeyboardButtonData(
+	// btnAmount := botapi.NewInlineKeyboardButtonData(
 	// 	fmt.Sprintf("💰 %.3f USDT", record.Price),
 	// 	"amount_show",
 	// )
 
-	// keyboard := tgbotapi.NewInlineKeyboardMarkup(
-	// 	[]tgbotapi.InlineKeyboardButton{btnAmount},
-	// 	[]tgbotapi.InlineKeyboardButton{btnCancel},
+	// keyboard := botapi.NewInlineKeyboardMarkup(
+	// 	[]botapi.InlineKeyboardButton{btnAmount},
+	// 	[]botapi.InlineKeyboardButton{btnCancel},
 	// )
 
-	bot, err := tgbotapi.NewBotAPI(token)
+	bot, err := botapi.NewBotAPI(token)
 	if err != nil {
 		global.GVA_LOG.Error("CheckRechargeAndNotify NewBotAPI", zap.Error(err))
 		return false, err
 	}
 
-	send := tgbotapi.NewMessage(chatID, msg)
+	send := botapi.NewMessage(chatID, msg)
 	// send.ReplyMarkup = keyboard
 
 	if _, err = bot.Send(send); err != nil {

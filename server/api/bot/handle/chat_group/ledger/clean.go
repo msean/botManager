@@ -5,11 +5,10 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
 type CleanHandler struct {
@@ -19,7 +18,7 @@ type CleanHandler struct {
 	ShouldPermissionAwareWithOutAdmin
 }
 
-func (l *CleanHandler) Match(botModel bot.Bot, update tgbotapi.Update) bool {
+func (l *CleanHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 	if update.Message == nil || update.Message.Text == "" {
 		return false
 	}
@@ -58,11 +57,11 @@ func (l *CleanHandler) Handle() error {
 }
 
 func (l *CleanHandler) reply(text string) error {
-	botSender, err := tgbotapi.NewBotAPI(l.botModel.Token)
+	botSender, err := botapi.NewBotAPI(l.botModel.Token)
 	if err != nil {
 		return err
 	}
-	msg := tgbotapi.NewMessage(l.chatGroupID, text)
+	msg := botapi.NewMessage(l.chatGroupID, text)
 	_, err = botSender.Send(msg)
 	return err
 }

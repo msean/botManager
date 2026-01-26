@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gorm.io/gorm"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
 type LedgerShowFeeRateHandler struct {
@@ -19,7 +19,7 @@ type LedgerShowFeeRateHandler struct {
 	ShouldPermissionAwareWithOutAdmin
 }
 
-func (l *LedgerShowFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
+func (l *LedgerShowFeeRateHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
 
 	text := strings.TrimSpace(update.Message.Text)
 
@@ -60,12 +60,12 @@ func (l *LedgerShowFeeRateHandler) Handle() (err error) {
 }
 
 func (l *LedgerShowFeeRateHandler) reply(text string) (err error) {
-	var botSender *tgbotapi.BotAPI
-	botSender, err = tgbotapi.NewBotAPI(l.botModel.Token)
+	var botSender *botapi.BotAPI
+	botSender, err = botapi.NewBotAPI(l.botModel.Token)
 	if err != nil {
 		return
 	}
-	msg := tgbotapi.NewMessage(l.chatGroupID, text)
+	msg := botapi.NewMessage(l.chatGroupID, text)
 	_, err = botSender.Send(msg)
 	return err
 }

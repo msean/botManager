@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/gin-gonic/gin"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/api/bot/handle/chat_group/ledger"
 	"github.com/msean/botmanager/server/api/bot/handle/private"
 	"github.com/msean/botmanager/server/dao"
@@ -13,6 +12,7 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +22,7 @@ func NewBotHandler() *BotHandler {
 	return &BotHandler{}
 }
 
-func getUpdateText(u tgbotapi.Update) string {
+func getUpdateText(u botapi.Update) string {
 	if u.Message != nil {
 		return u.Message.Text
 	}
@@ -33,7 +33,8 @@ func getUpdateText(u tgbotapi.Update) string {
 }
 
 func (handler *BotHandler) Handle(c *gin.Context, botID int, body []byte) (err error) {
-	var tgMsg tgbotapi.Update
+
+	var tgMsg botapi.Update
 	if err = json.Unmarshal(body, &tgMsg); err != nil {
 		global.GVA_LOG.Error("invalid telegram tgMsg", zap.Error(err))
 		return
@@ -87,12 +88,12 @@ func (handler *BotHandler) Handle(c *gin.Context, botID int, body []byte) (err e
 }
 
 // HandelChatGroup 处理群频道
-func (handler *BotHandler) HandleChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
+func (handler *BotHandler) HandleChannel(botModel bot.Bot, tgMsg botapi.Update) {
 	SyncChannel(botModel, tgMsg)
 }
 
 // HandelChatGroup 处理群聊消息
-func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update) (err error) {
+func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 	var has bool
 	chatGroupID := bot_handler.GetChatID(tgMsg)
 	chatGroup := cache.NewBotChatGroupCache(botModel.BotID, chatGroupID)

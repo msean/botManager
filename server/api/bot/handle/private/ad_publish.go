@@ -3,12 +3,12 @@ package private
 import (
 	"context"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/service/cache"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
-func PublishAdHandle(update tgbotapi.Update, token string, botID int64) {
+func PublishAdHandle(update botapi.Update, token string, botID int64) {
 	var userID int64
 	if update.CallbackQuery != nil {
 		userID = int64(update.CallbackQuery.From.ID)
@@ -21,7 +21,7 @@ func PublishAdHandle(update tgbotapi.Update, token string, botID int64) {
 	global.GVA_REDIS.Set(context.Background(), cache.AdWaitCacheKey(botID, userID), waitAdContentState, waitAdContentExpire)
 }
 
-// func PublishAdCheckHandle(update tgbotapi.Update, token string, botID int64) (canPublic bool) {
+// func PublishAdCheckHandle(update botapi.Update, token string, botID int64) (canPublic bool) {
 // 	var userID int64
 // 	if update.CallbackQuery != nil {
 // 		userID = int64(update.CallbackQuery.From.ID)

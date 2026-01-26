@@ -6,13 +6,13 @@ import (
 	"math/rand"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	bot_api "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
@@ -70,25 +70,25 @@ func (pay *Pay) Recharge(token string, userID int64, chatID int64, msgID int, us
 		constant.OrderLeftPaid,
 	)
 
-	btnAmount := tgbotapi.NewInlineKeyboardButtonData(
+	btnAmount := bot_api.NewInlineKeyboardButtonData(
 		fmt.Sprintf("💰 请支付%.3fUSDT", record.Price),
 		fmt.Sprintf("recharge_amount:%d", record.ID),
 	)
 
 	// 按钮2：取消充值
-	btnCancel := tgbotapi.NewInlineKeyboardButtonData(
+	btnCancel := bot_api.NewInlineKeyboardButtonData(
 		"❌ 取消充值",
 		fmt.Sprintf("/rechargeCancel:%d", record.ID),
 	)
 
 	// 组装键盘
-	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		[]tgbotapi.InlineKeyboardButton{btnAmount},
-		[]tgbotapi.InlineKeyboardButton{btnCancel},
+	keyboard := bot_api.NewInlineKeyboardMarkup(
+		[]bot_api.InlineKeyboardButton{btnAmount},
+		[]bot_api.InlineKeyboardButton{btnCancel},
 	)
 
-	botApi, _ := bot_handler.NewBot(token)
-	return botApi.SendMarkDownMessage(chatID, msg, keyboard)
+	bot_api, _ := bot_handler.NewBot(token)
+	return bot_api.SendMarkDownMessage(chatID, msg, keyboard)
 }
 
 func FormatRechargeMessage(orderID uint, amount, paymentAddr string, createdAt string, leftPaidMinutes int) string {

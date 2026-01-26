@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"strconv"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
-func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (err error) {
+func ReceiveAdContentHandle(update botapi.Update, token string, botID int64) (err error) {
 	msg := update.Message
 	if msg == nil {
 		return
@@ -41,12 +41,12 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 	// 清除等待状态
 	global.GVA_REDIS.Del(ctx, cache.AdWaitCacheKey(botID, userID))
 
-	buttons := tgbotapi.NewInlineKeyboardMarkup(
-		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅ 确认发布", AdConfirmCmd+":"+strconv.Itoa(msgID)),
+	buttons := botapi.NewInlineKeyboardMarkup(
+		[]botapi.InlineKeyboardButton{
+			botapi.NewInlineKeyboardButtonData("✅ 确认发布", AdConfirmCmd+":"+strconv.Itoa(msgID)),
 		},
-		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("❌ 取消发布", AdCancelCmd+":"+strconv.Itoa(msgID)),
+		[]botapi.InlineKeyboardButton{
+			botapi.NewInlineKeyboardButtonData("❌ 取消发布", AdCancelCmd+":"+strconv.Itoa(msgID)),
 		},
 	)
 	// 一次性发送预览 + 按 updateID 绑定按钮
@@ -56,7 +56,7 @@ func ReceiveAdContentHandle(update tgbotapi.Update, token string, botID int64) (
 	return
 }
 
-func ParseIncomingMedia(msg *tgbotapi.Message) []bot_handler.MediaItem {
+func ParseIncomingMedia(msg *botapi.Message) []bot_handler.MediaItem {
 	var items []bot_handler.MediaItem
 
 	if msg.Caption != "" {

@@ -5,10 +5,10 @@ import (
 	"regexp"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/cache"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"golang.org/x/net/html"
 )
 
@@ -37,7 +37,7 @@ func ExtractImgsAndText(htmlStr string) (imgs []string, textWithoutImgs string) 
 }
 
 // 辅助：创建 InlineKeyboardMarkup（如果没有按钮则返回 nil）
-func BuildMarkupFromExtrend(raw json.RawMessage) *tgbotapi.InlineKeyboardMarkup {
+func BuildMarkupFromExtrend(raw json.RawMessage) *botapi.InlineKeyboardMarkup {
 	if len(raw) == 0 {
 		return nil
 	}
@@ -45,12 +45,12 @@ func BuildMarkupFromExtrend(raw json.RawMessage) *tgbotapi.InlineKeyboardMarkup 
 	if err := json.Unmarshal(raw, &btns); err != nil || len(btns) == 0 {
 		return nil
 	}
-	var row []tgbotapi.InlineKeyboardButton
+	var row []botapi.InlineKeyboardButton
 	for _, b := range btns {
 		// 只创建 URL 按钮（和你之前逻辑保持一致）
-		row = append(row, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
+		row = append(row, botapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
 	}
-	m := tgbotapi.NewInlineKeyboardMarkup(row)
+	m := botapi.NewInlineKeyboardMarkup(row)
 	return &m
 }
 
@@ -116,7 +116,7 @@ func ExtractVideosFromHTML(content string) []string {
 }
 
 func HandleTexWithMarup(chatID int64, token string, content string, markup any) (err error) {
-	botAPI, err := tgbotapi.NewBotAPI(token)
+	botAPI, err := botapi.NewBotAPI(token)
 	if err != nil {
 		return
 	}
@@ -133,11 +133,11 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 	var sendMarkup interface{}
 	if markup != nil {
 		switch kb := markup.(type) {
-		case tgbotapi.InlineKeyboardMarkup:
+		case botapi.InlineKeyboardMarkup:
 			if len(kb.InlineKeyboard) > 0 {
 				sendMarkup = kb
 			}
-		case tgbotapi.ReplyKeyboardMarkup:
+		case botapi.ReplyKeyboardMarkup:
 			if len(kb.Keyboard) > 0 {
 				sendMarkup = kb
 			}
@@ -148,10 +148,10 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 
 	// 发送图片
 	for _, img := range imgs {
-		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(img))
+		photo := botapi.NewPhoto(chatID, botapi.FileURL(img))
 		if firstMessage {
 			photo.Caption = caption
-			photo.ParseMode = tgbotapi.ModeHTML
+			photo.ParseMode = botapi.ModeHTML
 			if sendMarkup != nil {
 				photo.ReplyMarkup = sendMarkup
 			}
@@ -164,10 +164,10 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 
 	// 发送视频
 	for _, vid := range videos {
-		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(vid))
+		video := botapi.NewVideo(chatID, botapi.FileURL(vid))
 		if firstMessage {
 			video.Caption = caption
-			video.ParseMode = tgbotapi.ModeHTML
+			video.ParseMode = botapi.ModeHTML
 			if sendMarkup != nil {
 				video.ReplyMarkup = sendMarkup
 			}
@@ -180,8 +180,8 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 
 	// 发送纯文本
 	if len(imgs) == 0 && len(videos) == 0 && caption != "" {
-		msg := tgbotapi.NewMessage(chatID, caption)
-		msg.ParseMode = tgbotapi.ModeHTML
+		msg := botapi.NewMessage(chatID, caption)
+		msg.ParseMode = botapi.ModeHTML
 		if sendMarkup != nil {
 			msg.ReplyMarkup = sendMarkup
 		}
@@ -194,7 +194,7 @@ func HandleTexWithMarup(chatID int64, token string, content string, markup any) 
 func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 	switch buttonType {
 	case constant.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
-		var keyboard [][]tgbotapi.KeyboardButton
+		var keyboard [][]botapi.KeyboardButton
 
 		if len(cfg.CmdButtons) > 0 {
 			var buttons [][]struct {
@@ -204,15 +204,15 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 			_ = json.Unmarshal([]byte(cfg.CmdButtons), &buttons)
 
 			for _, row := range buttons {
-				kbRow := []tgbotapi.KeyboardButton{}
+				kbRow := []botapi.KeyboardButton{}
 				for _, btn := range row {
-					kbRow = append(kbRow, tgbotapi.NewKeyboardButton(btn.Name))
+					kbRow = append(kbRow, botapi.NewKeyboardButton(btn.Name))
 				}
 				keyboard = append(keyboard, kbRow)
 			}
 
 			// 创建 ReplyKeyboardMarkup
-			replyKeyboard := tgbotapi.ReplyKeyboardMarkup{
+			replyKeyboard := botapi.ReplyKeyboardMarkup{
 				Keyboard:        keyboard,
 				ResizeKeyboard:  true,
 				OneTimeKeyboard: false,
@@ -227,27 +227,27 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 		}
 		_ = json.Unmarshal([]byte(cfg.CmdButtons), &rows)
 
-		inlineRows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		inlineRows := make([][]botapi.InlineKeyboardButton, 0)
 		for _, row := range rows {
-			btnRow := make([]tgbotapi.InlineKeyboardButton, 0)
+			btnRow := make([]botapi.InlineKeyboardButton, 0)
 			for _, b := range row {
-				var btn tgbotapi.InlineKeyboardButton
+				var btn botapi.InlineKeyboardButton
 				if strings.HasPrefix(b.BindCmd, "http://") || strings.HasPrefix(b.BindCmd, "https://") {
-					btn = tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.BindCmd)
+					btn = botapi.NewInlineKeyboardButtonURL(b.Name, b.BindCmd)
 				} else {
-					btn = tgbotapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd)
+					btn = botapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd)
 				}
 
 				btnRow = append(btnRow, btn)
 			}
 			inlineRows = append(inlineRows, btnRow)
 		}
-		markup = tgbotapi.NewInlineKeyboardMarkup(inlineRows...)
+		markup = botapi.NewInlineKeyboardMarkup(inlineRows...)
 	}
 	return
 }
 
-func GetChatUserID(update tgbotapi.Update) (userId int64) {
+func GetChatUserID(update botapi.Update) (userId int64) {
 	switch {
 	case update.Message != nil:
 		// 如果是用户发送的消息
@@ -262,8 +262,8 @@ func GetChatUserID(update tgbotapi.Update) (userId int64) {
 	return
 }
 
-func GetUserName(update tgbotapi.Update) (userName string) {
-	var from *tgbotapi.User
+func GetUserName(update botapi.Update) (userName string) {
+	var from *botapi.User
 
 	switch {
 	case update.Message != nil:
@@ -293,7 +293,7 @@ func GetUserName(update tgbotapi.Update) (userName string) {
 	return
 }
 
-func GetChatID(update tgbotapi.Update) (chatID int64) {
+func GetChatID(update botapi.Update) (chatID int64) {
 	switch {
 	case update.Message != nil:
 		// 如果是用户发送的消息

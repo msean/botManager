@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
-func BanChatGroupContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, err error) {
+func BanChatGroupContent(botModel bot.Bot, tgMsg botapi.Update) (find bool, err error) {
 	if tgMsg.Message == nil {
 		return
 	}
@@ -47,7 +47,7 @@ func BanChatGroupContent(botModel bot.Bot, tgMsg tgbotapi.Update) (find bool, er
 	return
 }
 
-func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err error) {
+func BanChatGroupMem(botModel bot.Bot, tgMsg botapi.Update) (found bool, err error) {
 	if tgMsg.Message == nil {
 		return
 	}
@@ -88,7 +88,7 @@ func BanChatGroupMem(botModel bot.Bot, tgMsg tgbotapi.Update) (found bool, err e
 	}
 	return
 }
-func BanUser(botModel bot.Bot, tgMsg tgbotapi.Update, _type int) (err error) {
+func BanUser(botModel bot.Bot, tgMsg botapi.Update, _type int) (err error) {
 	ctx := context.Background()
 	userKey := fmt.Sprintf("ban_user:%d_%d_%d", botModel.BotID, tgMsg.Message.From.ID, tgMsg.Message.Chat.ID)
 	lockKey := fmt.Sprintf("ban_lock:%d_%d_%d", botModel.BotID, tgMsg.Message.From.ID, tgMsg.Message.Chat.ID)

@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/bot/request"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm/clause"
@@ -198,7 +198,7 @@ func (svc BotChatHistorySvc) tableCacheKey() string {
 	return fmt.Sprintf("tg:msg_table:exists:%d:%d", svc.botID, svc.chatGroupID)
 }
 
-func (svc BotChatHistorySvc) SaveMessage(update tgbotapi.Update) error {
+func (svc BotChatHistorySvc) SaveMessage(update botapi.Update) error {
 	global.GVA_LOG.Debug("BotChatHistorySvc SaveMessage", zap.Any("update", update))
 	if update.Message == nil {
 		return nil

@@ -4,19 +4,19 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
 type Bot struct {
 	token  string
-	botApi *tgbotapi.BotAPI
+	botApi *botapi.BotAPI
 }
 
 func NewBot(token string) (bot *Bot, err error) {
 	bot = &Bot{
 		token: token,
 	}
-	if bot.botApi, err = tgbotapi.NewBotAPI(token); err != nil {
+	if bot.botApi, err = botapi.NewBotAPI(token); err != nil {
 		return
 	}
 	return
@@ -26,12 +26,12 @@ func (b *Bot) BanUser(chatID, userID int64, until int64) (err error) {
 	// until := time.Now().Add(duration).Unix()
 	// global.GVA_LOG.Info("util", zap.Int("util", int(until)))
 
-	cfg := tgbotapi.RestrictChatMemberConfig{
-		ChatMemberConfig: tgbotapi.ChatMemberConfig{
+	cfg := botapi.RestrictChatMemberConfig{
+		ChatMemberConfig: botapi.ChatMemberConfig{
 			ChatID: chatID,
 			UserID: userID,
 		},
-		Permissions: &tgbotapi.ChatPermissions{
+		Permissions: &botapi.ChatPermissions{
 			CanSendMessages:       false,
 			CanSendMediaMessages:  false,
 			CanSendPolls:          false,
@@ -48,13 +48,13 @@ func (b *Bot) BanUser(chatID, userID int64, until int64) (err error) {
 }
 
 func (b *Bot) UnMuteUser(chatID int64, userID int64) error {
-	cfg := tgbotapi.RestrictChatMemberConfig{
-		ChatMemberConfig: tgbotapi.ChatMemberConfig{
+	cfg := botapi.RestrictChatMemberConfig{
+		ChatMemberConfig: botapi.ChatMemberConfig{
 			ChatID: chatID,
 			UserID: userID,
 		},
 		UntilDate: time.Now().Unix(),
-		Permissions: &tgbotapi.ChatPermissions{
+		Permissions: &botapi.ChatPermissions{
 			CanSendMessages:       true,
 			CanSendMediaMessages:  true,
 			CanSendPolls:          true,
@@ -70,12 +70,12 @@ func (b *Bot) UnMuteUser(chatID int64, userID int64) error {
 }
 
 func RegisterWebhook(botToken, webhookURL string) error {
-	bot, err := tgbotapi.NewBotAPI(botToken)
+	bot, err := botapi.NewBotAPI(botToken)
 	if err != nil {
 		return err
 	}
 
-	cfg := tgbotapi.DeleteWebhookConfig{
+	cfg := botapi.DeleteWebhookConfig{
 		DropPendingUpdates: true, // true 表示丢弃所有未处理的消息
 	}
 
@@ -83,7 +83,7 @@ func RegisterWebhook(botToken, webhookURL string) error {
 		return err
 	}
 
-	wh, err := tgbotapi.NewWebhook(webhookURL)
+	wh, err := botapi.NewWebhook(webhookURL)
 	if err != nil {
 		return err
 	}
@@ -96,12 +96,12 @@ func RegisterWebhook(botToken, webhookURL string) error {
 }
 
 func UnRegisterWebhook(botToken string, dropPending bool) error {
-	bot, err := tgbotapi.NewBotAPI(botToken)
+	bot, err := botapi.NewBotAPI(botToken)
 	if err != nil {
 		return err
 	}
 
-	cfg := tgbotapi.DeleteWebhookConfig{
+	cfg := botapi.DeleteWebhookConfig{
 		DropPendingUpdates: dropPending, // true 表示丢弃所有未处理的消息
 	}
 
@@ -110,7 +110,7 @@ func UnRegisterWebhook(botToken string, dropPending bool) error {
 }
 
 func (b *Bot) DeleteMsg(chatID int64, msgID int) (err error) {
-	cfg := tgbotapi.DeleteMessageConfig{
+	cfg := botapi.DeleteMessageConfig{
 		ChatID:    chatID,
 		MessageID: msgID,
 	}
@@ -119,13 +119,13 @@ func (b *Bot) DeleteMsg(chatID int64, msgID int) (err error) {
 }
 
 func (b *Bot) SendTextMessage(chatID int64, text string) (err error) {
-	msg := tgbotapi.NewMessage(chatID, text)
+	msg := botapi.NewMessage(chatID, text)
 	_, err = b.botApi.Send(msg)
 	return
 }
 
 func (b *Bot) SendMarkDownMessage(chatID int64, text string, button any) (err error) {
-	msg := tgbotapi.NewMessage(chatID, text)
+	msg := botapi.NewMessage(chatID, text)
 	msg.ParseMode = "MarkdownV2"
 	msg.ReplyMarkup = button
 	_, err = b.botApi.Send(msg)
@@ -152,19 +152,19 @@ func EscapeMarkdownV2(text string) string {
 	return text
 }
 
-func (b *Bot) Send(c tgbotapi.Chattable) (msg tgbotapi.Message, err error) {
+func (b *Bot) Send(c botapi.Chattable) (msg botapi.Message, err error) {
 	return b.botApi.Send(c)
 }
 
 func (b *Bot) DeleteOriginMessage(chatID int64, msgID int) error {
-	deleteMsg := tgbotapi.NewDeleteMessage(chatID, msgID)
+	deleteMsg := botapi.NewDeleteMessage(chatID, msgID)
 	_, err := b.Send(deleteMsg)
 	return err
 }
 
 // SendAdMessage 统一发送广告内容（文字 / 图片 + 文本 / 视频 + 文本）
 // 如果 replyMarkup != nil，则用作按钮，否则不带按钮
-func (b *Bot) TgSend(chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg tgbotapi.Message, err error) {
+func (b *Bot) TgSend(chatID int64, medias []MediaItem, replyMarkup interface{}) (tgMsg botapi.Message, err error) {
 	var caption string
 	var photoID string
 	var videoID string
@@ -183,7 +183,7 @@ func (b *Bot) TgSend(chatID int64, medias []MediaItem, replyMarkup interface{}) 
 
 	// PHOTO
 	if photoID != "" {
-		msg := tgbotapi.NewPhoto(chatID, tgbotapi.FileID(photoID))
+		msg := botapi.NewPhoto(chatID, botapi.FileID(photoID))
 		msg.Caption = caption
 
 		if replyMarkup != nil {
@@ -195,7 +195,7 @@ func (b *Bot) TgSend(chatID int64, medias []MediaItem, replyMarkup interface{}) 
 
 	// VIDEO
 	if videoID != "" {
-		msg := tgbotapi.NewVideo(chatID, tgbotapi.FileID(videoID))
+		msg := botapi.NewVideo(chatID, botapi.FileID(videoID))
 		msg.Caption = caption
 
 		if replyMarkup != nil {
@@ -206,7 +206,7 @@ func (b *Bot) TgSend(chatID int64, medias []MediaItem, replyMarkup interface{}) 
 	}
 
 	// ONLY TEXT
-	msg := tgbotapi.NewMessage(chatID, caption)
+	msg := botapi.NewMessage(chatID, caption)
 
 	if replyMarkup != nil {
 		msg.ReplyMarkup = replyMarkup

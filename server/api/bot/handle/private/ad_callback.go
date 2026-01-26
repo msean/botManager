@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -16,10 +15,11 @@ import (
 	"github.com/msean/botmanager/server/service/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
-func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err error) {
+func HandleAdCancel(update botapi.Update, token string, botID int64) (err error) {
 	userID := bot_handler.GetChatUserID(update)
 	chatID := bot_handler.GetChatID(update)
 	ctx := context.Background()
@@ -32,14 +32,14 @@ func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err erro
 	draftMsgIDStr := parts[1]
 	draftMsgID, _ := strconv.Atoi(draftMsgIDStr)
 	draftKey := cache.AdDraftCacheKey(botID, userID, draftMsgID)
-	bot, _ := tgbotapi.NewBotAPI(token)
+	bot, _ := botapi.NewBotAPI(token)
 
 	// // 2. 判断草稿是否存在
 	// val, _ := global.GVA_REDIS.Get(ctx, draftKey).Result()
 
 	// if val == "" {
 	// 	// 草稿不存在 = 超时
-	// 	bot.Send(tgbotapi.NewMessage(chatID,
+	// 	bot.Send(botapi.NewMessage(chatID,
 	// 		"⏱️ 发布请求已超时，请重新提交内容。"))
 	// 	return nil
 	// }
@@ -51,16 +51,16 @@ func HandleAdCancel(update tgbotapi.Update, token string, botID int64) (err erro
 	// 3. 正常取消
 	global.GVA_REDIS.Del(ctx, draftKey)
 
-	del := tgbotapi.NewDeleteMessage(chatID, update.CallbackQuery.Message.MessageID)
+	del := botapi.NewDeleteMessage(chatID, update.CallbackQuery.Message.MessageID)
 	bot.Send(del)
 
-	bot.Send(tgbotapi.NewMessage(chatID, "❌ 已取消发布。"))
+	bot.Send(botapi.NewMessage(chatID, "❌ 已取消发布。"))
 
 	return nil
 }
 
 // 确认发布
-func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) (err error) {
+func HandleAdConfirmCallback(update botapi.Update, token string, botID int64) (err error) {
 	publishTimes := 1
 	userID := bot_handler.GetChatUserID(update)
 	chatID := bot_handler.GetChatID(update)
@@ -125,10 +125,10 @@ func HandleAdConfirmCallback(update tgbotapi.Update, token string, botID int64) 
 
 	// 余额不足提示充值
 	if wallet.Balance < cnf.Price {
-		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("你当前的余额为%.3f, 余额不足，请充值", wallet.Balance))
-		btn := tgbotapi.NewInlineKeyboardButtonData("⚡ 立即充值", NoticeRechargeCmd)
-		keyboard := tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(btn),
+		msg := botapi.NewMessage(chatID, fmt.Sprintf("你当前的余额为%.3f, 余额不足，请充值", wallet.Balance))
+		btn := botapi.NewInlineKeyboardButtonData("⚡ 立即充值", NoticeRechargeCmd)
+		keyboard := botapi.NewInlineKeyboardMarkup(
+			botapi.NewInlineKeyboardRow(btn),
 		)
 
 		msg.ReplyMarkup = keyboard

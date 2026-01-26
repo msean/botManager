@@ -1,16 +1,16 @@
 package handle
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botSvc "github.com/msean/botmanager/server/service/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
-func SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update, chatGroup *cache.BotChatGroupCache, has bool) (err error) {
+func SyncChatGroup(botModel bot.Bot, tgMsg botapi.Update, chatGroup *cache.BotChatGroupCache, has bool) (err error) {
 	if tgMsg.Message == nil {
 		return
 	}
@@ -84,7 +84,7 @@ func SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update, chatGroup *cache.Bot
 	return
 }
 
-func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
+func SyncChannel(botModel bot.Bot, tgMsg botapi.Update) {
 	msg := tgMsg.ChannelPost
 
 	if msg == nil || msg.Chat == nil {
@@ -155,7 +155,7 @@ func SyncChannel(botModel bot.Bot, tgMsg tgbotapi.Update) {
 }
 
 // 同步群消息
-func SyncChatGroupMessage(botID int64, chatGroupID int64, tgMsg tgbotapi.Update) (err error) {
+func SyncChatGroupMessage(botID int64, chatGroupID int64, tgMsg botapi.Update) (err error) {
 	svc := botSvc.NewBotChatHistorySvc(botID, chatGroupID)
 	if err = svc.Sync(); err != nil {
 		global.GVA_LOG.Error("SyncChatGroupMessage NewBotMsgRecordSvc",

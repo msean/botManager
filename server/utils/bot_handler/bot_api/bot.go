@@ -1,6 +1,7 @@
+package botapi
+
 // Package tgbotapi has functions and types used for interacting with
 // the Telegram Bot API.
-package tgbotapi
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package tgbotapi
+package botapi
 
 import (
 	"encoding/json"
@@ -353,8 +353,24 @@ func (c Chat) ChatConfig() ChatConfig {
 	return ChatConfig{ChatID: c.ID}
 }
 
+type ExternalReply struct {
+	Origin    ExternalReplyOrigin `json:"origin"`
+	Chat      *Chat               `json:"chat,omitempty"`
+	MessageID int                 `json:"message_id,omitempty"`
+}
+
+type ExternalReplyOrigin struct {
+	Type string `json:"type"` // channel / chat
+	Chat *Chat  `json:"chat,omitempty"`
+
+	MessageID       int    `json:"message_id,omitempty"`
+	AuthorSignature string `json:"author_signature,omitempty"`
+	Date            int    `json:"date,omitempty"`
+}
+
 // Message represents a message.
 type Message struct {
+	ExternalReply *ExternalReply `json:"external_reply,omitempty"`
 	// MessageID is a unique message identifier inside this chat
 	MessageID int `json:"message_id"`
 	// From is a sender, empty for messages sent to channels;

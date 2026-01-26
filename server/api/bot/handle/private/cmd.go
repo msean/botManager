@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +37,7 @@ var (
 	confirmAdExpire     = 30 * time.Minute // 确认广告超时有效时间
 )
 
-func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
+func Handle(update botapi.Update, token string, botID int64) (err error) {
 	var text string
 	var chatID int64
 
@@ -137,7 +137,7 @@ func Handle(update tgbotapi.Update, token string, botID int64) (err error) {
 	return
 }
 
-func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd string) {
+func ProcessBindCommand(update botapi.Update, token string, botID int64, cmd string) {
 	switch cmd {
 	case AdPublishCmd: // 点击发布广告
 		PublishAdHandle(update, token, botID)
@@ -156,7 +156,7 @@ func ProcessBindCommand(update tgbotapi.Update, token string, botID int64, cmd s
 func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 	switch buttonType {
 	case constant.ButtonTypeKeyBoard: // 普通键盘（ReplyKeyboard）
-		var keyboard [][]tgbotapi.KeyboardButton
+		var keyboard [][]botapi.KeyboardButton
 
 		if len(cfg.CmdButtons) > 0 {
 			var buttons [][]struct {
@@ -166,15 +166,15 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 			_ = json.Unmarshal([]byte(cfg.CmdButtons), &buttons)
 
 			for _, row := range buttons {
-				kbRow := []tgbotapi.KeyboardButton{}
+				kbRow := []botapi.KeyboardButton{}
 				for _, btn := range row {
-					kbRow = append(kbRow, tgbotapi.NewKeyboardButton(btn.Name))
+					kbRow = append(kbRow, botapi.NewKeyboardButton(btn.Name))
 				}
 				keyboard = append(keyboard, kbRow)
 			}
 
 			// 创建 ReplyKeyboardMarkup
-			replyKeyboard := tgbotapi.ReplyKeyboardMarkup{
+			replyKeyboard := botapi.ReplyKeyboardMarkup{
 				Keyboard:        keyboard,
 				ResizeKeyboard:  true,
 				OneTimeKeyboard: false,
@@ -189,22 +189,22 @@ func ParseContentFromCfg(cfg cache.BotCmdCache, buttonType int) (markup any) {
 		}
 		_ = json.Unmarshal([]byte(cfg.CmdButtons), &rows)
 
-		inlineRows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		inlineRows := make([][]botapi.InlineKeyboardButton, 0)
 		for _, row := range rows {
-			btnRow := make([]tgbotapi.InlineKeyboardButton, 0)
+			btnRow := make([]botapi.InlineKeyboardButton, 0)
 			for _, b := range row {
-				var btn tgbotapi.InlineKeyboardButton
+				var btn botapi.InlineKeyboardButton
 				if strings.HasPrefix(b.BindCmd, "http://") || strings.HasPrefix(b.BindCmd, "https://") {
-					btn = tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.BindCmd)
+					btn = botapi.NewInlineKeyboardButtonURL(b.Name, b.BindCmd)
 				} else {
-					btn = tgbotapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd)
+					btn = botapi.NewInlineKeyboardButtonData(b.Name, b.BindCmd)
 				}
 
 				btnRow = append(btnRow, btn)
 			}
 			inlineRows = append(inlineRows, btnRow)
 		}
-		markup = tgbotapi.NewInlineKeyboardMarkup(inlineRows...)
+		markup = botapi.NewInlineKeyboardMarkup(inlineRows...)
 	}
 	return
 }
@@ -216,7 +216,7 @@ func SendCfgMessage(chatID int64, token string, cfg cache.BotCmdCache, buttonTyp
 	return bot_handler.HandleTexWithMarup(chatID, token, cfg.Content, markup)
 }
 
-func WaitCmd(update tgbotapi.Update, botID int64) string {
+func WaitCmd(update botapi.Update, botID int64) string {
 	state, _ := global.GVA_REDIS.Get(context.Background(), cache.AdWaitCacheKey(botID, bot_handler.GetChatUserID(update))).Result()
 
 	switch state {
@@ -228,7 +228,7 @@ func WaitCmd(update tgbotapi.Update, botID int64) string {
 	return ""
 }
 
-func HandleCallback(update tgbotapi.Update, token string, botID int64) (err error) {
+func HandleCallback(update botapi.Update, token string, botID int64) (err error) {
 	cb := update.CallbackQuery
 	chatID := cb.Message.Chat.ID
 	data := cb.Data

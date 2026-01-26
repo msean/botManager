@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/service/cache"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
 type LedgerSetFeeRateHandler struct {
@@ -23,7 +23,7 @@ type LedgerSetFeeRateHandler struct {
 	ShouldPermissionAwareWithOutAdmin
 }
 
-func (l *LedgerSetFeeRateHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
+func (l *LedgerSetFeeRateHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
 	text := strings.TrimSpace(update.Message.Text)
 
 	// 必须以「费率设置」开头
@@ -92,12 +92,12 @@ func (l *LedgerSetFeeRateHandler) Handle() (err error) {
 }
 
 func (l *LedgerSetFeeRateHandler) reply(text string) (err error) {
-	var botSender *tgbotapi.BotAPI
-	botSender, err = tgbotapi.NewBotAPI(l.botModel.Token)
+	var botSender *botapi.BotAPI
+	botSender, err = botapi.NewBotAPI(l.botModel.Token)
 	if err != nil {
 		return
 	}
-	msg := tgbotapi.NewMessage(l.chatGroupID, text)
+	msg := botapi.NewMessage(l.chatGroupID, text)
 	_, err = botSender.Send(msg)
 	return err
 }

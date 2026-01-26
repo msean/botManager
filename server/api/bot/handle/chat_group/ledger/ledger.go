@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/utils"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -19,11 +19,11 @@ type LedgerHandler struct {
 	model       ledger.Ledger
 	botModel    bot.Bot
 	chatGroupID int64
-	msg         tgbotapi.Update
+	msg         botapi.Update
 	ShouldPermissionAwareWithOutAdmin
 }
 
-func (l *LedgerHandler) Match(botModel bot.Bot, update tgbotapi.Update) (match bool) {
+func (l *LedgerHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
 
 	msg := update.Message
 	input := strings.TrimSpace(msg.Text)
@@ -110,15 +110,15 @@ func (l *LedgerHandler) Handle() (err error) {
 		return
 	}
 
-	botSender, err := tgbotapi.NewBotAPI(l.botModel.Token)
+	botSender, err := botapi.NewBotAPI(l.botModel.Token)
 	if err != nil {
 		return
 	}
 
-	msg := tgbotapi.NewMessage(l.chatGroupID, reply)
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("📊 点击查看完整账单", url),
+	msg := botapi.NewMessage(l.chatGroupID, reply)
+	msg.ReplyMarkup = botapi.NewInlineKeyboardMarkup(
+		botapi.NewInlineKeyboardRow(
+			botapi.NewInlineKeyboardButtonURL("📊 点击查看完整账单", url),
 		),
 	)
 	_, err = botSender.Send(msg)

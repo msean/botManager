@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
 )
 
@@ -160,23 +160,23 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 		return err
 	}
 
-	botAPI, err := tgbotapi.NewBotAPI(botModel.Token)
+	botAPI, err := botapi.NewBotAPI(botModel.Token)
 	if err != nil {
 		return err
 	}
 
-	var markup tgbotapi.InlineKeyboardMarkup
+	var markup botapi.InlineKeyboardMarkup
 	var hasButton bool
 
 	if len(task.ExtrendButton) > 0 {
 		var btns [][]bot.ButtonItem
 		if err := json.Unmarshal(task.ExtrendButton, &btns); err == nil {
 
-			var rows [][]tgbotapi.InlineKeyboardButton
+			var rows [][]botapi.InlineKeyboardButton
 			for _, row := range btns {
-				var r []tgbotapi.InlineKeyboardButton
+				var r []botapi.InlineKeyboardButton
 				for _, b := range row {
-					r = append(r, tgbotapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
+					r = append(r, botapi.NewInlineKeyboardButtonURL(b.Name, b.URL))
 				}
 				if len(r) > 0 {
 					rows = append(rows, r)
@@ -184,7 +184,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 			}
 
 			if len(rows) > 0 {
-				markup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+				markup = botapi.NewInlineKeyboardMarkup(rows...)
 				hasButton = true
 			}
 		}
@@ -195,7 +195,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 
 	case 0: // 仅按钮
 		if hasButton {
-			msg := tgbotapi.NewMessage(chatID, "请选择：")
+			msg := botapi.NewMessage(chatID, "请选择：")
 			msg.ReplyMarkup = markup
 			_, err = botAPI.Send(msg)
 		}
@@ -205,7 +205,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 		return bot_handler.HandleTexWithMarup(chatID, botModel.Token, task.Content, markup)
 
 	case 2: // 文本
-		msg := tgbotapi.NewMessage(chatID, task.Content)
+		msg := botapi.NewMessage(chatID, task.Content)
 		if hasButton {
 			msg.ReplyMarkup = markup
 		}
@@ -218,7 +218,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 			return err
 		}
 		for i, url := range urls {
-			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(url))
+			photo := botapi.NewPhoto(chatID, botapi.FileURL(url))
 			if i == 0 && hasButton {
 				photo.ReplyMarkup = markup
 			}
@@ -234,7 +234,7 @@ func SendTelegramMessage(chatID int64, task *bot.BotTask) error {
 			return err
 		}
 		for i, url := range urls {
-			video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(url))
+			video := botapi.NewVideo(chatID, botapi.FileURL(url))
 			if i == 0 && hasButton {
 				video.ReplyMarkup = markup
 			}
