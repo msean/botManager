@@ -6,7 +6,8 @@ import psycopg2
 import logging
 import logging.handlers
 import traceback
-from datetime import datetime
+import asyncio
+import signal
 from telethon import TelegramClient, events
 from telethon.tl.types import Message
 
@@ -40,12 +41,10 @@ formatter = logging.Formatter(
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-
 # ================== 读取 YAML ==================
 def load_config(path: str) -> dict:
     if not os.path.exists(path):
         raise RuntimeError(f"配置文件不存在: {path}")
-
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -55,7 +54,7 @@ def build_pg_dsn(cfg: dict) -> str:
     if not pg:
         raise RuntimeError("配置文件中缺少 pgsql 节点")
 
-    dsn = (
+    return (
         f"dbname={pg['db-name']} "
         f"user={pg['username']} "
         f"password={pg['password']} "
@@ -64,7 +63,6 @@ def build_pg_dsn(cfg: dict) -> str:
         f"sslmode=disable "
         f"options='-c timezone=Asia/Shanghai'"
     )
-    return dsn
 
 # ================== PostgreSQL ==================
 try:
@@ -77,7 +75,6 @@ try:
 except Exception as e:
     logger.error("PostgreSQL 连接失败: %s", e)
     raise
-
 
 # ================== Telegram ==================
 client = TelegramClient(SESSION_NAME, api_id, api_hash)
@@ -116,14 +113,11 @@ def load_keywords(force=False):
                 for line in f
                 if line.strip() and not line.startswith("#")
             }
-
         KEYWORD_FILE_MTIME = mtime
         logger.info("关键词加载成功 count=%d", len(KEYWORDS))
-
     except Exception as e:
         logger.error("关键词加载失败: %s", e)
         KEYWORDS = set()
-
 
 # ================== 表相关 ==================
 def message_table(group_id: int) -> str:
@@ -152,20 +146,15 @@ def ensure_message_table(cur, table: str):
         last_name VARCHAR(128),
         nick_name VARCHAR(64),
         is_bot BOOLEAN,
-
         reply_to_message_id BIGINT,
-
         message_type VARCHAR(50),
         text TEXT,
         caption TEXT,
-
         file_id TEXT,
         file_unique_id TEXT,
         file_type VARCHAR(32),
-
         timestamp TIMESTAMP,
         raw JSONB,
-
         created_at TIMESTAMP DEFAULT NOW()
     )
     """)
@@ -174,30 +163,15 @@ def ensure_message_table(cur, table: str):
 def ensure_indexes(cur, table: str):
     idx = abs(hash(table)) % 100000
 
-    cur.execute(f"""
-        CREATE INDEX IF NOT EXISTS idx_{idx}_time
-        ON "{table}"(timestamp)
-    """)
-
-    cur.execute(f"""
-        CREATE INDEX IF NOT EXISTS idx_{idx}_user_id
-        ON "{table}"(user_id)
-    """)
-
+    cur.execute(f"""CREATE INDEX IF NOT EXISTS idx_{idx}_time ON "{table}"(timestamp)""")
+    cur.execute(f"""CREATE INDEX IF NOT EXISTS idx_{idx}_user_id ON "{table}"(user_id)""")
     cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-
-    cur.execute(f"""
-        CREATE INDEX IF NOT EXISTS idx_{idx}_username_trgm
-        ON "{table}" USING gin (username gin_trgm_ops)
-    """)
-
     cur.execute(f"""
         CREATE INDEX IF NOT EXISTS idx_{idx}_text_trgm
         ON "{table}" USING gin (
             (coalesce(text,'') || ' ' || coalesce(caption,'')) gin_trgm_ops
         )
     """)
-
 
 # ================== Telegram 监听 ==================
 @client.on(events.NewMessage)
@@ -207,13 +181,11 @@ async def handler(event):
             return
 
         msg: Message = event.message
-
         text = msg.text or ""
-        caption = getattr(msg, "message", None) or ""
+        caption = getattr(msg, "message", "") or ""
         content = f"{text} {caption}"
 
         load_keywords()
-
         hit = next((kw for kw in KEYWORDS if kw in content), None)
         if not hit:
             return
@@ -221,11 +193,7 @@ async def handler(event):
         chat = await event.get_chat()
         sender = await event.get_sender()
 
-        group_id = chat.id
-        group_type = 2 if event.is_channel else 1
-        group_name = getattr(chat, "title", "")
-
-        table = message_table(group_id)
+        table = message_table(chat.id)
         cur = conn.cursor()
 
         cur.execute("""
@@ -234,24 +202,19 @@ async def handler(event):
             ON CONFLICT (group_id) DO UPDATE
             SET group_name = EXCLUDED.group_name,
                 updated_at = NOW()
-        """, (group_id, group_type, group_name))
+        """, (chat.id, 2 if event.is_channel else 1, getattr(chat, "title", "")))
 
         if table not in MESSAGE_TABLE_READY:
             ensure_message_table(cur, table)
             ensure_indexes(cur, table)
             MESSAGE_TABLE_READY.add(table)
-            logger.info("消息表初始化完成 table=%s", table)
-
-        raw_json = json.dumps(msg.to_dict(), ensure_ascii=False, default=str)
 
         cur.execute(
             f"""
             INSERT INTO "{table}" (
-                id, user_id, username, first_name, last_name, nick_name, is_bot,
-                reply_to_message_id,
-                message_type, text, caption,
-                file_id, file_unique_id, file_type,
-                timestamp, raw
+                id,user_id,username,first_name,last_name,nick_name,is_bot,
+                reply_to_message_id,message_type,text,caption,
+                file_id,file_unique_id,file_type,timestamp,raw
             )
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (id) DO NOTHING
@@ -269,16 +232,20 @@ async def handler(event):
                 text,
                 caption,
                 None, None, None,
-                msg.date.replace(tzinfo=None),
-                raw_json
+                msg.date,
+                json.dumps(msg.to_dict(), ensure_ascii=False, default=str)
             )
         )
 
-        logger.info("命中关键词=%s group_id=%s msg_id=%s", hit, group_id, msg.id)
+        logger.info("命中关键词=%s group_id=%s msg_id=%s", hit, chat.id, msg.id)
 
     except Exception:
         logger.error("消息处理异常\n%s", traceback.format_exc())
 
+# ================== 优雅退出 ==================
+async def shutdown(sig):
+    logger.info("收到退出信号 %s，关闭 Telegram 客户端", sig)
+    await client.disconnect()
 
 # ================== 启动 ==================
 if __name__ == "__main__":
@@ -286,12 +253,18 @@ if __name__ == "__main__":
 
     cur = conn.cursor()
     ensure_chat_map_table(cur)
-
     load_keywords(force=True)
 
-    if not KEYWORDS:
-        logger.warning("关键词为空，不会入库任何消息")
+    loop = asyncio.get_event_loop()
+    for s in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(s, lambda sig=s: asyncio.create_task(shutdown(sig)))
 
     client.start()
-    logger.info("Telegram Listener 已启动，开始监听")
-    client.run_until_disconnected()
+    logger.info("开始监听 Telegram")
+
+    try:
+        loop.run_until_complete(client.run_until_disconnected())
+    finally:
+        loop.run_until_complete(client.disconnect())
+        loop.close()
+        logger.info("监听器已安全退出")

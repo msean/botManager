@@ -1,0 +1,4 @@
+/*! 
+ Build based on gin-vue-admin 
+ Time : 1769405832000 */
+System.register(["./087AC4D233B64EB0index-legacy.DQdfTLVm.js"],function(t,e){"use strict";var r;return{setters:[function(t){r=t.s}],execute:function(){t("c",function(t){return r({url:"/bot_mgr/create",method:"post",data:t})}),t("d",function(t){return r({url:"/bot_mgr/delete",method:"delete",params:t})}),t("b",function(t){return r({url:"/bot_mgr/delete_by_ids",method:"delete",params:t})}),t("a",function(t){return r({url:"/bot_mgr/update",method:"put",data:t})}),t("f",function(t){return r({url:"/bot_mgr/get",method:"get",params:t})}),t("g",function(t){return r({url:"/bot_mgr/list",method:"get",params:t})}),t("e",function(t){return r({url:"/bot_mgr/choice",method:"get",params:t})}),t("h",function(t){return r({url:"/bot_mgr/choice_with_chat_group",method:"get",params:t})}),t("u",function(t){return r({url:"/bot_mgr/unban_user",method:"post",data:t})})}}});

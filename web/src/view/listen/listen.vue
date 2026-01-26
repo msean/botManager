@@ -57,17 +57,22 @@
     <!-- 表格 -->
     <div class="gva-table-box">
       <el-table :data="tableData" style="width:100%">
-        <el-table-column label="群 / 频道" prop="groupName" width="160" />
-
-        <el-table-column label="用户" width="160">
+        <el-table-column label="用户ID" width="160">
           <template #default="scope">
-            {{ scope.row.nickName || scope.row.username || scope.row.userId }}
+            {{ scope.row.user_id }}
           </template>
         </el-table-column>
-
-        <el-table-column label="内容" prop="text" min-width="300" />
-        <el-table-column label="类型" prop="messageType" width="100" />
-
+        <el-table-column label="用户" width="160">
+          <template #default="scope">
+            {{ scope.row.username }}
+          </template>
+        </el-table-column>
+         <el-table-column label="昵称" width="160">
+          <template #default="scope">
+            {{ scope.row.nick_name}}
+          </template>
+        </el-table-column>
+        <el-table-column label="消息内容" prop="text" min-width="300" />
         <el-table-column label="时间" width="180">
           <template #default="scope">
             {{ formatDate(scope.row.timestamp) }}
