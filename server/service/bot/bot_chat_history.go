@@ -199,6 +199,7 @@ func (svc BotChatHistorySvc) tableCacheKey() string {
 }
 
 func (svc BotChatHistorySvc) SaveMessage(update tgbotapi.Update) error {
+	global.GVA_LOG.Debug("BotChatHistorySvc SaveMessage", zap.Any("update", update))
 	if update.Message == nil {
 		return nil
 	}

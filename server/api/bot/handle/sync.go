@@ -38,6 +38,7 @@ func SyncChatGroup(botModel bot.Bot, tgMsg tgbotapi.Update, chatGroup *cache.Bot
 			BotID:         botModel.BotID,
 			ChatGroupID:   chatID,
 			ChatGroupName: chatName,
+			SyncMessage:   2, // 默认不开启吧
 		}
 		if createErr := global.GVA_MYSQL.Create(&newGroup).Error; createErr != nil {
 			global.GVA_LOG.Error("failed to create new chat group",
