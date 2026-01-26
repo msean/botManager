@@ -31,6 +31,7 @@ func (api *BotMsgHandler) Handle(c *gin.Context) {
 		response.BotBadRequest(c, "invalid body")
 		return
 	}
+	global.GVA_LOG.Debug("BotMsgHandler Handle", zap.ByteString("raw", body))
 	c.Status(200)
 	c.Writer.WriteHeaderNow()
 
