@@ -123,6 +123,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		SyncChatGroupMessage(botModel.BotID, chatGroupID, tgMsg)
 	}()
 
+	// 记账功能入口
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -139,7 +140,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 	}()
 
 	// 只要消息是转发的都需要禁止
-	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil {
+	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
 		BanUser(botModel, tgMsg, constant.BanTypeForword)
 		return nil
 	}

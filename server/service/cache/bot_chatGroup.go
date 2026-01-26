@@ -14,6 +14,7 @@ type (
 		BotID         int64  `json:"botID"`
 		ChatGroupID   int64  `json:"chatGroupID"`
 		SyncMessage   int64  `json:"syncMessage"` // 是否需要同步消息
+		BanForward    int64  `json:"banForward"`  // 是否禁用转发消息
 		ChatGroupName string `json:"chatGroupName"`
 	}
 )
