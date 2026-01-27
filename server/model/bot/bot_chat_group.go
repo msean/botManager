@@ -13,6 +13,7 @@ type BotChatGroup struct {
 	ChatGroupID   int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群组ID;column:chat_group_id;"`       //群组ID
 	ChatGroupName string `json:"chatGroupName" form:"chatGroupName" gorm:"comment:群组ID;column:chat_group_name;"` //群组ID
 	BanForward    int64  `json:"banForward" form:"banForward" gorm:"column:ban_forward;default:1"`               // 是否禁用转发消息 1 是 2 否
+	MaxWords      int64  `json:"maxWords" form:"maxWords" gorm:"column:max_words;default:-1"`                    // 最大长度限制
 	SyncMessage   int64  `json:"syncMessage" form:"botID" gorm:"column:sync_message;default:2"`                  // 是否需要同步消息, 1 是 2否 // 默认不开启吧
 }
 

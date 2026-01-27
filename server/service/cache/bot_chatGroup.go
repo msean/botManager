@@ -15,6 +15,7 @@ type (
 		ChatGroupID   int64  `json:"chatGroupID"`
 		SyncMessage   int64  `json:"syncMessage"` // 是否需要同步消息
 		BanForward    int64  `json:"banForward"`  // 是否禁用转发消息
+		MaxWords      int    `json:"maxWords"`    // 最大长度限制
 		ChatGroupName string `json:"chatGroupName"`
 	}
 )

@@ -2,6 +2,7 @@ package handle
 
 import (
 	"encoding/json"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/api/bot/handle/chat_group/ledger"
@@ -139,10 +140,12 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		ledger.Handle(botModel, tgMsg)
 	}()
 
-	// 只要消息是转发的都需要禁止
-	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
-		BanUser(botModel, tgMsg, constant.BanTypeForword)
-		return nil
+	// 假如群聊天设置了需要禁止转发
+	if chatGroup.BanForward == 1 {
+		if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
+			BanUser(botModel, tgMsg, constant.BanTypeForword)
+			return nil
+		}
 	}
 
 	// 普通消息
@@ -152,6 +155,13 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 
 	var find bool
 	if tgMsg.Message.Text != "" {
+		if chatGroup.MaxWords > 0 {
+			wordCount := utf8.RuneCountInString(tgMsg.Message.Text)
+			if wordCount > chatGroup.MaxWords {
+				BanUser(botModel, tgMsg, constant.BanTypeWordLen)
+				return
+			}
+		}
 		if find, err = BanChatGroupContent(botModel, tgMsg); err != nil || find {
 			return
 		}
