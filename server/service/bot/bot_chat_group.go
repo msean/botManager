@@ -54,11 +54,10 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroupByIds(ctx cont
 // UpdateBotChatGroup 更新机器人群组列表记录
 // Author [yourname](https://github.com/yourname)
 func (botChatGroupService *BotChatGroupService) UpdateBotChatGroup(ctx context.Context, botChatGroup bot.BotChatGroup) (err error) {
-	if err = global.GVA_MYSQL.Model(&bot.BotChatGroup{}).Where("id = ?", botChatGroup.ID).Updates(&botChatGroup).Error; err != nil {
+	if err = cache.ReleaseBotChatGroup(int(botChatGroup.ID)); err != nil {
 		return
 	}
-
-	return cache.ReleaseBotChatGroup(int(botChatGroup.ID))
+	return global.GVA_MYSQL.Model(&bot.BotChatGroup{}).Where("id = ?", botChatGroup.ID).Updates(&botChatGroup).Error
 }
 
 // GetBotChatGroup 根据ID获取机器人群组列表记录
