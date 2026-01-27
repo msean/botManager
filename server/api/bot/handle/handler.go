@@ -140,8 +140,10 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		ledger.Handle(botModel, tgMsg)
 	}()
 
+	global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("chatGroup", chatGroup))
 	// 假如群聊天设置了需要禁止转发
 	if chatGroup.BanForward == 1 {
+		global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("1", tgMsg.Message.ForwardFrom != nil), zap.Any("2", tgMsg.Message.ForwardFromChat != nil), zap.Any("2", tgMsg.Message.ExternalReply != nil))
 		if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
 			BanUser(botModel, tgMsg, constant.BanTypeForword)
 			return nil
