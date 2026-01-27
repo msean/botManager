@@ -13,7 +13,8 @@ type Bot struct {
 	UpdatedAt   time.Time      `json:"updatedAt" form:"updatedAt" gorm:"column:updated_at;"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 	Name        string         `json:"name" form:"name" gorm:"comment:机器人名称;column:name;"`
-	IsForLedger int64          `json:"isForLedger" form:"isForLedger" gorm:"comment:是否用来记账(1开2关);column:is_for_ledger;"` // 是否用来做记账
+	IsForLedger int64          `json:"isForLedger" form:"isForLedger" gorm:"comment:是否用来记账(1开2关);column:is_for_ledger;"`           // 是否用来做记账
+	IsForMsgMgr int64          `json:"isForMsgMgr" form:"isForMsgMgr" gorm:"comment:是否用来记账(1开2关);column:is_for_msg_mgr;default:1"` // 是否用来做消息管理
 	BotID       int64          `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;index"`
 	Token       string         `json:"token" form:"token" gorm:"comment:token;column:token;size:256;"`
 	Chats       []BotChatGroup `json:"botChatGroups" form:"botChatGroups" gorm:"foreignKey:BotID;references:BotID"`

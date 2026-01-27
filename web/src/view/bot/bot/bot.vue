@@ -36,14 +36,26 @@
         <el-table-column label="名称" prop="name" width="180" />
         <el-table-column label="Token" prop="token" width="420" />
 
-        <!-- ✅ 滑动即更新 -->
-        <el-table-column label="是否记账" width="140">
+        <!-- 是否记账 -->
+        <el-table-column label="开启记账功能" width="140">
           <template #default="scope">
             <el-switch
               v-model="scope.row.isForLedger"
               :active-value="1"
               :inactive-value="2"
               @change="val => onLedgerSwitchChange(scope.row, val)"
+            />
+          </template>
+        </el-table-column>
+
+        <!-- ✅ 是否消息管理 -->
+        <el-table-column label="开启消息管理功能" width="160">
+          <template #default="scope">
+            <el-switch
+              v-model="scope.row.isForMsgMgr"
+              :active-value="1"
+              :inactive-value="2"
+              @change="val => onMsgMgrSwitchChange(scope.row, val)"
             />
           </template>
         </el-table-column>
@@ -95,6 +107,14 @@
           />
         </el-form-item>
 
+        <el-form-item label="是否消息管理">
+          <el-switch
+            v-model="formData.isForMsgMgr"
+            :active-value="1"
+            :inactive-value="2"
+          />
+        </el-form-item>
+
         <el-button type="primary" @click="enterDialog">确定</el-button>
       </el-form>
     </el-drawer>
@@ -110,6 +130,9 @@
         </el-descriptions-item>
         <el-descriptions-item label="是否记账">
           {{ detailForm.isForLedger === 1 ? '开启' : '关闭' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="是否消息管理">
+          {{ detailForm.isForMsgMgr === 1 ? '开启' : '关闭' }}
         </el-descriptions-item>
       </el-descriptions>
     </el-drawer>
@@ -145,7 +168,8 @@ const type = ref('')
 const formData = ref({
   name: '',
   token: '',
-  isForLedger: 2
+  isForLedger: 2,
+  isForMsgMgr: 2
 })
 
 const detailForm = ref({})
@@ -184,7 +208,12 @@ const handleSelectionChange = (val) => {
 
 const openDialog = () => {
   type.value = 'create'
-  formData.value = { name: '', token: '', isForLedger: 2 }
+  formData.value = {
+    name: '',
+    token: '',
+    isForLedger: 2,
+    isForMsgMgr: 2
+  }
   dialogFormVisible.value = true
 }
 
@@ -207,17 +236,30 @@ const enterDialog = async () => {
   }
 }
 
-/** ✅ 关键：滑动即更新 */
+/** 是否记账 */
 const onLedgerSwitchChange = async (row, newVal) => {
   const oldVal = newVal === 1 ? 2 : 1
-
   const res = await updateBot({
     botID: row.botID,
     isForLedger: newVal
   })
-
   if (res.code !== 0) {
     row.isForLedger = oldVal
+    ElMessage.error('更新失败，已回滚')
+  } else {
+    ElMessage.success('更新成功')
+  }
+}
+
+/** ✅ 是否消息管理 */
+const onMsgMgrSwitchChange = async (row, newVal) => {
+  const oldVal = newVal === 1 ? 2 : 1
+  const res = await updateBot({
+    botID: row.botID,
+    isForMsgMgr: newVal
+  })
+  if (res.code !== 0) {
+    row.isForMsgMgr = oldVal
     ElMessage.error('更新失败，已回滚')
   } else {
     ElMessage.success('更新成功')

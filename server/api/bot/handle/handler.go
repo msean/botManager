@@ -105,6 +105,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 	}
 
 	global.GVA_LOG.Debug("HandelChatGroup Sync", zap.Int64("SyncMessage", chatGroup.SyncMessage))
+	global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("bot", botModel))
 
 	SyncChatGroup(botModel, tgMsg, chatGroup, has)
 
@@ -140,38 +141,55 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		ledger.Handle(botModel, tgMsg)
 	}()
 
-	global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("chatGroup", chatGroup))
-	// 假如群聊天设置了需要禁止转发
-	if chatGroup.BanForward == 1 {
-		global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("1", tgMsg.Message.ForwardFrom != nil), zap.Any("2", tgMsg.Message.ForwardFromChat != nil), zap.Any("2", tgMsg.Message.ExternalReply != nil))
-		if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
-			BanUser(botModel, tgMsg, constant.BanTypeForword)
-			return nil
+	// 消息管理入口
+	go func() {
+		if botModel.IsForMsgMgr != 1 {
+			return
 		}
-	}
-
-	// 普通消息
-	if tgMsg.Message == nil {
-		return nil
-	}
-
-	var find bool
-	if tgMsg.Message.Text != "" {
-		if chatGroup.MaxWords > 0 {
-			wordCount := utf8.RuneCountInString(tgMsg.Message.Text)
-			if wordCount > chatGroup.MaxWords {
-				BanUser(botModel, tgMsg, constant.BanTypeWordLen)
+		defer func() {
+			if r := recover(); r != nil {
+				global.GVA_LOG.Error(
+					"panic in ban msg Handle",
+					zap.Any("recover", r),
+					zap.Int64("chatGroupID", chatGroupID),
+					zap.Stack("stack"),
+				)
+			}
+		}()
+		global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("chatGroup", chatGroup))
+		// 假如群聊天设置了需要禁止转发
+		if chatGroup.BanForward == 1 {
+			global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("1", tgMsg.Message.ForwardFrom != nil), zap.Any("2", tgMsg.Message.ForwardFromChat != nil), zap.Any("2", tgMsg.Message.ExternalReply != nil))
+			if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
+				BanUser(botModel, tgMsg, constant.BanTypeForword)
 				return
 			}
 		}
-		if find, err = BanChatGroupContent(botModel, tgMsg); err != nil || find {
+
+		// 普通消息
+		if tgMsg.Message == nil {
 			return
 		}
-	}
 
-	global.GVA_LOG.Debug("HandelChatGroup",
-		zap.Bool("find", find))
+		var find bool
+		if tgMsg.Message.Text != "" {
+			if chatGroup.MaxWords > 0 {
+				wordCount := utf8.RuneCountInString(tgMsg.Message.Text)
+				if wordCount > chatGroup.MaxWords {
+					BanUser(botModel, tgMsg, constant.BanTypeWordLen)
+					return
+				}
+			}
+			if find, err = BanChatGroupContent(botModel, tgMsg); err != nil || find {
+				return
+			}
+		}
 
-	_, err = BanChatGroupMem(botModel, tgMsg)
+		global.GVA_LOG.Debug("HandelChatGroup",
+			zap.Bool("find", find))
+
+		_, err = BanChatGroupMem(botModel, tgMsg)
+	}()
+
 	return
 }
