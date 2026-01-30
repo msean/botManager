@@ -153,7 +153,7 @@ func EscapeMarkdownV2(text string) string {
 }
 
 func (b *Bot) Send(c BotAPI.Chattable) (msg BotAPI.Message, err error) {
-	return b.Send(c)
+	return b.BotAPI.Send(c)
 }
 
 func (b *Bot) DeleteOriginMessage(chatID int64, msgID int) error {

@@ -129,10 +129,6 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 
 	// 记账功能入口
 	go func() {
-		// 判断 机器人是不是有 记账标记
-		if botModel.IsForLedger != 1 {
-			return
-		}
 		defer func() {
 			if r := recover(); r != nil {
 				global.GVA_LOG.Error(
