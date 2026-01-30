@@ -250,10 +250,13 @@ func handleCallback(
 		CheckTime:   time.Now(),
 	}).Error
 
-	msg := botapi.NewMessage(
-		chatID,
-		"✅ 验证通过，已解除禁言，现在可以正常发言了",
-	)
-	msg.ReplyToMessageID = update.CallbackQuery.Message.MessageID
-	_, _ = botAPI.Send(msg)
+	if err := botAPI.UnMuteUser(chatID, userID); err != nil {
+		msg := botapi.NewMessage(
+			chatID,
+			"✅ 验证通过，已解除禁言，现在可以正常发言了",
+		)
+		msg.ReplyToMessageID = update.CallbackQuery.Message.MessageID
+		_, _ = botAPI.Send(msg)
+	}
+
 }
