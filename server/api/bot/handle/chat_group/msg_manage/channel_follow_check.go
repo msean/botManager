@@ -54,12 +54,14 @@ func ChannelFollowCheck(
 	channelIDs := strings.Split(chatGroup.MustJoinChannels, ",")
 	global.GVA_LOG.Debug("ChannelFollowCheck22", zap.Any("botModel", botModel), zap.Error(err))
 
-	for _, chIDStr := range channelIDs {
+	for index, chIDStr := range channelIDs {
 		chID, _ := strconv.ParseInt(strings.TrimSpace(chIDStr), 10, 64)
 
 		ok, getErr := IsUserJoinedChannel(botAPI, chID, userID)
 		// 防止429 并发请求太高问题
-		time.Sleep(100 * time.Millisecond)
+		if index != len(chIDStr)-1 {
+			time.Sleep(100 * time.Millisecond)
+		}
 
 		global.GVA_LOG.Debug(
 			"ChannelFollowCheck IsUserJoinedChannel",
