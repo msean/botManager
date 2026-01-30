@@ -45,8 +45,8 @@ func ChannelFollowCheck(
 	}
 
 	botAPI, err := bot_handler.NewBot(botModel.Token)
-	global.GVA_LOG.Error("ChannelFollowCheck NewBot", zap.Any("botModel", botModel), zap.Error(err))
 	if err != nil {
+		global.GVA_LOG.Error("ChannelFollowCheck NewBot", zap.Any("botModel", botModel), zap.Error(err))
 		return
 	}
 
@@ -56,6 +56,7 @@ func ChannelFollowCheck(
 		chID, _ := strconv.ParseInt(strings.TrimSpace(chIDStr), 10, 64)
 
 		ok, _ := IsUserJoinedChannel(botAPI, chID, userID)
+		global.GVA_LOG.Debug("ChannelFollowCheck NewBot", zap.Any("chID", chID), zap.Any("userID", userID), zap.Any("ok", ok), zap.Error(err))
 		if !ok {
 			// ❌ 禁言 10 分钟
 			BanUser(botModel, *update, constant.BanTypeUnFollowChannel, 10*time.Minute)
@@ -101,6 +102,11 @@ func sendMustJoinMessage(
 			),
 		),
 	)
+
+	global.GVA_LOG.Debug("ChannelFollowCheck sendMustJoinMessage",
+		zap.Any("chatGroupID", chatGroupID),
+		zap.Any("channelFoldLink", channelFoldLink),
+		zap.Any("chatID", chatID))
 
 	if _, err = botAPI.Send(msg); err != nil {
 		global.GVA_LOG.Error("ChannelFollowCheck sendMustJoinMessage",
