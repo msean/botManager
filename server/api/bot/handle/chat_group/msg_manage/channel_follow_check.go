@@ -10,6 +10,7 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
+	"go.uber.org/zap"
 )
 
 func ChannelFollowCheck(
@@ -39,10 +40,12 @@ func ChannelFollowCheck(
 		First(&record).Error
 
 	if err == nil {
+		global.GVA_LOG.Error("ChannelFollowCheck", zap.Any("botModel", botModel), zap.Error(err))
 		return
 	}
 
 	botAPI, err := bot_handler.NewBot(botModel.Token)
+	global.GVA_LOG.Error("ChannelFollowCheck NewBot", zap.Any("botModel", botModel), zap.Error(err))
 	if err != nil {
 		return
 	}
@@ -55,20 +58,8 @@ func ChannelFollowCheck(
 		ok, _ := IsUserJoinedChannel(botAPI, chID, userID)
 		if !ok {
 			// ❌ 禁言 10 分钟
-			_ = BanUser(
-				botModel,
-				*update,
-				constant.BanTypeUnFollowChannel,
-				10*time.Minute,
-			)
-
-			sendMustJoinMessage(
-				botAPI,
-				chatID,
-				update.Message.MessageID,
-				chatGroup.ChatGroupID,
-				chatGroup.InvaidChannelFoldLink,
-			)
+			BanUser(botModel, *update, constant.BanTypeUnFollowChannel, 10*time.Minute)
+			sendMustJoinMessage(botAPI, chatID, update.Message.MessageID, chatGroup.ChatGroupID, chatGroup.InvaidChannelFoldLink)
 			return
 		}
 	}
@@ -87,7 +78,7 @@ func sendMustJoinMessage(
 	replyMsgID int,
 	chatGroupID int64,
 	channelFoldLink string,
-) {
+) (err error) {
 	msg := botapi.NewMessage(
 		chatID,
 		"🚫 若您要在群中发言，请先关注我们的频道\n\n"+
@@ -111,7 +102,14 @@ func sendMustJoinMessage(
 		),
 	)
 
-	_, _ = botAPI.Send(msg)
+	if _, err = botAPI.Send(msg); err != nil {
+		global.GVA_LOG.Error("ChannelFollowCheck sendMustJoinMessage",
+			zap.Any("chatGroupID", chatGroupID),
+			zap.Any("channelFoldLink", channelFoldLink),
+			zap.Any("chatID", chatID),
+			zap.Error(err))
+	}
+	return
 }
 
 func IsUserJoinedChannel(
@@ -129,6 +127,7 @@ func IsUserJoinedChannel(
 
 	member, err := bot.GetChatMember(cfg)
 	if err != nil {
+		global.GVA_LOG.Error("ChannelFollowCheck IsUserJoinedChannel", zap.Any("channelID", channelID), zap.Any("", userID), zap.Error(err))
 		return false, err
 	}
 

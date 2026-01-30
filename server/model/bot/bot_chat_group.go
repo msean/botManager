@@ -22,7 +22,7 @@ type BotChatGroup struct {
 }
 
 type BotChatGroupRelatedChannelFollow struct {
-	UserID      int64     `json:"userID" form:"userID" gorm:"column:user_id"`
+	UserID      int64     `json:"userID" form:"userID" gorm:"column:user_id;index"`
 	BotID       int64     `json:"botID" form:"botID" gorm:"column:bot_id"`
 	ChatGroupID int64     `json:"chatGroupID" form:"chatGroupID" gorm:"column:chat_group_id"`
 	CheckTime   time.Time `json:"checkTime" form:"checkTime" gorm:"column:check_time"`
