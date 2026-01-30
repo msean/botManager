@@ -51,6 +51,7 @@ func ChannelFollowCheck(
 	}
 
 	channelIDs := strings.Split(chatGroup.MustJoinChannels, ",")
+	sendMustJoinMessage(botAPI, chatID, update.Message.MessageID, chatGroup.ChatGroupID, chatGroup.InvaidChannelFoldLink)
 
 	for _, chIDStr := range channelIDs {
 		chID, _ := strconv.ParseInt(strings.TrimSpace(chIDStr), 10, 64)
@@ -60,7 +61,7 @@ func ChannelFollowCheck(
 		if !ok {
 			// ❌ 禁言 10 分钟
 			BanUser(botModel, *update, constant.BanTypeUnFollowChannel, 10*time.Minute)
-			sendMustJoinMessage(botAPI, chatID, update.Message.MessageID, chatGroup.ChatGroupID, chatGroup.InvaidChannelFoldLink)
+
 			return
 		}
 	}
