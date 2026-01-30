@@ -39,6 +39,7 @@ func ChannelFollowCheck(
 		).
 		First(&record).Error
 
+	global.GVA_LOG.Debug("ChannelFollowCheck11", zap.Any("botModel", botModel), zap.Error(err))
 	if err == nil {
 		global.GVA_LOG.Error("ChannelFollowCheck", zap.Any("botModel", botModel), zap.Error(err))
 		return
@@ -51,7 +52,7 @@ func ChannelFollowCheck(
 	}
 
 	channelIDs := strings.Split(chatGroup.MustJoinChannels, ",")
-	global.GVA_LOG.Error("ChannelFollowCheck22", zap.Any("botModel", botModel), zap.Error(err))
+	global.GVA_LOG.Debug("ChannelFollowCheck22", zap.Any("botModel", botModel), zap.Error(err))
 	sendMustJoinMessage(botAPI, chatID, update.Message.MessageID, chatGroup.ChatGroupID, chatGroup.InvaidChannelFoldLink)
 
 	for _, chIDStr := range channelIDs {
