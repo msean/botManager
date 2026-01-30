@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
@@ -61,7 +60,7 @@ func ChannelFollowCheck(
 		global.GVA_LOG.Debug("ChannelFollowCheck NewBot", zap.Any("chID", chID), zap.Any("userID", userID), zap.Any("ok", ok), zap.Error(err))
 		if !ok {
 			// ❌ 禁言 10 分钟
-			BanUser(botModel, *update, constant.BanTypeUnFollowChannel, 10*time.Minute)
+			// BanUser(botModel, *update, constant.BanTypeUnFollowChannel, 10*time.Minute)
 			sendMustJoinMessage(botAPI, chatID, update.Message.MessageID, chatGroup.ChatGroupID, chatGroup.InvaidChannelFoldLink)
 			return
 		}
