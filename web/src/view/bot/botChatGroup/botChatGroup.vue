@@ -81,20 +81,6 @@
           </template>
         </el-table-column>
 
-        <!-- 邀请链接 -->
-        <el-table-column label="渠道关注链接" min-width="300" align="center">
-          <template #default="{ row }">
-            <el-input
-              v-model="row.InvaidChannelFoldLink"
-              placeholder="填写邀请链接"
-              @change="val => onLinkChange(val, row)"
-            />
-            <div style="font-size:12px;color:#999">
-              例如：https://t.me/xxxx
-            </div>
-          </template>
-        </el-table-column>
-
         <!-- 必须关注频道 -->
         <el-table-column label="必须关注频道" min-width="260" align="center">
           <template #default="{ row }">
@@ -115,6 +101,20 @@
                 icon="Plus"
                 @click="openBindChannel(row)"
               />
+            </div>
+          </template>
+        </el-table-column>
+
+         <!-- 邀请链接 -->
+        <el-table-column label="渠道关注链接" min-width="300" align="center">
+          <template #default="{ row }">
+            <el-input
+              v-model="row.invaidChannelFoldLink"
+              placeholder="填写邀请链接"
+              @change="val => onLinkChange(val, row)"
+            />
+            <div style="font-size:12px;color:#999">
+              例如：https://t.me/xxxx
             </div>
           </template>
         </el-table-column>
