@@ -51,6 +51,7 @@ func ChannelFollowCheck(
 	}
 
 	channelIDs := strings.Split(chatGroup.MustJoinChannels, ",")
+	global.GVA_LOG.Error("ChannelFollowCheck22", zap.Any("botModel", botModel), zap.Error(err))
 	sendMustJoinMessage(botAPI, chatID, update.Message.MessageID, chatGroup.ChatGroupID, chatGroup.InvaidChannelFoldLink)
 
 	for _, chIDStr := range channelIDs {
