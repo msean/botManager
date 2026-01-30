@@ -54,18 +54,53 @@ func ChannelFollowCheck(
 	channelIDs := strings.Split(chatGroup.MustJoinChannels, ",")
 	global.GVA_LOG.Debug("ChannelFollowCheck22", zap.Any("botModel", botModel), zap.Error(err))
 
-	for _, chIDStr := range channelIDs {
+	for index, chIDStr := range channelIDs {
 		chID, _ := strconv.ParseInt(strings.TrimSpace(chIDStr), 10, 64)
 
-		ok, _ := IsUserJoinedChannel(botAPI, chID, userID)
-		global.GVA_LOG.Debug("ChannelFollowCheck NewBot", zap.Any("chID", chID), zap.Any("userID", userID), zap.Any("ok", ok), zap.Error(err))
-		if !ok {
-			// ❌ 禁言 10 分钟
-			// BanUser(botModel, *update, constant.BanTypeUnFollowChannel, 10*time.Minute)
-			sendMustJoinMessage(botAPI, chatID, update.Message.MessageID, chatGroup.ChatGroupID, chatGroup.InvaidChannelFoldLink)
-			BanUser(botModel, *update, constant.BanTypeUnFollowChannel, 10*time.Minute)
+		ok, getErr := IsUserJoinedChannel(botAPI, chID, userID)
+
+		// 防止429 并发请求错误
+		if index != len(channelIDs)-1 {
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		global.GVA_LOG.Debug(
+			"ChannelFollowCheck IsUserJoinedChannel",
+			zap.Int64("channelID", chID),
+			zap.Int64("userID", userID),
+			zap.Bool("ok", ok),
+			zap.Error(getErr),
+		)
+
+		// 🚨 ① 只要有一次请求异常，直接放弃本轮校验
+		if getErr != nil {
+			global.GVA_LOG.Warn(
+				"ChannelFollowCheck abort due to getChatMember error",
+				zap.Int64("channelID", chID),
+				zap.Int64("userID", userID),
+				zap.Error(getErr),
+			)
 			return
 		}
+
+		if !ok {
+			sendMustJoinMessage(
+				botAPI,
+				chatID,
+				update.Message.MessageID,
+				chatGroup.ChatGroupID,
+				chatGroup.InvaidChannelFoldLink,
+			)
+			BanUser(
+				botModel,
+				*update,
+				constant.BanTypeUnFollowChannel,
+				10*time.Minute,
+			)
+			return
+		}
+
+		// ✅ ③ 已关注 → 继续检查下一个
 	}
 
 	// ✅ 全通过，写 DB
