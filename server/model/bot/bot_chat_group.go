@@ -2,19 +2,35 @@
 package bot
 
 import (
+	"time"
+
 	"github.com/msean/botmanager/server/global"
 )
 
 // 机器人群组列表 结构体  BotChatGroup
 type BotChatGroup struct {
 	global.GVA_MODEL
-	BotName       string `json:"botName" form:"botName" gorm:"-"`                                                //机器人名称
-	BotID         int64  `json:"botID" form:"botID" gorm:"column:bot_id;"`                                       //机器人ID
-	ChatGroupID   int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群组ID;column:chat_group_id;"`       //群组ID
-	ChatGroupName string `json:"chatGroupName" form:"chatGroupName" gorm:"comment:群组ID;column:chat_group_name;"` //群组ID
-	BanForward    int64  `json:"banForward" form:"banForward" gorm:"column:ban_forward;default:1"`               // 是否禁用转发消息 1 是 2 否
-	MaxWords      int64  `json:"maxWords" form:"maxWords" gorm:"column:max_words;default:-1"`                    // 最大长度限制
-	SyncMessage   int64  `json:"syncMessage" form:"botID" gorm:"column:sync_message;default:2"`                  // 是否需要同步消息, 1 是 2否 // 默认不开启吧
+	BotName               string `json:"botName" form:"botName" gorm:"-"`                                                           //机器人名称
+	BotID                 int64  `json:"botID" form:"botID" gorm:"column:bot_id"`                                                   //机器人ID
+	ChatGroupID           int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群组ID;column:chat_group_id;"`                  //群组ID
+	ChatGroupName         string `json:"chatGroupName" form:"chatGroupName" gorm:"comment:群组ID;column:chat_group_name;"`            //群组ID
+	BanForward            int64  `json:"banForward" form:"banForward" gorm:"column:ban_forward;default:1"`                          // 是否禁用转发消息 1 是 2 否
+	MaxWords              int64  `json:"maxWords" form:"maxWords" gorm:"column:max_words;default:-1"`                               // 最大长度限制
+	SyncMessage           int64  `json:"syncMessage" form:"botID" gorm:"column:sync_message;default:2"`                             // 是否需要同步消息, 1 是 2否 // 默认不开启吧
+	MustJoinChannels      string `json:"mustJoinChannels" form:"mustJoinChannels" gorm:"column:must_join_channels"`                 // 需要关注的频道
+	InvaidChannelFoldLink string `json:"invaidChannelFoldLink" form:"invaidChannelFoldLink" gorm:"column:invaid_channel_fold_link"` // 邀请链接
+}
+
+type BotChatGroupRelatedChannelFollow struct {
+	UserID      int64     `json:"userID" form:"userID" gorm:"column:user_id"`
+	BotID       int64     `json:"botID" form:"botID" gorm:"column:bot_id"`
+	ChatGroupID int64     `json:"chatGroupID" form:"chatGroupID" gorm:"column:chat_group_id"`
+	CheckTime   time.Time `json:"checkTime" form:"checkTime" gorm:"column:check_time"`
+}
+
+// TableName 机器人群组列表 BotChatGroup自定义表名 bot_chat_group
+func (BotChatGroupRelatedChannelFollow) TableName() string {
+	return "bot_group_related_channnel_follow"
 }
 
 // TableName 机器人群组列表 BotChatGroup自定义表名 bot_chat_group

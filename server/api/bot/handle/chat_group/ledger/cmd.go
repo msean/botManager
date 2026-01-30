@@ -59,10 +59,6 @@ func (l *NotPermissionAwareWithAdmin) SetPermission(p *cache.LedgerPermissionCac
 func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 
 	global.GVA_LOG.Debug("ParserChain Handle", zap.Any("bot", botModel))
-	// 判断 机器人是不是有 记账标记
-	if botModel.IsForLedger != 1 {
-		return nil
-	}
 
 	global.GVA_LOG.Debug("ParserChain Handle2", zap.Any("bot", botModel))
 	chatGroupID := update.Message.Chat.ID

@@ -11,12 +11,14 @@ import (
 
 type (
 	BotChatGroupCache struct {
-		BotID         int64  `json:"botID"`
-		ChatGroupID   int64  `json:"chatGroupID"`
-		SyncMessage   int64  `json:"syncMessage"` // 是否需要同步消息
-		BanForward    int64  `json:"banForward"`  // 是否禁用转发消息
-		MaxWords      int    `json:"maxWords"`    // 最大长度限制
-		ChatGroupName string `json:"chatGroupName"`
+		BotID                 int64  `json:"botID"`
+		ChatGroupID           int64  `json:"chatGroupID"`
+		SyncMessage           int64  `json:"syncMessage"` // 是否需要同步消息
+		BanForward            int64  `json:"banForward"`  // 是否禁用转发消息
+		MaxWords              int64  `json:"maxWords"`    // 最大长度限制
+		ChatGroupName         string `json:"chatGroupName"`
+		MustJoinChannels      string `json:"mustJoinChannels"`
+		InvaidChannelFoldLink string `json:"invaidChannelFoldLink"` // 邀请链接
 	}
 )
 
@@ -38,6 +40,18 @@ func (c BotChatGroupCache) Pairs() []KvPkPair {
 
 func (BotChatGroupCache) LoadType() LoadType { return LoadFromDBGet }
 func (c BotChatGroupCache) Release() error   { return CacheDelete(c) }
+
+func (c BotChatGroupCache) ToModel() bot.BotChatGroup {
+	return bot.BotChatGroup{
+		BotID:                 c.BotID,
+		ChatGroupID:           c.ChatGroupID,
+		BanForward:            c.BanForward,
+		MaxWords:              c.MaxWords,
+		SyncMessage:           c.SyncMessage,
+		MustJoinChannels:      c.MustJoinChannels,
+		InvaidChannelFoldLink: c.InvaidChannelFoldLink,
+	}
+}
 
 func ReleaseBotChatGroup(modelID int) (err error) {
 	var object bot.BotChatGroup

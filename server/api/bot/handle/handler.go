@@ -2,14 +2,13 @@ package handle
 
 import (
 	"encoding/json"
-	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/api/bot/handle/chat_group/ledger"
+	msgmanage "github.com/msean/botmanager/server/api/bot/handle/chat_group/msg_manage"
 	"github.com/msean/botmanager/server/api/bot/handle/private"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/global/constant"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
@@ -111,6 +110,9 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 
 	// 需要同步群聊消息
 	go func() {
+		if chatGroup.SyncMessage != 1 {
+			return
+		}
 		defer func() {
 			if r := recover(); r != nil {
 				global.GVA_LOG.Error(
@@ -127,6 +129,10 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 
 	// 记账功能入口
 	go func() {
+		// 判断 机器人是不是有 记账标记
+		if botModel.IsForLedger != 1 {
+			return
+		}
 		defer func() {
 			if r := recover(); r != nil {
 				global.GVA_LOG.Error(
@@ -156,39 +162,8 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 				)
 			}
 		}()
-		global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("chatGroup", chatGroup))
-		// 假如群聊天设置了需要禁止转发
-		if chatGroup.BanForward == 1 {
-			global.GVA_LOG.Debug("BotHandler HandelChatGroup", zap.Any("1", tgMsg.Message.ForwardFrom != nil), zap.Any("2", tgMsg.Message.ForwardFromChat != nil), zap.Any("2", tgMsg.Message.ExternalReply != nil))
-			if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
-				BanUser(botModel, tgMsg, constant.BanTypeForword)
-				return
-			}
-		}
 
-		// 普通消息
-		if tgMsg.Message == nil {
-			return
-		}
-
-		var find bool
-		if tgMsg.Message.Text != "" {
-			if chatGroup.MaxWords > 0 {
-				wordCount := utf8.RuneCountInString(tgMsg.Message.Text)
-				if wordCount > chatGroup.MaxWords {
-					BanUser(botModel, tgMsg, constant.BanTypeWordLen)
-					return
-				}
-			}
-			if find, err = BanChatGroupContent(botModel, tgMsg); err != nil || find {
-				return
-			}
-		}
-
-		global.GVA_LOG.Debug("HandelChatGroup",
-			zap.Bool("find", find))
-
-		_, err = BanChatGroupMem(botModel, tgMsg)
+		msgmanage.Dispatch(botModel, tgMsg, *chatGroup)
 	}()
 
 	return

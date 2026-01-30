@@ -17,8 +17,9 @@ const (
 )
 
 const (
-	BanTypeWord    = 1
-	BanTypeMem     = 2
-	BanTypeForword = 3
-	BanTypeWordLen = 4
+	BanTypeWord            = 1
+	BanTypeMem             = 2
+	BanTypeForword         = 3
+	BanTypeWordLen         = 4
+	BanTypeUnFollowChannel = 5
 )
