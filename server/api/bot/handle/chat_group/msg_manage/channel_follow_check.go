@@ -250,7 +250,7 @@ func handleCallback(
 		CheckTime:   time.Now(),
 	}).Error
 
-	if err := botAPI.UnMuteUser(chatID, userID); err != nil {
+	if err := botAPI.UnMuteUser(chatID, userID); err == nil {
 		msg := botapi.NewMessage(
 			chatID,
 			"✅ 验证通过，已解除禁言，现在可以正常发言了",
