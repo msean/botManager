@@ -1,6 +1,7 @@
 package msgmanage
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -87,6 +88,7 @@ func ChannelFollowCheck(
 			sendMustJoinMessage(
 				botAPI,
 				chatID,
+				userID,
 				update.Message.MessageID,
 				chatGroup.ChatGroupID,
 				chatGroup.InvaidChannelFoldLink,
@@ -114,6 +116,7 @@ func ChannelFollowCheck(
 func sendMustJoinMessage(
 	botAPI *bot_handler.Bot,
 	chatID int64,
+	userID int64,
 	replyMsgID int,
 	chatGroupID int64,
 	channelFoldLink string,
@@ -136,7 +139,7 @@ func sendMustJoinMessage(
 		botapi.NewInlineKeyboardRow(
 			botapi.NewInlineKeyboardButtonData(
 				"✅ 我已订阅",
-				"check_join:"+strconv.FormatInt(chatGroupID, 10),
+				fmt.Sprintf("check_join:%d:%d", chatGroupID, userID),
 			),
 		),
 	)
@@ -199,8 +202,21 @@ func handleCallback(
 		return
 	}
 
+	splits := strings.Split(data, ":")
+	if len(splits) != 3 {
+		return
+	}
 	chatGroupID, err := strconv.ParseInt(
-		strings.TrimPrefix(data, "check_join:"),
+		splits[1],
+		10,
+		64,
+	)
+	if err != nil {
+		return
+	}
+
+	_userID, err := strconv.ParseInt(
+		splits[2],
 		10,
 		64,
 	)
@@ -210,6 +226,10 @@ func handleCallback(
 
 	userID := update.CallbackQuery.From.ID
 	chatID := update.CallbackQuery.Message.Chat.ID
+
+	if userID != _userID {
+		return
+	}
 
 	var chatGroup bot.BotChatGroup
 	if err := global.GVA_MYSQL.
@@ -239,8 +259,6 @@ func handleCallback(
 			return
 		}
 	}
-
-	// ✅ 解禁
 
 	// 写 DB 缓存
 	_ = global.GVA_MYSQL.Create(&bot.BotChatGroupRelatedChannelFollow{
