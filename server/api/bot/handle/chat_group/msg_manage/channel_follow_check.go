@@ -264,23 +264,24 @@ func handleCallback(
 		}
 	}
 
-	// 写 DB 缓存
-	_ = global.GVA_MYSQL.Create(&bot.BotChatGroupRelatedChannelFollow{
-		UserID:      userID,
-		BotID:       botModel.BotID,
-		ChatGroupID: chatGroupID,
-		CheckTime:   time.Now(),
-	}).Error
-
-	if err := botAPI.UnMuteUser(chatID, userID); err == nil {
-		msg := botapi.NewMessage(
-			chatID,
-			"✅ 验证通过，已解除禁言，现在可以正常发言了",
-		)
-		msg.ReplyToMessageID = update.CallbackQuery.Message.MessageID
-		_, _ = botAPI.Send(msg)
+	global.GVA_LOG.Error("ChannelFollowCheck IsUserJoinedChannel", zap.Any("Env", global.GVA_CONFIG.System.Env), zap.Any("", userID), zap.Error(err))
+	if global.GVA_CONFIG.System.Env != "test" {
+		// 写 DB 缓存
+		_ = global.GVA_MYSQL.Create(&bot.BotChatGroupRelatedChannelFollow{
+			UserID:      userID,
+			BotID:       botModel.BotID,
+			ChatGroupID: chatGroupID,
+			CheckTime:   time.Now(),
+		}).Error
+		if err := botAPI.UnMuteUser(chatID, userID); err == nil {
+			msg := botapi.NewMessage(
+				chatID,
+				"✅ 验证通过，已解除禁言，现在可以正常发言了",
+			)
+			msg.ReplyToMessageID = update.CallbackQuery.Message.MessageID
+			_, _ = botAPI.Send(msg)
+		}
 	}
-
 }
 
 func shouldSkipChannelCheck(
