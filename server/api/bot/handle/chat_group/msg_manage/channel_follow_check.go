@@ -52,6 +52,10 @@ func ChannelFollowCheck(
 		return
 	}
 
+	if !shouldSkipChannelCheck(botAPI, chatID, userID) {
+		return
+	}
+
 	channelIDs := strings.Split(chatGroup.MustJoinChannels, ",")
 	global.GVA_LOG.Debug("ChannelFollowCheck22", zap.Any("botModel", botModel), zap.Error(err))
 
@@ -277,4 +281,49 @@ func handleCallback(
 		_, _ = botAPI.Send(msg)
 	}
 
+}
+
+func shouldSkipChannelCheck(
+	botAPI *bot_handler.Bot,
+	chatID int64,
+	userID int64,
+) bool {
+
+	cfg := botapi.GetChatMemberConfig{
+		ChatConfigWithUser: botapi.ChatConfigWithUser{
+			ChatID: chatID,
+			UserID: userID,
+		},
+	}
+
+	member, err := botAPI.GetChatMember(cfg)
+	if err != nil {
+		// ⚠️ 出错不跳过，避免被 API 异常绕过校验
+		global.GVA_LOG.Warn(
+			"shouldSkipChannelCheck GetChatMember error",
+			zap.Int64("chatID", chatID),
+			zap.Int64("userID", userID),
+			zap.Error(err),
+		)
+		return false
+	}
+
+	// ① 必须是 admin / creator
+	if member.Status != "administrator" && member.Status != "creator" {
+		return true
+	}
+
+	// ② 必须能拿到入群时间
+	// if member.JoinedAt == 0 {
+	// 	return false
+	// }
+
+	// joinedAt := time.Unix(int64(member.JoinedAt), 0)
+
+	// // ③ 入群 ≥ 2 个月
+	// if time.Since(joinedAt) >= 60*24*time.Hour {
+	// 	return true
+	// }
+
+	return false
 }
