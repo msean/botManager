@@ -215,21 +215,21 @@ func handleCallback(
 		return
 	}
 
-	_userID, err := strconv.ParseInt(
-		splits[2],
-		10,
-		64,
-	)
-	if err != nil {
-		return
-	}
+	// _userID, err := strconv.ParseInt(
+	// 	splits[2],
+	// 	10,
+	// 	64,
+	// )
+	// if err != nil {
+	// 	return
+	// }
 
 	userID := update.CallbackQuery.From.ID
 	chatID := update.CallbackQuery.Message.Chat.ID
 
-	if userID != _userID {
-		return
-	}
+	// if userID != _userID {
+	// 	return
+	// }
 
 	var chatGroup bot.BotChatGroup
 	if err := global.GVA_MYSQL.
