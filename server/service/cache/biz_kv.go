@@ -61,10 +61,11 @@ type (
 	}
 	LedgerPermissionCache struct {
 		global.GVA_MODEL
-		BotID          int64   `json:"botID"`
-		ChatGroupID    int64   `json:"chatGroupID"`
-		OprUsers       string  `json:"oprUsers"`
-		CurrentFeeRate float64 `json:"currentFeeRate"`
+		BotID                  int64   `json:"botID"`
+		ChatGroupID            int64   `json:"chatGroupID"`
+		OprUsers               string  `json:"oprUsers"`
+		CurrentFeeRate         float64 `json:"currentFeeRate"`
+		CurrentCurrencyFeeRate float64 `json:"currentCurrencyFeeRate"` //当前汇率
 	}
 )
 
