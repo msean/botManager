@@ -42,4 +42,8 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		listenRouter := router.RouterGroupApp.Listen
 		listenRouter.InitListenRouter(privateGroup, publicGroup)
 	}
+	{
+		tg_auto_helperRouter := router.RouterGroupApp.Tg_auto_helper
+		tg_auto_helperRouter.InitTgUserRouter(privateGroup, publicGroup)
+	}
 }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -17,19 +15,22 @@ import (
 	"github.com/msean/botmanager/server/service/listen"
 	rechargeSrv "github.com/msean/botmanager/server/service/recharge"
 	"github.com/msean/botmanager/server/service/system"
+	"github.com/msean/botmanager/server/service/tg_auto_helper"
 	"github.com/msean/botmanager/server/utils"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
+	"time"
 )
 
 var ServiceGroupApp = new(ServiceGroup)
 
 type ServiceGroup struct {
-	SystemServiceGroup   system.ServiceGroup
-	BotServiceGroup      botSrv.ServiceGroup
-	RechargeServiceGroup rechargeSrv.ServiceGroup
-	UsageServiceGroup    ledger.ServiceGroup
-	ListenServiceGroup   listen.ServiceGroup
+	SystemServiceGroup         system.ServiceGroup
+	BotServiceGroup            botSrv.ServiceGroup
+	RechargeServiceGroup       rechargeSrv.ServiceGroup
+	UsageServiceGroup          ledger.ServiceGroup
+	ListenServiceGroup         listen.ServiceGroup
+	Tg_auto_helperServiceGroup tg_auto_helper.ServiceGroup
 }
 
 func Init() {

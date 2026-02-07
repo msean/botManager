@@ -7,6 +7,7 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
 	"github.com/msean/botmanager/server/model/recharge"
+	"github.com/msean/botmanager/server/model/tg_auto_helper"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -102,6 +103,7 @@ func bizModel() error {
 		recharge.AdPublishRecord{},
 		ledger.Ledger{},
 		ledger.LedgerPermission{},
+		tg_auto_helper.TgUser{},
 	)
 	if err != nil {
 		return err
