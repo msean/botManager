@@ -1,12 +1,14 @@
-
 package request
 
 import (
-	"github.com/msean/botmanager/server/model/common/request"
 	"time"
+
+	"github.com/msean/botmanager/server/model/common/request"
 )
 
-type BotMassMsgRecordSearch struct{
-    CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
-    request.PageInfo
+type BotMassMsgRecordSearch struct {
+	BotID          *int64      `json:"botID" form:"botID"`                     // 可选：机器人ID
+	ChatGroupID    *int64      `json:"chatGroupID" form:"chatGroupID"`         // 可选：群聊ID
+	CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"` // 创建日期范围
+	request.PageInfo
 }

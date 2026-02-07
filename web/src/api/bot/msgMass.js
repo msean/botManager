@@ -117,3 +117,12 @@ export const sendBotMsgMass = (data) => {
     data
   })
 }
+
+
+export const massMsgHistory = (data) => {
+  return service({
+    url: '/botMsgMass/history',
+    method: 'get',
+    data
+  })
+}

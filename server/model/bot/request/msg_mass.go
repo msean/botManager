@@ -7,6 +7,8 @@ import (
 )
 
 type BotMsgMassSearch struct {
+	BotID          *int64      `json:"botID" form:"botID"`
+	ChatGroupID    *int64      `json:"chatGroupID" form:"chatGroupID"`
 	CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
 	request.PageInfo
 }

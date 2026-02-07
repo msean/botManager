@@ -43,46 +43,39 @@ func (botMsgMassService *BotMsgMassService) UpdateBotMsgMass(ctx context.Context
 // GetBotMsgMass 根据ID获取机器人群发记录
 // Author [yourname](https://github.com/yourname)
 func (botMsgMassService *BotMsgMassService) GetBotMsgMass(ctx context.Context, ID string) (botMsgMass bot.BotMsgMass, err error) {
-	err = global.GVA_MYSQL.Where("id = ?", ID).First(&botMsgMass).Error
+	if err = global.GVA_MYSQL.Where("id = ?", ID).First(&botMsgMass).Error; err != nil {
+		return
+	}
+
+	chatGroupModel, _, _ := dao.BotChatGroupDao.FromID(global.GVA_MYSQL, int(botMsgMass.ChatGroupID))
+	botModel, _, _ := dao.BotDao.FromBotID(global.GVA_MYSQL, int(botMsgMass.BotID))
+
+	botMsgMass.BotName = botModel.Name
+	botMsgMass.ChatGroupName = chatGroupModel.ChatGroupName
 	return
 }
 
 // GetBotMsgMassInfoList 分页获取机器人群发记录
 // Author [yourname](https://github.com/yourname)
-func (botMsgMassService *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info botReq.BotMsgMassSearch) (list []*bot.BotMsgMass, total int64, err error) {
+func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info botReq.BotMsgMassSearch) (list []*bot.BotMsgMass, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
-	// 创建db
+
 	db := global.GVA_MYSQL.Model(&bot.BotMsgMass{})
-	var botMsgMasss []*bot.BotMsgMass
-	// 如果有条件搜索 下方会自动创建搜索语句
+	var records []*bot.BotMsgMass
+
+	// 条件过滤
+	if info.BotID != nil {
+		db = db.Where("bot_id = ?", *info.BotID)
+	}
+	if info.ChatGroupID != nil {
+		db = db.Where("chat_group_id = ?", *info.ChatGroupID)
+	}
 	if len(info.CreatedAtRange) == 2 {
 		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
 	}
 
-	err = db.Count(&total).Error
-	if err != nil {
-		return
-	}
-
-	if err = db.Find(&botMsgMasss).Error; err != nil {
-		return
-	}
-
-	var botList []int64
-	var chatGroupList []int64
-	for _, object := range botMsgMasss {
-		botList = append(botList, object.BotID)
-		chatGroupList = append(chatGroupList, object.ChatGroupID)
-	}
-
-	var botMapper map[int64]bot.Bot
-	var chatGroupMapper map[int64]bot.BotChatGroup
-	if botMapper, err = dao.BotDao.MappByIDList(global.GVA_MYSQL, botList); err != nil {
-		return
-	}
-
-	if chatGroupMapper, err = dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, chatGroupList); err != nil {
+	if err = db.Count(&total).Error; err != nil {
 		return
 	}
 
@@ -90,11 +83,37 @@ func (botMsgMassService *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Co
 		db = db.Limit(limit).Offset(offset)
 	}
 
-	for _, object := range botMsgMasss {
-		object.BotName = botMapper[object.BotID].Name
-		object.ChatGroupName = chatGroupMapper[object.ChatGroupID].ChatGroupName
+	if err = db.Find(&records).Error; err != nil {
+		return
 	}
-	return botMsgMasss, total, err
+
+	// 获取机器人和群聊映射
+	var botIDs, chatGroupIDs []int64
+	for _, r := range records {
+		botIDs = append(botIDs, r.BotID)
+		chatGroupIDs = append(chatGroupIDs, r.ChatGroupID)
+	}
+
+	botMapper, err := dao.BotDao.MappByIDList(global.GVA_MYSQL, botIDs)
+	if err != nil {
+		return
+	}
+	chatGroupMapper, err := dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, chatGroupIDs)
+	if err != nil {
+		return
+	}
+
+	// 填充名称
+	for _, r := range records {
+		if b, ok := botMapper[r.BotID]; ok {
+			r.BotName = b.Name
+		}
+		if g, ok := chatGroupMapper[r.ChatGroupID]; ok {
+			r.ChatGroupName = g.ChatGroupName
+		}
+	}
+
+	return records, total, nil
 }
 
 func (botMsgMassService *BotMsgMassService) GetBotMsgMassPublic(ctx context.Context) {
@@ -142,4 +161,65 @@ func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
 		Create(&records).Error
 
 	return err
+}
+
+// GetBotMassMsgRecordInfoList 分页获取群发历史记录记录
+// Author [yourname](https://github.com/yourname)
+func (svc *BotMsgMassService) GetHistory(ctx context.Context, info botReq.BotMassMsgRecordSearch) (list []*bot.BotMassMsgRecord, total int64, err error) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+
+	db := global.GVA_MYSQL.Model(&bot.BotMassMsgRecord{})
+	var records []*bot.BotMassMsgRecord
+
+	// 条件过滤
+	if info.BotID != nil {
+		db = db.Where("bot_id = ?", *info.BotID)
+	}
+	if info.ChatGroupID != nil {
+		db = db.Where("chat_group_id = ?", *info.ChatGroupID)
+	}
+	if len(info.CreatedAtRange) == 2 {
+		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
+	}
+
+	if err = db.Count(&total).Error; err != nil {
+		return
+	}
+
+	if limit != 0 {
+		db = db.Limit(limit).Offset(offset)
+	}
+
+	if err = db.Find(&records).Error; err != nil {
+		return
+	}
+
+	// 获取机器人和群聊映射
+	var botIDs, chatGroupIDs []int64
+	for _, r := range records {
+		botIDs = append(botIDs, r.BotID)
+		chatGroupIDs = append(chatGroupIDs, r.ChatGroupID)
+	}
+
+	botMapper, err := dao.BotDao.MappByIDList(global.GVA_MYSQL, botIDs)
+	if err != nil {
+		return
+	}
+	chatGroupMapper, err := dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, chatGroupIDs)
+	if err != nil {
+		return
+	}
+
+	// 填充名称
+	for _, r := range records {
+		if b, ok := botMapper[r.BotID]; ok {
+			r.BotName = b.Name
+		}
+		if g, ok := chatGroupMapper[r.ChatGroupID]; ok {
+			r.ChatGroupName = g.ChatGroupName
+		}
+	}
+
+	return records, total, nil
 }

@@ -12,5 +12,4 @@ type ServiceGroup struct {
 	BotHandlerSvc
 	BotChatHistorySvc
 	BotMsgMassService
-	BotMassMsgRecordService
 }

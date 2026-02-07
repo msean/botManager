@@ -1,24 +1,6 @@
 <template>
   <div>
 
-    <!-- ================= 搜索 ================= -->
-    <div class="gva-search-box">
-      <el-form :inline="true" :model="searchInfo">
-        <el-form-item label="创建日期">
-          <el-date-picker
-            v-model="searchInfo.createdAtRange"
-            type="datetimerange"
-            range-separator="至"
-          />
-        </el-form-item>
-
-        <el-form-item>
-          <el-button type="primary" @click="onSubmit">查询</el-button>
-          <el-button @click="onReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-
     <!-- ================= 群发按钮区 ================= -->
     <el-card style="margin-bottom: 15px">
       <el-button type="primary" @click="openSendDialog">
@@ -39,6 +21,44 @@
       </span>
     </el-card>
 
+    <!-- ================= 搜索 ================= -->
+    <div class="gva-search-box">
+      <el-form
+        ref="elSearchFormRef"
+        :inline="true"
+        :model="searchInfo"
+        @keyup.enter="onSubmit"
+      >
+        <!-- 机器人+群聊级联 -->
+        <el-form-item label="机器人/群聊">
+          <el-cascader
+            v-model="searchInfo.botChatGroup"
+            :options="botCascaderOptions"
+            placeholder="请选择机器人和群聊"
+            clearable
+            style="width: 300px"
+            @focus="loadBotListLazy"
+          />
+        </el-form-item>
+
+        <!-- 日期 -->
+        <el-form-item label="创建日期">
+          <el-date-picker
+            v-model="searchInfo.createdAtRange"
+            type="datetimerange"
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+          />
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="onSubmit">查询</el-button>
+          <el-button @click="onReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+
     <!-- ================= 表格 ================= -->
     <div class="gva-table-box">
       <div class="gva-btn-list">
@@ -58,17 +78,16 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-
-        <el-table-column label="日期">
+        <el-table-column label="机器人" prop="botName" width="120" />
+        <el-table-column label="群聊" prop="chatGroupName" width="120" />
+        <el-table-column label="成员" prop="members" width="200" />
+        <el-table-column label="发送内容" width="150">
           <template #default="scope">
-            {{ formatDate(scope.row.CreatedAt) }}
+            <el-button link type="primary" @click="openMsg(scope.row.msg)">
+              查看
+            </el-button>
           </template>
         </el-table-column>
-
-        <el-table-column label="机器人" prop="botName" />
-        <el-table-column label="群聊" prop="chatGroupName" />
-        <el-table-column label="成员" prop="members" />
-
         <el-table-column label="操作" width="200">
           <template #default="scope">
             <el-button link @click="getDetails(scope.row)">查看</el-button>
@@ -95,27 +114,14 @@
       </template>
 
       <el-form :model="formData" label-position="top">
-
-        <el-form-item label="机器人">
-          <el-select v-model="formData.botID">
-            <el-option
-              v-for="bot in botList"
-              :key="bot.botID"
-              :label="bot.name"
-              :value="bot.botID"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="群聊">
-          <el-select v-model="formData.chatGroupID">
-            <el-option
-              v-for="g in currentChatGroups"
-              :key="g.chatGroupID"
-              :label="g.chatGroupName"
-              :value="g.chatGroupID"
-            />
-          </el-select>
+        <el-form-item label="机器人/群聊">
+          <el-cascader
+            v-model="formData.botChatGroup"
+            :options="botCascaderOptions"
+            placeholder="请选择机器人和群聊"
+            clearable
+            @focus="loadBotListLazy"
+          />
         </el-form-item>
 
         <el-form-item label="成员">
@@ -151,12 +157,25 @@
       </template>
     </el-dialog>
 
+    <!-- ================= 查看发送内容 ================= -->
+    <el-drawer
+      v-model="contentVisible"
+      title="发送内容"
+      size="50%"
+      destroy-on-close
+    >
+      <RichView v-model="currentContent" />
+    </el-drawer>
+
     <!-- ================= 详情 ================= -->
     <el-drawer v-model="detailVisible" title="详情">
       <el-descriptions border column="1">
         <el-descriptions-item label="机器人">{{ detailForm.botName }}</el-descriptions-item>
         <el-descriptions-item label="群聊">{{ detailForm.chatGroupName }}</el-descriptions-item>
         <el-descriptions-item label="成员">{{ detailForm.members }}</el-descriptions-item>
+        <el-descriptions-item label="发送内容">
+          <RichView v-model="detailForm.msg" />
+        </el-descriptions-item>
       </el-descriptions>
     </el-drawer>
 
@@ -164,9 +183,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { formatDate } from '@/utils/format'
+import RichEdit from '@/components/richtext/rich-edit.vue'
+import RichView from '@/components/richtext/rich-view.vue'
 
 import {
   createBotMsgMass,
@@ -175,64 +195,85 @@ import {
   deleteBotMsgMassByIds,
   findBotMsgMass,
   getBotMsgMassList,
-  sendBotMsgMass   // ✅ 群发接口
+  sendBotMsgMass
 } from '@/api/bot/msgMass'
 
 import { getBotChoiceWithChatGroup } from '@/api/bot/bot'
-import RichEdit from '@/components/richtext/rich-edit.vue'
 
 // ================= 表格 =================
 const tableData = ref([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
-const searchInfo = ref({})
 const multipleSelection = ref([])
 
 // ================= 群发 =================
 const sendContent = ref('')
 const sendDialogVisible = ref(false)
 
-// ================= 表单 =================
+// ================= 弹窗 =================
 const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const type = ref('create')
 
 const formData = ref({
-  botID: undefined,
-  chatGroupID: undefined,
+  botChatGroup: [],
   members: ''
 })
 
 const detailForm = ref({})
 
-// ================= 机器人 =================
+// ================= 机器人/群聊级联 =================
 const botList = ref([])
+const botCascaderOptions = ref([])
+let botLoaded = false
+const loadBotListLazy = async () => {
+  if (botLoaded) return
+  const res = await getBotChoiceWithChatGroup()
+  if (res.code === 0) {
+    botList.value = res.data
+    botCascaderOptions.value = botList.value.map(bot => ({
+      value: bot.botID,
+      label: bot.name,
+      children: (bot.botChatGroups || []).map(g => ({
+        value: g.chatGroupID,
+        label: g.chatGroupName
+      }))
+    }))
+    botLoaded = true
+  }
+}
 
-const currentChatGroups = computed(() => {
-  const bot = botList.value.find(b => b.botID === formData.value.botID)
-  return bot?.botChatGroups || []
+// ================= 页面加载立即获取表格数据 =================
+onMounted(() => {
+  getTableData()
 })
 
-const loadBotList = async () => {
-  const res = await getBotChoiceWithChatGroup()
-  if (res.code === 0) botList.value = res.data
-}
-loadBotList()
-
 // ================= 表格数据 =================
+const searchInfo = ref({
+  botChatGroup: [],
+  createdAtRange: []
+})
+
 const getTableData = async () => {
-  const res = await getBotMsgMassList({
+  const payload = {
     page: page.value,
     pageSize: pageSize.value,
-    ...searchInfo.value
-  })
+  }
+  if (searchInfo.value.botChatGroup?.length) {
+    payload.botID = searchInfo.value.botChatGroup[0]
+    payload.chatGroupID = searchInfo.value.botChatGroup[1]
+  }
+  if (searchInfo.value.createdAtRange?.length) {
+    payload.startTime = searchInfo.value.createdAtRange[0]
+    payload.endTime = searchInfo.value.createdAtRange[1]
+  }
+  const res = await getBotMsgMassList(payload)
   if (res.code === 0) {
     tableData.value = res.data.list
     total.value = res.data.total
   }
 }
-getTableData()
 
 const handleSelectionChange = val => {
   multipleSelection.value = val
@@ -241,17 +282,26 @@ const handleSelectionChange = val => {
 // ================= CRUD =================
 const openDialog = () => {
   type.value = 'create'
+  formData.value = { botChatGroup: [], members: '' }
   dialogVisible.value = true
 }
 
 const closeDialog = () => {
   dialogVisible.value = false
-  formData.value = { botID: undefined, chatGroupID: undefined, members: '' }
 }
 
 const save = async () => {
+  if (!formData.value.botChatGroup?.length) {
+    ElMessage.warning('请选择机器人和群聊')
+    return
+  }
+  const payload = {
+    ...formData.value,
+    botID: formData.value.botChatGroup[0],
+    chatGroupID: formData.value.botChatGroup[1]
+  }
   const api = type.value === 'create' ? createBotMsgMass : updateBotMsgMass
-  const res = await api(formData.value)
+  const res = await api(payload)
   if (res.code === 0) {
     ElMessage.success('保存成功')
     closeDialog()
@@ -263,7 +313,10 @@ const updateRow = async row => {
   const res = await findBotMsgMass({ ID: row.ID })
   if (res.code === 0) {
     type.value = 'update'
-    formData.value = res.data
+    formData.value = {
+      ...res.data,
+      botChatGroup: [res.data.botID, res.data.chatGroupID]
+    }
     dialogVisible.value = true
   }
 }
@@ -277,13 +330,14 @@ const deleteRow = row => {
 }
 
 const onDelete = async () => {
+  if (!multipleSelection.value.length) return
   const IDs = multipleSelection.value.map(i => i.ID)
   await deleteBotMsgMassByIds({ IDs })
   ElMessage.success('删除成功')
   getTableData()
 }
 
-// ================= 群发（核心） =================
+// ================= 群发 =================
 const openSendDialog = () => {
   sendDialogVisible.value = true
 }
@@ -293,25 +347,30 @@ const sendBatch = async () => {
     ElMessage.warning('请先编辑发送内容')
     return
   }
-
   if (!multipleSelection.value.length) {
     ElMessage.warning('请先选择要发送的记录')
     return
   }
-
   const ids = multipleSelection.value.map(item => item.ID)
-
   const res = await sendBotMsgMass({
     msg: sendContent.value,
     ids,
     remark: ''
   })
-
   if (res.code === 0) {
     ElMessage.success('群发记录已保存')
   }
 }
 
+// ================= 查看发送内容 =================
+const contentVisible = ref(false)
+const currentContent = ref('')
+const openMsg = (msg) => {
+  currentContent.value = msg
+  contentVisible.value = true
+}
+
+// ================= 查看详情 =================
 const getDetails = async row => {
   const res = await findBotMsgMass({ ID: row.ID })
   if (res.code === 0) {
@@ -320,9 +379,14 @@ const getDetails = async row => {
   }
 }
 
-const onSubmit = () => getTableData()
+// ================= 搜索/重置 =================
+const onSubmit = () => {
+  page.value = 1
+  getTableData()
+}
+
 const onReset = () => {
-  searchInfo.value = {}
+  searchInfo.value = { botChatGroup: [], createdAtRange: [] }
   getTableData()
 }
 </script>

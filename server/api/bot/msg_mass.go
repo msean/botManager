@@ -168,25 +168,6 @@ func (botMsgMassApi *BotMsgMassApi) GetBotMsgMassList(c *gin.Context) {
 	}, "获取成功", c)
 }
 
-// GetBotMsgMassPublic 不需要鉴权的机器人群发接口
-// @Tags BotMsgMass
-// @Summary 不需要鉴权的机器人群发接口
-// @Accept application/json
-// @Produce application/json
-// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
-// @Router /botMsgMass/getBotMsgMassPublic [get]
-func (botMsgMassApi *BotMsgMassApi) GetBotMsgMassPublic(c *gin.Context) {
-	// 创建业务用Context
-	ctx := c.Request.Context()
-
-	// 此接口不需要鉴权
-	// 示例为返回了一个固定的消息接口，一般本接口用于C端服务，需要自己实现业务逻辑
-	botMsgMassService.GetBotMsgMassPublic(ctx)
-	response.OkWithDetailed(gin.H{
-		"info": "不需要鉴权的机器人群发接口信息",
-	}, "获取成功", c)
-}
-
 func (botMsgMassApi *BotMsgMassApi) SendBotMsgMass(c *gin.Context) {
 	// 从ctx获取标准context进行业务行为
 	ctx := c.Request.Context()
@@ -204,4 +185,28 @@ func (botMsgMassApi *BotMsgMassApi) SendBotMsgMass(c *gin.Context) {
 		return
 	}
 	response.OkWithMessage("更新成功", c)
+}
+
+func (botMsgMassApi *BotMsgMassApi) GetHistory(c *gin.Context) {
+	// 创建业务用Context
+	ctx := c.Request.Context()
+
+	var pageInfo botReq.BotMassMsgRecordSearch
+	err := c.ShouldBindQuery(&pageInfo)
+	if err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	list, total, err := botMsgMassService.GetHistory(ctx, pageInfo)
+	if err != nil {
+		global.GVA_LOG.Error("获取失败!", zap.Error(err))
+		response.FailWithMessage("获取失败:"+err.Error(), c)
+		return
+	}
+	response.OkWithDetailed(response.PageResult{
+		List:     list,
+		Total:    total,
+		Page:     pageInfo.Page,
+		PageSize: pageInfo.PageSize,
+	}, "获取成功", c)
 }

@@ -22,6 +22,7 @@
   "/src/view/bot/botTask/botTask.vue": "BotTask",
   "/src/view/bot/botTask/botTaskForm.vue": "BotTaskForm",
   "/src/view/bot/index.vue": "Bot",
+  "/src/view/bot/msgMass/index.vue": "BotMassMsg",
   "/src/view/bot/msgMass/msgMass.vue": "MsgMass",
   "/src/view/bot/msgMass/msgMassForm.vue": "BotMsgMassForm",
   "/src/view/dashboard/components/banner.vue": "Banner",

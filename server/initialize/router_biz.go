@@ -26,7 +26,6 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		botRouter.InitBotChannelRouter(privateGroup, publicGroup)
 		botRouter.InitBotCmdConfigRouter(privateGroup, publicGroup)
 		botRouter.InitBotMsgMassRouter(privateGroup, publicGroup)
-		botRouter.InitBotMassMsgRecordRouter(privateGroup, publicGroup)
 	}
 	{
 		rechargeRouter := router.RouterGroupApp.Recharge

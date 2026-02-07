@@ -13,6 +13,7 @@ type BotMassMsgRecord struct {
 	Msg         string `json:"msg" form:"msg" gorm:"comment:发送消息;column:msg;type:text;"`                 //发送消息
 	Members     string `json:"members" form:"members" gorm:"comment:发送成员;column:members;type:text;"`     //发送成员
 	Remark      string `json:"remark" form:"remark" gorm:"comment:备注;column:remark;type:text;"`          //发送成员
+	BotFeildExtend
 }
 
 // TableName 群发历史记录 BotMassMsgRecord自定义表名 bot_mass_msg_record
