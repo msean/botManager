@@ -18,7 +18,6 @@
   "/src/view/bot/botCmdConfig/botCmdConfig.vue": "BotCmdConfig",
   "/src/view/bot/botCmdConfig/botCmdConfigForm.vue": "BotCmdConfigForm",
   "/src/view/bot/botMassMsgRecord/botMassMsgRecord.vue": "BotMassMsgRecord",
-  "/src/view/bot/botMassMsgRecord/botMassMsgRecordForm.vue": "BotMassMsgRecordForm",
   "/src/view/bot/botTask/botTask.vue": "BotTask",
   "/src/view/bot/botTask/botTaskForm.vue": "BotTaskForm",
   "/src/view/bot/index.vue": "Bot",
