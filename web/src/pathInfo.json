@@ -20,6 +20,8 @@
   "/src/view/bot/botTask/botTask.vue": "BotTask",
   "/src/view/bot/botTask/botTaskForm.vue": "BotTaskForm",
   "/src/view/bot/index.vue": "Bot",
+  "/src/view/bot/msgMass/msgMass.vue": "BotMsgMass",
+  "/src/view/bot/msgMass/msgMassForm.vue": "BotMsgMassForm",
   "/src/view/dashboard/components/banner.vue": "Banner",
   "/src/view/dashboard/components/card.vue": "Card",
   "/src/view/dashboard/components/charts-content-numbers.vue": "ChartsContentNumbers",

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -20,6 +18,7 @@ import (
 	"github.com/msean/botmanager/server/utils"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
+	"time"
 )
 
 var ServiceGroupApp = new(ServiceGroup)

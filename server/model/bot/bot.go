@@ -25,3 +25,8 @@ type Bot struct {
 func (Bot) TableName() string {
 	return "bot"
 }
+
+type BotFeildExtend struct {
+	BotName       string `json:"botName" form:"botName" gorm:"-"` //渠道名称
+	ChatGroupName string `json:"chatGroupName" form:"chatGroupName" gorm:"-;"`
+}
