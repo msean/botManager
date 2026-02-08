@@ -207,9 +207,12 @@ func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
 
 	for _, item := range list {
 		// 👇 拼接 @成员
+		var remark string
 		finalMsg := req.Msg + FormatMentionMembers(item.Members)
 		err := SendMassMsg(item.ChatGroupID, item.BotID, finalMsg)
-		remark := err.Error()
+		if err != nil {
+			remark = err.Error()
+		}
 		records = append(records, bot.BotMassMsgRecord{
 			BotID:       item.BotID,
 			ChatGroupID: item.ChatGroupID,
