@@ -78,16 +78,9 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column label="机器人" prop="botName" width="120" />
-        <el-table-column label="群聊" prop="chatGroupName" width="120" />
-        <el-table-column label="成员" prop="members" width="200" />
-        <el-table-column label="发送内容" width="150">
-          <template #default="scope">
-            <el-button link type="primary" @click="openMsg(scope.row.msg)">
-              查看
-            </el-button>
-          </template>
-        </el-table-column>
+        <el-table-column label="机器人" prop="botName" width="180" />
+        <el-table-column label="群聊" prop="chatGroupName" width="180" />
+        <el-table-column label="成员" prop="members" minWidth="300" />
         <el-table-column label="操作" width="200">
           <template #default="scope">
             <el-button link @click="getDetails(scope.row)">查看</el-button>

@@ -3,11 +3,14 @@ package bot
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/utils/bot_handler"
 )
 
 type BotMsgMassService struct{}
@@ -121,48 +124,6 @@ func (botMsgMassService *BotMsgMassService) GetBotMsgMassPublic(ctx context.Cont
 	// 请自行实现
 }
 
-// UpdateBotMsgMass 更新机器人群发记录
-// Author [yourname](https://github.com/yourname)
-// SendBotMsgMass 群发（仅保存记录，不发 Telegram）
-func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
-	ctx context.Context,
-	req botReq.BotMsgMassSend,
-) (err error) {
-
-	var list []bot.BotMsgMass
-
-	// 1️⃣ 查出被选中的群发配置
-	err = global.GVA_MYSQL.
-		Where("id IN ?", req.IDs).
-		Find(&list).Error
-	if err != nil {
-		return err
-	}
-
-	if len(list) == 0 {
-		return errors.New("未找到群发记录")
-	}
-
-	// 2️⃣ 组装群发历史记录
-	records := make([]bot.BotMassMsgRecord, 0, len(list))
-
-	for _, item := range list {
-		records = append(records, bot.BotMassMsgRecord{
-			BotID:       item.BotID,
-			ChatGroupID: item.ChatGroupID,
-			Msg:         req.Msg,
-			Members:     item.Members,
-			Remark:      "",
-		})
-	}
-
-	// 3️⃣ 批量写入历史表
-	err = global.GVA_MYSQL.
-		Create(&records).Error
-
-	return err
-}
-
 // GetBotMassMsgRecordInfoList 分页获取群发历史记录记录
 // Author [yourname](https://github.com/yourname)
 func (svc *BotMsgMassService) GetHistory(ctx context.Context, info botReq.BotMassMsgRecordSearch) (list []*bot.BotMassMsgRecord, total int64, err error) {
@@ -222,4 +183,84 @@ func (svc *BotMsgMassService) GetHistory(ctx context.Context, info botReq.BotMas
 	}
 
 	return records, total, nil
+}
+
+func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
+	ctx context.Context,
+	req botReq.BotMsgMassSend,
+) (err error) {
+
+	var list []bot.BotMsgMass
+
+	err = global.GVA_MYSQL.
+		Where("id IN ?", req.IDs).
+		Find(&list).Error
+	if err != nil {
+		return err
+	}
+
+	if len(list) == 0 {
+		return errors.New("未找到群发记录")
+	}
+
+	records := make([]bot.BotMassMsgRecord, 0, len(list))
+
+	for _, item := range list {
+		// 👇 拼接 @成员
+		finalMsg := req.Msg + FormatMentionMembers(item.Members)
+		err := SendMassMsg(item.ChatGroupID, item.BotID, finalMsg)
+		remark := err.Error()
+		records = append(records, bot.BotMassMsgRecord{
+			BotID:       item.BotID,
+			ChatGroupID: item.ChatGroupID,
+			Msg:         req.Msg,
+			Members:     item.Members,
+			Remark:      remark,
+		})
+	}
+
+	err = global.GVA_MYSQL.
+		Create(&records).Error
+
+	return err
+}
+
+func SendMassMsg(chatID int64, botID int64, content string) error {
+	botModel, has, err := dao.BotDao.FromBotID(global.GVA_MYSQL, int(botID))
+	if !has || err != nil {
+		if !has {
+			return fmt.Errorf("bot %d not found", botID)
+		}
+		return err
+	}
+
+	return bot_handler.HandleTexWithMarup(chatID, botModel.Token, content, nil)
+
+}
+
+func FormatMentionMembers(members string) string {
+	if members == "" {
+		return ""
+	}
+
+	arr := strings.Split(members, ",")
+	res := make([]string, 0, len(arr))
+
+	for _, m := range arr {
+		m = strings.TrimSpace(m)
+		if m == "" {
+			continue
+		}
+		if !strings.HasPrefix(m, "@") {
+			m = "@" + m
+		}
+		res = append(res, m)
+	}
+
+	if len(res) == 0 {
+		return ""
+	}
+
+	// 前面换两行，更好看
+	return "\n\n" + strings.Join(res, ",")
 }
