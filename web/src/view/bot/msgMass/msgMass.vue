@@ -87,9 +87,9 @@
       <template #header>{{ type === 'create' ? '新增' : '编辑' }}</template>
 
       <el-form label-position="top">
-        <el-form-item label="标题">
+        <!-- <el-form-item label="标题">
           <el-input v-model="formData.title" />
-        </el-form-item>
+        </el-form-item> -->
 
         <el-form-item label="机器人">
           <el-select v-model="formData.botID" @change="onBotChange" style="width:100%">
@@ -148,7 +148,7 @@
     <!-- ================= 详情 ================= -->
     <el-drawer v-model="detailVisible" title="详情">
       <el-descriptions border column="1">
-        <el-descriptions-item label="标题">{{ detailForm.title }}</el-descriptions-item>
+        <!-- <el-descriptions-item label="标题">{{ detailForm.title }}</el-descriptions-item> -->
         <el-descriptions-item label="机器人">{{ detailForm.botName }}</el-descriptions-item>
         <el-descriptions-item label="群聊">{{ detailForm.chatGroupName }}</el-descriptions-item>
         <el-descriptions-item label="成员">{{ detailForm.members }}</el-descriptions-item>
