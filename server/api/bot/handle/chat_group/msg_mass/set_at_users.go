@@ -2,15 +2,12 @@ package msgmass
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
-	"github.com/msean/botmanager/server/service/cache"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
@@ -47,7 +44,7 @@ func (h *BotMassMsgHandler) Handle() (err error) {
 		return errors.New("bot or chat group invalid")
 	}
 
-	var record bot.BotMassMsgRecord
+	var record bot.BotMsgMass
 
 	// 查询是否存在
 	err = global.GVA_MYSQL.Where(
@@ -59,16 +56,15 @@ func (h *BotMassMsgHandler) Handle() (err error) {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 不存在就创建
-			record = bot.BotMassMsgRecord{
+			record = bot.BotMsgMass{
 				BotID:       h.botModel.BotID,
 				ChatGroupID: h.chatGroupID,
 				Members:     h.members,
-				Msg:         "",
 			}
 			if err = global.GVA_MYSQL.Create(&record).Error; err != nil {
 				return
 			}
-			h.reply(fmt.Sprintf("成员列表已保存: %s", h.members))
+			h.reply("设置成功")
 			return nil
 		}
 		return err
@@ -79,15 +75,6 @@ func (h *BotMassMsgHandler) Handle() (err error) {
 		"members": h.members,
 	}).Error; err != nil {
 		return
-	}
-
-	// 清缓存（如果你有缓存逻辑）
-	if e := cache.NewLedgerPermissionCache(h.botModel.BotID, h.chatGroupID).Release(); e != nil {
-		global.GVA_LOG.Error("Cache release failed",
-			zap.Int64("botID", h.botModel.BotID),
-			zap.Int64("chatGroupID", h.chatGroupID),
-			zap.Error(e),
-		)
 	}
 
 	h.reply("设置成功")
