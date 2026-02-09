@@ -23,43 +23,57 @@
     <!-- ================= 搜索 ================= -->
     <div class="gva-search-box">
       <el-form :inline="true" :model="searchInfo" @keyup.enter="onSubmit">
-        <el-form-item label="机器人 / 群聊">
-          <el-cascader
-            v-model="searchInfo.botChatGroup"
-            :options="botCascaderOptions"
+
+        <el-form-item label="机器人">
+          <el-select
+            v-model="searchInfo.botID"
+            placeholder="请选择机器人"
             clearable
-            style="width: 300px"
-            @focus="loadBotListLazy"
-          />
+            style="width: 200px"
+            @change="onSearchBotChange"
+          >
+            <el-option
+              v-for="bot in botList"
+              :key="bot.botID"
+              :label="bot.name"
+              :value="bot.botID"
+            />
+          </el-select>
         </el-form-item>
 
-        <!-- <el-form-item label="创建日期">
-          <el-date-picker
-            v-model="searchInfo.createdAtRange"
-            type="datetimerange"
-            range-separator="至"
-          />
-        </el-form-item> -->
+        <el-form-item label="群聊">
+          <el-select
+            v-model="searchInfo.chatGroupID"
+            placeholder="请选择群聊"
+            clearable
+            style="width: 260px"
+            :disabled="!searchInfo.botID"
+          >
+            <el-option
+              v-for="g in searchChatGroups"
+              :key="g.chatGroupID"
+              :label="g.chatGroupName"
+              :value="g.chatGroupID"
+            />
+          </el-select>
+        </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="onSubmit">查询</el-button>
           <el-button @click="onReset">重置</el-button>
         </el-form-item>
+
       </el-form>
     </div>
 
     <!-- ================= 表格 ================= -->
     <div class="gva-table-box">
-      <!-- <div class="gva-btn-list">
-        <el-button type="primary" @click="openDialog">新增</el-button>
-        <el-button type="danger" :disabled="!multipleSelection.length" @click="onDelete">
-          删除
-        </el-button>
-      </div> -->
-
-      <el-table :data="tableData" row-key="ID" @selection-change="handleSelectionChange">
+      <el-table
+        :data="tableData"
+        row-key="ID"
+        @selection-change="handleSelectionChange"
+      >
         <el-table-column type="selection" width="55" />
-        <!-- <el-table-column label="标题" prop="title" width="180" /> -->
         <el-table-column label="机器人" prop="botName" width="180" />
         <el-table-column label="群聊" prop="chatGroupName" width="180" />
         <el-table-column label="成员" prop="members" min-width="300" />
@@ -87,10 +101,6 @@
       <template #header>{{ type === 'create' ? '新增' : '编辑' }}</template>
 
       <el-form label-position="top">
-        <!-- <el-form-item label="标题">
-          <el-input v-model="formData.title" />
-        </el-form-item> -->
-
         <el-form-item label="机器人">
           <el-select v-model="formData.botID" @change="onBotChange" style="width:100%">
             <el-option
@@ -132,7 +142,6 @@
     <el-dialog v-model="sendDialogVisible" title="编辑发送内容" width="70%">
       <RichEdit v-model="sendContent" />
 
-      <!-- 新增开关 -->
       <el-form style="margin-top:10px">
         <el-form-item label="是否艾特">
           <el-switch v-model="atUsers" active-text="是" inactive-text="否" />
@@ -148,7 +157,6 @@
     <!-- ================= 详情 ================= -->
     <el-drawer v-model="detailVisible" title="详情">
       <el-descriptions border column="1">
-        <!-- <el-descriptions-item label="标题">{{ detailForm.title }}</el-descriptions-item> -->
         <el-descriptions-item label="机器人">{{ detailForm.botName }}</el-descriptions-item>
         <el-descriptions-item label="群聊">{{ detailForm.chatGroupName }}</el-descriptions-item>
         <el-descriptions-item label="成员">{{ detailForm.members }}</el-descriptions-item>
@@ -184,7 +192,6 @@ const pageSize = ref(30)
 const total = ref(0)
 const multipleSelection = ref([])
 
-// 群发内容 + 是否艾特开关
 const sendContent = ref('')
 const atUsers = ref(false)
 const sendDialogVisible = ref(false)
@@ -193,10 +200,8 @@ const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const type = ref('create')
 
-// formData 增加 ID
 const formData = ref({
   ID: null,
-  title: '',
   botID: '',
   chatGroupID: '',
   members: ''
@@ -205,7 +210,6 @@ const formData = ref({
 const detailForm = ref({})
 
 const botList = ref([])
-const botCascaderOptions = ref([])
 let botLoaded = false
 
 const loadBotListLazy = async () => {
@@ -213,25 +217,8 @@ const loadBotListLazy = async () => {
   const res = await getBotChoiceWithChatGroup()
   if (res.code === 0) {
     botList.value = res.data
-    botCascaderOptions.value = res.data.map(bot => ({
-      value: bot.botID,
-      label: bot.name,
-      children: (bot.botChatGroups || []).map(g => ({
-        value: g.chatGroupID,
-        label: g.chatGroupName
-      }))
-    }))
     botLoaded = true
   }
-}
-
-const currentChatGroups = computed(() => {
-  const bot = botList.value.find(b => b.botID === formData.value.botID)
-  return bot?.botChatGroups || []
-})
-
-const onBotChange = () => {
-  formData.value.chatGroupID = ''
 }
 
 onMounted(() => {
@@ -239,20 +226,32 @@ onMounted(() => {
   getTableData()
 })
 
+/* ================= 搜索 ================= */
+
 const searchInfo = ref({
-  botChatGroup: [],
-  createdAtRange: []
+  botID: '',
+  chatGroupID: ''
 })
+
+const searchChatGroups = computed(() => {
+  if (!searchInfo.value.botID) return []
+  const bot = botList.value.find(b => b.botID === searchInfo.value.botID)
+  return bot?.botChatGroups || []
+})
+
+const onSearchBotChange = () => {
+  searchInfo.value.chatGroupID = ''
+}
 
 const getTableData = async () => {
   const payload = {
     page: page.value,
     pageSize: pageSize.value
   }
-  if (searchInfo.value.botChatGroup?.length) {
-    payload.botID = searchInfo.value.botChatGroup[0]
-    payload.chatGroupID = searchInfo.value.botChatGroup[1]
-  }
+
+  if (searchInfo.value.botID) payload.botID = searchInfo.value.botID
+  if (searchInfo.value.chatGroupID) payload.chatGroupID = searchInfo.value.chatGroupID
+
   const res = await getBotMsgMassList(payload)
   if (res.code === 0) {
     tableData.value = res.data.list
@@ -260,24 +259,25 @@ const getTableData = async () => {
   }
 }
 
+const onSubmit = () => {
+  page.value = 1
+  getTableData()
+}
+
+const onReset = () => {
+  searchInfo.value = { botID: '', chatGroupID: '' }
+  page.value = 1
+  getTableData()
+}
+
+/* ================= 表格 & 编辑 ================= */
+
 const handleSelectionChange = val => {
   multipleSelection.value = val
 }
 
-const openDialog = () => {
-  type.value = 'create'
-  formData.value = {
-    ID: null,
-    title: '',
-    botID: '',
-    chatGroupID: '',
-    members: ''
-  }
-  dialogVisible.value = true
-}
-
-const closeDialog = () => {
-  dialogVisible.value = false
+const onBotChange = () => {
+  formData.value.chatGroupID = ''
 }
 
 const save = async () => {
@@ -285,12 +285,11 @@ const save = async () => {
     ElMessage.warning('请选择机器人和群聊')
     return
   }
-
   const api = type.value === 'create' ? createBotMsgMass : updateBotMsgMass
   const res = await api(formData.value)
   if (res.code === 0) {
     ElMessage.success('保存成功')
-    closeDialog()
+    dialogVisible.value = false
     getTableData()
   }
 }
@@ -299,13 +298,7 @@ const updateRow = async row => {
   const res = await findBotMsgMass({ ID: row.ID })
   if (res.code === 0) {
     type.value = 'update'
-    formData.value = {
-      ID: res.data.ID,
-      title: res.data.title,
-      botID: res.data.botID,
-      chatGroupID: res.data.chatGroupID,
-      members: res.data.members
-    }
+    formData.value = res.data
     dialogVisible.value = true
   }
 }
@@ -318,36 +311,17 @@ const deleteRow = row => {
   })
 }
 
-const onDelete = async () => {
-  const IDs = multipleSelection.value.map(i => i.ID)
-  await deleteBotMsgMassByIds({ IDs })
-  ElMessage.success('删除成功')
-  getTableData()
-}
-
 const openSendDialog = () => {
   sendDialogVisible.value = true
 }
 
 const sendBatch = async () => {
-  if (!sendContent.value) {
-    ElMessage.warning('请先编辑发送内容')
-    return
-  }
-  if (!multipleSelection.value.length) {
-    ElMessage.warning('请先选择要发送的记录')
-    return
-  }
-
   const ids = multipleSelection.value.map(i => i.ID)
-
-  // ✅ 带上 atUsers 参数
   const res = await sendBotMsgMass({
     msg: sendContent.value,
     ids,
     atUsers: atUsers.value
   })
-
   if (res.code === 0) ElMessage.success('群发成功')
 }
 
@@ -357,15 +331,5 @@ const getDetails = async row => {
     detailForm.value = res.data
     detailVisible.value = true
   }
-}
-
-const onSubmit = () => {
-  page.value = 1
-  getTableData()
-}
-
-const onReset = () => {
-  searchInfo.value = { botChatGroup: [], createdAtRange: [] }
-  getTableData()
 }
 </script>
