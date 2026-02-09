@@ -15,7 +15,7 @@ import (
 type BotAtUserShowHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
-	NeedAdminAware
+	ShouldPermissionAwareWithOutAdmin
 }
 
 func (h *BotAtUserShowHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {

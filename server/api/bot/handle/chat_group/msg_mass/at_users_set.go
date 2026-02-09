@@ -15,7 +15,7 @@ type BotAtUsersSetHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
 	members     string
-	NeedAdminAware
+	ShouldPermissionAwareWithOutAdmin
 }
 
 func (h *BotAtUsersSetHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
