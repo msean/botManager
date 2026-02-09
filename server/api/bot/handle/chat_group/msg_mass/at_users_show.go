@@ -36,7 +36,7 @@ func (h *BotAtUserShowHandler) Handle() (err error) {
 		return errors.New("bot or chat group invalid")
 	}
 
-	var record bot.BotMsgMass
+	var record bot.BotChatGroup
 
 	err = global.GVA_MYSQL.Where(
 		"bot_id = ? AND chat_group_id = ?",

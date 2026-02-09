@@ -19,6 +19,7 @@ type BotChatGroup struct {
 	SyncMessage           int64  `json:"syncMessage" form:"botID" gorm:"column:sync_message;default:2"`                             // 是否需要同步消息, 1 是 2否 // 默认不开启吧
 	MustJoinChannels      string `json:"mustJoinChannels" form:"mustJoinChannels" gorm:"column:must_join_channels"`                 // 需要关注的频道
 	InvaidChannelFoldLink string `json:"invaidChannelFoldLink" form:"invaidChannelFoldLink" gorm:"column:invaid_channel_fold_link"` // 邀请链接
+	Members               string `json:"members" form:"members" gorm:"comment:成员;column:members;type:text;"`                        //成员
 }
 
 type BotChatGroupRelatedChannelFollow struct {

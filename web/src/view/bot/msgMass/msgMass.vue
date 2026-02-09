@@ -33,13 +33,13 @@
           />
         </el-form-item>
 
-        <el-form-item label="创建日期">
+        <!-- <el-form-item label="创建日期">
           <el-date-picker
             v-model="searchInfo.createdAtRange"
             type="datetimerange"
             range-separator="至"
           />
-        </el-form-item>
+        </el-form-item> -->
 
         <el-form-item>
           <el-button type="primary" @click="onSubmit">查询</el-button>
@@ -50,16 +50,16 @@
 
     <!-- ================= 表格 ================= -->
     <div class="gva-table-box">
-      <div class="gva-btn-list">
+      <!-- <div class="gva-btn-list">
         <el-button type="primary" @click="openDialog">新增</el-button>
         <el-button type="danger" :disabled="!multipleSelection.length" @click="onDelete">
           删除
         </el-button>
-      </div>
+      </div> -->
 
       <el-table :data="tableData" row-key="ID" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
-        <el-table-column label="标题" prop="title" width="180" />
+        <!-- <el-table-column label="标题" prop="title" width="180" /> -->
         <el-table-column label="机器人" prop="botName" width="180" />
         <el-table-column label="群聊" prop="chatGroupName" width="180" />
         <el-table-column label="成员" prop="members" min-width="300" />

@@ -20,24 +20,24 @@ type BotMsgMassApi struct{}
 // @Param data body bot.BotMsgMass true "创建机器人群发"
 // @Success 200 {object} response.Response{msg=string} "创建成功"
 // @Router /botMsgMass/createBotMsgMass [post]
-func (botMsgMassApi *BotMsgMassApi) CreateBotMsgMass(c *gin.Context) {
-	// 创建业务用Context
-	ctx := c.Request.Context()
+// func (botMsgMassApi *BotMsgMassApi) CreateBotMsgMass(c *gin.Context) {
+// 	// 创建业务用Context
+// 	ctx := c.Request.Context()
 
-	var botMsgMass bot.BotMsgMass
-	err := c.ShouldBindJSON(&botMsgMass)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
-	err = botMsgMassService.CreateBotMsgMass(ctx, &botMsgMass)
-	if err != nil {
-		global.GVA_LOG.Error("创建失败!", zap.Error(err))
-		response.FailWithMessage("创建失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("创建成功", c)
-}
+// 	var botMsgMass bot.BotMsgMass
+// 	err := c.ShouldBindJSON(&botMsgMass)
+// 	if err != nil {
+// 		response.FailWithMessage(err.Error(), c)
+// 		return
+// 	}
+// 	err = botMsgMassService.CreateBotMsgMass(ctx, &botMsgMass)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("创建失败!", zap.Error(err))
+// 		response.FailWithMessage("创建失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("创建成功", c)
+// }
 
 // DeleteBotMsgMass 删除机器人群发
 // @Tags BotMsgMass
@@ -48,19 +48,19 @@ func (botMsgMassApi *BotMsgMassApi) CreateBotMsgMass(c *gin.Context) {
 // @Param data body bot.BotMsgMass true "删除机器人群发"
 // @Success 200 {object} response.Response{msg=string} "删除成功"
 // @Router /botMsgMass/deleteBotMsgMass [delete]
-func (botMsgMassApi *BotMsgMassApi) DeleteBotMsgMass(c *gin.Context) {
-	// 创建业务用Context
-	ctx := c.Request.Context()
+// func (botMsgMassApi *BotMsgMassApi) DeleteBotMsgMass(c *gin.Context) {
+// 	// 创建业务用Context
+// 	ctx := c.Request.Context()
 
-	ID := c.Query("ID")
-	err := botMsgMassService.DeleteBotMsgMass(ctx, ID)
-	if err != nil {
-		global.GVA_LOG.Error("删除失败!", zap.Error(err))
-		response.FailWithMessage("删除失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("删除成功", c)
-}
+// 	ID := c.Query("ID")
+// 	err := botMsgMassService.DeleteBotMsgMass(ctx, ID)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
+// 		response.FailWithMessage("删除失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("删除成功", c)
+// }
 
 // DeleteBotMsgMassByIds 批量删除机器人群发
 // @Tags BotMsgMass
@@ -70,19 +70,19 @@ func (botMsgMassApi *BotMsgMassApi) DeleteBotMsgMass(c *gin.Context) {
 // @Produce application/json
 // @Success 200 {object} response.Response{msg=string} "批量删除成功"
 // @Router /botMsgMass/deleteBotMsgMassByIds [delete]
-func (botMsgMassApi *BotMsgMassApi) DeleteBotMsgMassByIds(c *gin.Context) {
-	// 创建业务用Context
-	ctx := c.Request.Context()
+// func (botMsgMassApi *BotMsgMassApi) DeleteBotMsgMassByIds(c *gin.Context) {
+// 	// 创建业务用Context
+// 	ctx := c.Request.Context()
 
-	IDs := c.QueryArray("IDs[]")
-	err := botMsgMassService.DeleteBotMsgMassByIds(ctx, IDs)
-	if err != nil {
-		global.GVA_LOG.Error("批量删除失败!", zap.Error(err))
-		response.FailWithMessage("批量删除失败:"+err.Error(), c)
-		return
-	}
-	response.OkWithMessage("批量删除成功", c)
-}
+// 	IDs := c.QueryArray("IDs[]")
+// 	err := botMsgMassService.DeleteBotMsgMassByIds(ctx, IDs)
+// 	if err != nil {
+// 		global.GVA_LOG.Error("批量删除失败!", zap.Error(err))
+// 		response.FailWithMessage("批量删除失败:"+err.Error(), c)
+// 		return
+// 	}
+// 	response.OkWithMessage("批量删除成功", c)
+// }
 
 // UpdateBotMsgMass 更新机器人群发
 // @Tags BotMsgMass
@@ -97,7 +97,7 @@ func (botMsgMassApi *BotMsgMassApi) UpdateBotMsgMass(c *gin.Context) {
 	// 从ctx获取标准context进行业务行为
 	ctx := c.Request.Context()
 
-	var botMsgMass bot.BotMsgMass
+	var botMsgMass bot.BotChatGroup
 	err := c.ShouldBindJSON(&botMsgMass)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)

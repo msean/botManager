@@ -19,35 +19,35 @@ type BotMsgMassService struct{}
 
 // CreateBotMsgMass 创建机器人群发记录
 // Author [yourname](https://github.com/yourname)
-func (botMsgMassService *BotMsgMassService) CreateBotMsgMass(ctx context.Context, botMsgMass *bot.BotMsgMass) (err error) {
-	err = global.GVA_MYSQL.Create(botMsgMass).Error
-	return err
-}
+// func (botMsgMassService *BotMsgMassService) CreateBotMsgMass(ctx context.Context, botMsgMass *bot.BotMsgMass) (err error) {
+// 	err = global.GVA_MYSQL.Create(botMsgMass).Error
+// 	return err
+// }
 
 // DeleteBotMsgMass 删除机器人群发记录
 // Author [yourname](https://github.com/yourname)
-func (botMsgMassService *BotMsgMassService) DeleteBotMsgMass(ctx context.Context, ID string) (err error) {
-	err = global.GVA_MYSQL.Delete(&bot.BotMsgMass{}, "id = ?", ID).Error
-	return err
-}
+// func (botMsgMassService *BotMsgMassService) DeleteBotMsgMass(ctx context.Context, ID string) (err error) {
+// 	err = global.GVA_MYSQL.Delete(&bot.BotChatGroup{}, "id = ?", ID).Error
+// 	return err
+// }
 
 // DeleteBotMsgMassByIds 批量删除机器人群发记录
 // Author [yourname](https://github.com/yourname)
-func (botMsgMassService *BotMsgMassService) DeleteBotMsgMassByIds(ctx context.Context, IDs []string) (err error) {
-	err = global.GVA_MYSQL.Delete(&[]bot.BotMsgMass{}, "id in ?", IDs).Error
-	return err
-}
+// func (botMsgMassService *BotMsgMassService) DeleteBotMsgMassByIds(ctx context.Context, IDs []string) (err error) {
+// 	err = global.GVA_MYSQL.Delete(&[]bot.BotMsgMass{}, "id in ?", IDs).Error
+// 	return err
+// }
 
 // UpdateBotMsgMass 更新机器人群发记录
 // Author [yourname](https://github.com/yourname)
-func (botMsgMassService *BotMsgMassService) UpdateBotMsgMass(ctx context.Context, botMsgMass bot.BotMsgMass) (err error) {
-	err = global.GVA_MYSQL.Model(&bot.BotMsgMass{}).Where("id = ?", botMsgMass.ID).Updates(&botMsgMass).Error
+func (botMsgMassService *BotMsgMassService) UpdateBotMsgMass(ctx context.Context, botMsgMass bot.BotChatGroup) (err error) {
+	err = global.GVA_MYSQL.Model(&bot.BotChatGroup{}).Where("id = ?", botMsgMass.ID).Updates(&botMsgMass).Error
 	return err
 }
 
 // GetBotMsgMass 根据ID获取机器人群发记录
 // Author [yourname](https://github.com/yourname)
-func (botMsgMassService *BotMsgMassService) GetBotMsgMass(ctx context.Context, ID string) (botMsgMass bot.BotMsgMass, err error) {
+func (botMsgMassService *BotMsgMassService) GetBotMsgMass(ctx context.Context, ID string) (botMsgMass bot.BotChatGroup, err error) {
 	if err = global.GVA_MYSQL.Where("id = ?", ID).First(&botMsgMass).Error; err != nil {
 		return
 	}
@@ -62,12 +62,12 @@ func (botMsgMassService *BotMsgMassService) GetBotMsgMass(ctx context.Context, I
 
 // GetBotMsgMassInfoList 分页获取机器人群发记录
 // Author [yourname](https://github.com/yourname)
-func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info botReq.BotMsgMassSearch) (list []*bot.BotMsgMass, total int64, err error) {
+func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info botReq.BotMsgMassSearch) (list []*bot.BotChatGroup, total int64, err error) {
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 
-	db := global.GVA_MYSQL.Model(&bot.BotMsgMass{})
-	var records []*bot.BotMsgMass
+	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{})
+	var records []*bot.BotChatGroup
 
 	// 条件过滤
 	if info.BotID != nil {
@@ -192,7 +192,7 @@ func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
 	req botReq.BotMsgMassSend,
 ) (err error) {
 
-	var list []bot.BotMsgMass
+	var list []bot.BotChatGroup
 
 	err = global.GVA_MYSQL.
 		Where("id IN ?", req.IDs).

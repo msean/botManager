@@ -44,7 +44,7 @@ func (h *BotAtUsersSetHandler) Handle() (err error) {
 		return errors.New("bot or chat group invalid")
 	}
 
-	var record bot.BotMsgMass
+	var record bot.BotChatGroup
 
 	// 查询是否存在
 	err = global.GVA_MYSQL.Where(
@@ -56,7 +56,7 @@ func (h *BotAtUsersSetHandler) Handle() (err error) {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 不存在就创建
-			record = bot.BotMsgMass{
+			record = bot.BotChatGroup{
 				BotID:       h.botModel.BotID,
 				ChatGroupID: h.chatGroupID,
 				Members:     h.members,

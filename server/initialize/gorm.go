@@ -96,7 +96,7 @@ func bizModel() error {
 		bot.BotChannel{},
 		bot.BotCmdConfig{},
 		bot.BotChatGroupRelatedChannelFollow{},
-		bot.BotMsgMass{},
+		// bot.BotMsgMass{},
 		bot.BotMassMsgRecord{},
 		recharge.RechargeConfig{},
 		recharge.UserRechargeRecord{},
