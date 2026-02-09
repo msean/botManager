@@ -2,6 +2,7 @@ package msgmass
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -11,42 +12,32 @@ import (
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
-type BotMassMsgHandler struct {
+type BotAtUserShowHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
-	members     string
 	NeedAdminAware
 }
 
-func (h *BotMassMsgHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
+func (h *BotAtUserShowHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
 	text := strings.TrimSpace(update.Message.Text)
 
-	// 必须以「艾特设置」开头
-	if !strings.HasPrefix(text, "艾特设置") {
+	// 精确匹配「艾特查看」
+	if text != "艾特查看" {
 		return false
 	}
 
-	parts := strings.Fields(text)
-	if len(parts) < 2 {
-		return false
-	}
-
-	// 获取成员列表，空格分隔
-	h.members = strings.Join(parts[1:], ",")
 	h.botModel = botModel
 	h.chatGroupID = update.Message.Chat.ID
-
 	return true
 }
 
-func (h *BotMassMsgHandler) Handle() (err error) {
+func (h *BotAtUserShowHandler) Handle() (err error) {
 	if h.botModel.BotID == 0 || h.chatGroupID == 0 {
 		return errors.New("bot or chat group invalid")
 	}
 
 	var record bot.BotMsgMass
 
-	// 查询是否存在
 	err = global.GVA_MYSQL.Where(
 		"bot_id = ? AND chat_group_id = ?",
 		h.botModel.BotID,
@@ -55,33 +46,32 @@ func (h *BotMassMsgHandler) Handle() (err error) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 不存在就创建
-			record = bot.BotMsgMass{
-				BotID:       h.botModel.BotID,
-				ChatGroupID: h.chatGroupID,
-				Members:     h.members,
-			}
-			if err = global.GVA_MYSQL.Create(&record).Error; err != nil {
-				return
-			}
-			h.reply("设置成功")
+			h.reply("当前未设置艾特成员")
 			return nil
 		}
 		return err
 	}
 
-	// 已存在就更新 Members
-	if err = global.GVA_MYSQL.Model(&record).Updates(map[string]interface{}{
-		"members": h.members,
-	}).Error; err != nil {
-		return
+	if strings.TrimSpace(record.Members) == "" {
+		h.reply("当前未设置艾特成员")
+		return nil
 	}
 
-	h.reply("设置成功")
+	// 展示成员（支持你之前用的空格 / 逗号）
+	members := strings.FieldsFunc(record.Members, func(r rune) bool {
+		return r == ' ' || r == ',' || r == '，'
+	})
+
+	replyText := fmt.Sprintf(
+		"当前艾特成员：\n%s",
+		strings.Join(members, "\n"),
+	)
+
+	h.reply(replyText)
 	return nil
 }
 
-func (h *BotMassMsgHandler) reply(text string) (err error) {
+func (h *BotAtUserShowHandler) reply(text string) (err error) {
 	botSender, err := botapi.NewBotAPI(h.botModel.Token)
 	if err != nil {
 		return

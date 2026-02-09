@@ -79,7 +79,10 @@ func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 	if tgMsg.Message == nil || tgMsg.Message.Text == "" {
 		return
 	}
-	chain := NewParserChain(&BotMassMsgHandler{})
+	chain := NewParserChain(
+		&BotAtUsersSetHandler{},
+		&BotAtUserShowHandler{},
+	)
 
 	return chain.Handle(botModel, tgMsg)
 }
