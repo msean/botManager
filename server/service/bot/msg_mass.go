@@ -66,7 +66,12 @@ func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info bo
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 
-	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{})
+	var botOpenMsgMass []int64
+	if err = global.GVA_MYSQL.Model(&bot.Bot{}).Where("is_for_msg_mass=1").Pluck("bot_id", &botOpenMsgMass).Error; err != nil {
+		return
+	}
+
+	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{}).Where("bot_id in (?)", botOpenMsgMass)
 	var records []*bot.BotChatGroup
 
 	// 条件过滤
