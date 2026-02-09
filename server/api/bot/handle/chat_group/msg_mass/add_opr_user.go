@@ -1,9 +1,11 @@
 package msgmass
 
 import (
+	"errors"
 	"strings"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -51,20 +53,22 @@ func (l *AddOprUserHandler) Handle() error {
 
 	if err != nil {
 		global.GVA_LOG.Error("AddOprUserHandler Handle", zap.Any("bot", l.botModel), zap.Error(err))
-		// if errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-		// 不存在就创建
-		// permission = ledger.LedgerPermission{
-		// 	BotID:       l.botModel.BotID,
-		// 	ChatGroupID: l.chatGroupID,
-		// 	OprUsers:    l.userID,
-		// }
-		// if err = global.GVA_MYSQL.Create(&permission).Error; err != nil {
-		// 	return err
-		// 	// }
-		// } else {
-		// 	return err
-		// }
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 不存在就创建
+			permission = bot.BotMassMsgPermission{
+				BotID:       l.botModel.BotID,
+				ChatGroupID: l.chatGroupID,
+				OprUsers:    l.userID,
+			}
+			if err = global.GVA_MYSQL.Create(&permission).Error; err != nil {
+				global.GVA_LOG.Error("AddOprUserHandler Handle", zap.Any("bot", l.botModel), zap.Error(err))
+				return err
+				// }
+			} else {
+				global.GVA_LOG.Error("AddOprUserHandler Handle", zap.Any("bot", l.botModel), zap.Error(err))
+				return err
+			}
+		}
 	} else {
 		// 已存在，追加 opr user（去重）
 		if !hasOprUser(permission.OprUsers, l.userID) {
