@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
 	"github.com/msean/botmanager/server/utils/bot_handler"
+	"go.uber.org/zap"
 )
 
 type BotMsgMassService struct{}
@@ -203,29 +205,34 @@ func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
 		return errors.New("未找到群发记录")
 	}
 
-	records := make([]bot.BotMassMsgRecord, 0, len(list))
+	go func() {
+		records := make([]bot.BotMassMsgRecord, 0, len(list))
 
-	for _, item := range list {
-		// 👇 拼接 @成员
-		var remark string
-		finalMsg := req.Msg + FormatMentionMembers(item.Members)
-		err := SendMassMsg(item.ChatGroupID, item.BotID, finalMsg)
-		if err != nil {
-			remark = err.Error()
+		for _, item := range list {
+			// 防止429
+			time.Sleep(100 * time.Millisecond)
+			// 👇 拼接 @成员
+			remark := "发送成功"
+			finalMsg := req.Msg + FormatMentionMembers(item.Members)
+			err := SendMassMsg(item.ChatGroupID, item.BotID, finalMsg)
+			if err != nil {
+				global.GVA_LOG.Error("SendBotMsgMass SendMassMsg", zap.Any("item", item), zap.Error(err))
+				remark = err.Error()
+			}
+			records = append(records, bot.BotMassMsgRecord{
+				BotID:       item.BotID,
+				ChatGroupID: item.ChatGroupID,
+				Msg:         req.Msg,
+				Members:     item.Members,
+				Remark:      remark,
+			})
 		}
-		records = append(records, bot.BotMassMsgRecord{
-			BotID:       item.BotID,
-			ChatGroupID: item.ChatGroupID,
-			Msg:         req.Msg,
-			Members:     item.Members,
-			Remark:      remark,
-		})
-	}
 
-	err = global.GVA_MYSQL.
-		Create(&records).Error
-
-	return err
+		if err = global.GVA_MYSQL.Create(&records).Error; err != nil {
+			global.GVA_LOG.Error("SendBotMsgMass Create", zap.Any("records", records), zap.Error(err))
+		}
+	}()
+	return
 }
 
 func SendMassMsg(chatID int64, botID int64, content string) error {
@@ -265,5 +272,5 @@ func FormatMentionMembers(members string) string {
 	}
 
 	// 前面换两行，更好看
-	return "\n\n" + strings.Join(res, ",")
+	return "\n\n" + strings.Join(res, " ")
 }

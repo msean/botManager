@@ -52,7 +52,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="发送消息" width="200">
+        <el-table-column label="发送消息" width="100">
           <template #default="scope">
             <el-button link type="primary" @click="openMsg(scope.row.msg)">
               查看
@@ -60,7 +60,8 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="发送成员" prop="members" minWidth="300" />
+        <el-table-column label="发送成员" prop="members" minWidth="200" />
+        <el-table-column label="结果" prop="remark" Width="200" />
 
         <el-table-column label="日期" width="180">
           <template #default="scope">
