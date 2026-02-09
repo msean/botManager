@@ -213,7 +213,11 @@ func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
 			time.Sleep(100 * time.Millisecond)
 			// 👇 拼接 @成员
 			remark := "发送成功"
-			finalMsg := req.Msg + FormatMentionMembers(item.Members)
+			finalMsg := req.Msg
+			if req.AtUsers {
+				finalMsg = req.Msg + FormatMentionMembers(item.Members)
+			}
+
 			err := SendMassMsg(item.ChatGroupID, item.BotID, finalMsg)
 			if err != nil {
 				global.GVA_LOG.Error("SendBotMsgMass SendMassMsg", zap.Any("item", item), zap.Error(err))

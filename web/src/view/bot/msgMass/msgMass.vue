@@ -1,6 +1,5 @@
 <template>
   <div>
-
     <!-- ================= 群发按钮区 ================= -->
     <el-card style="margin-bottom: 15px">
       <el-button type="primary" @click="openSendDialog">
@@ -63,7 +62,7 @@
         <el-table-column label="标题" prop="title" width="180" />
         <el-table-column label="机器人" prop="botName" width="180" />
         <el-table-column label="群聊" prop="chatGroupName" width="180" />
-        <el-table-column label="成员" prop="members" minWidth="300" />
+        <el-table-column label="成员" prop="members" min-width="300" />
         <el-table-column label="操作" width="200">
           <template #default="scope">
             <el-button link @click="getDetails(scope.row)">查看</el-button>
@@ -87,11 +86,11 @@
     <el-drawer v-model="dialogVisible" size="40%">
       <template #header>{{ type === 'create' ? '新增' : '编辑' }}</template>
 
-      <el-form-item label="标题">
-        <el-input v-model="formData.title"  />
-      </el-form-item>
-      
       <el-form label-position="top">
+        <el-form-item label="标题">
+          <el-input v-model="formData.title" />
+        </el-form-item>
+
         <el-form-item label="机器人">
           <el-select v-model="formData.botID" @change="onBotChange" style="width:100%">
             <el-option
@@ -118,8 +117,6 @@
           </el-select>
         </el-form-item>
 
-
-
         <el-form-item label="成员">
           <el-input v-model="formData.members" type="textarea" :rows="5" />
         </el-form-item>
@@ -134,6 +131,14 @@
     <!-- ================= 编辑发送内容 ================= -->
     <el-dialog v-model="sendDialogVisible" title="编辑发送内容" width="70%">
       <RichEdit v-model="sendContent" />
+
+      <!-- 新增开关 -->
+      <el-form style="margin-top:10px">
+        <el-form-item label="是否艾特">
+          <el-switch v-model="atUsers" active-text="是" inactive-text="否" />
+        </el-form-item>
+      </el-form>
+
       <template #footer>
         <el-button @click="sendDialogVisible=false">取消</el-button>
         <el-button type="primary" @click="sendDialogVisible=false">确认</el-button>
@@ -152,7 +157,6 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-drawer>
-
   </div>
 </template>
 
@@ -176,18 +180,23 @@ import { getBotChoiceWithChatGroup } from '@/api/bot/bot'
 
 const tableData = ref([])
 const page = ref(1)
-const pageSize = ref(30)   // ✅ 默认 30
+const pageSize = ref(30)
 const total = ref(0)
 const multipleSelection = ref([])
 
+// 群发内容 + 是否艾特开关
 const sendContent = ref('')
+const atUsers = ref(false)
 const sendDialogVisible = ref(false)
 
 const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const type = ref('create')
 
+// formData 增加 ID
 const formData = ref({
+  ID: null,
+  title: '',
   botID: '',
   chatGroupID: '',
   members: ''
@@ -257,17 +266,26 @@ const handleSelectionChange = val => {
 
 const openDialog = () => {
   type.value = 'create'
-  formData.value = { botID: '', chatGroupID: '', members: '' }
+  formData.value = {
+    ID: null,
+    title: '',
+    botID: '',
+    chatGroupID: '',
+    members: ''
+  }
   dialogVisible.value = true
 }
 
-const closeDialog = () => dialogVisible.value = false
+const closeDialog = () => {
+  dialogVisible.value = false
+}
 
 const save = async () => {
   if (!formData.value.botID || !formData.value.chatGroupID) {
     ElMessage.warning('请选择机器人和群聊')
     return
   }
+
   const api = type.value === 'create' ? createBotMsgMass : updateBotMsgMass
   const res = await api(formData.value)
   if (res.code === 0) {
@@ -282,6 +300,8 @@ const updateRow = async row => {
   if (res.code === 0) {
     type.value = 'update'
     formData.value = {
+      ID: res.data.ID,
+      title: res.data.title,
       botID: res.data.botID,
       chatGroupID: res.data.chatGroupID,
       members: res.data.members
@@ -305,11 +325,29 @@ const onDelete = async () => {
   getTableData()
 }
 
-const openSendDialog = () => sendDialogVisible.value = true
+const openSendDialog = () => {
+  sendDialogVisible.value = true
+}
 
 const sendBatch = async () => {
+  if (!sendContent.value) {
+    ElMessage.warning('请先编辑发送内容')
+    return
+  }
+  if (!multipleSelection.value.length) {
+    ElMessage.warning('请先选择要发送的记录')
+    return
+  }
+
   const ids = multipleSelection.value.map(i => i.ID)
-  const res = await sendBotMsgMass({ msg: sendContent.value, ids })
+
+  // ✅ 带上 atUsers 参数
+  const res = await sendBotMsgMass({
+    msg: sendContent.value,
+    ids,
+    atUsers: atUsers.value
+  })
+
   if (res.code === 0) ElMessage.success('群发成功')
 }
 

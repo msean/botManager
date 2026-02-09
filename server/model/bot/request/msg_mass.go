@@ -14,6 +14,7 @@ type BotMsgMassSearch struct {
 }
 
 type BotMsgMassSend struct {
-	Msg string `json:"msg" binding:"required"`
-	IDs []uint `json:"ids" binding:"required"`
+	Msg     string `json:"msg" binding:"required"`
+	IDs     []uint `json:"ids" binding:"required"`
+	AtUsers bool   `json:"atUsers"`
 }

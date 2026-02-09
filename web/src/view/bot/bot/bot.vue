@@ -60,13 +60,25 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="创建时间" width="180">
+        <!-- ✅ 是否消息管理 -->
+        <el-table-column label="开启群发消息" width="160">
           <template #default="scope">
-            {{ formatDate(scope.row.createdAt) }}
+            <el-switch
+              v-model="scope.row.isForMsgMass"
+              :active-value="1"
+              :inactive-value="2"
+              @change="val => onMsgMassSwitchChange(scope.row, val)"
+            />
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="220" fixed="right">
+        <!-- <el-table-column label="创建时间" width="180">
+          <template #default="scope">
+            {{ formatDate(scope.row.createdAt) }}
+          </template>
+        </el-table-column> -->
+
+        <!-- <el-table-column label="操作" width="220" fixed="right">
           <template #default="scope">
             <el-button link @click="getDetails(scope.row)">查看</el-button>
             <el-button link @click="updateBotFunc(scope.row)">编辑</el-button>
@@ -74,7 +86,7 @@
               删除
             </el-button>
           </template>
-        </el-table-column>
+        </el-table-column> -->
       </el-table>
 
       <el-pagination
@@ -265,6 +277,23 @@ const onMsgMgrSwitchChange = async (row, newVal) => {
     ElMessage.success('更新成功')
   }
 }
+
+
+/** ✅ 是否消息管理 */
+const onMsgMassSwitchChange = async (row, newVal) => {
+  const oldVal = newVal === 1 ? 2 : 1
+  const res = await updateBot({
+    botID: row.botID,
+    isForMsgMass: newVal
+  })
+  if (res.code !== 0) {
+    row.isForMsgMass = oldVal
+    ElMessage.error('更新失败，已回滚')
+  } else {
+    ElMessage.success('更新成功')
+  }
+}
+
 
 const getDetails = async (row) => {
   const res = await findBot({ ID: row.botID })

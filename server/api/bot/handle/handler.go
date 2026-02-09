@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/api/bot/handle/chat_group/ledger"
 	msgmanage "github.com/msean/botmanager/server/api/bot/handle/chat_group/msg_manage"
+	msgmass "github.com/msean/botmanager/server/api/bot/handle/chat_group/msg_mass"
 	"github.com/msean/botmanager/server/api/bot/handle/private"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -160,6 +161,25 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		}()
 
 		msgmanage.Dispatch(botModel, tgMsg, *chatGroup)
+	}()
+
+	// 消息管理入口
+	go func() {
+		if botModel.IsForMsgMgr != 1 {
+			return
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				global.GVA_LOG.Error(
+					"panic in ban msg Handle",
+					zap.Any("recover", r),
+					zap.Int64("chatGroupID", chatGroupID),
+					zap.Stack("stack"),
+				)
+			}
+		}()
+
+		msgmass.Handle(botModel, tgMsg)
 	}()
 
 	return
