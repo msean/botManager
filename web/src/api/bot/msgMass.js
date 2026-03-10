@@ -119,10 +119,10 @@ export const sendBotMsgMass = (data) => {
 }
 
 
-export const massMsgHistory = (data) => {
+export const massMsgHistory = (params) => {
   return service({
     url: '/botMsgMass/history',
     method: 'get',
-    data
+    params
   })
 }
