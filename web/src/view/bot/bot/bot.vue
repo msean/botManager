@@ -22,9 +22,9 @@
     <div class="gva-table-box">
       <div class="gva-btn-list">
         <el-button type="primary" @click="openDialog">新增</el-button>
-        <el-button :disabled="!multipleSelection.length" @click="onDelete">
+        <!-- <el-button :disabled="!multipleSelection.length" @click="onDelete">
           删除
-        </el-button>
+        </el-button> -->
       </div>
 
       <el-table
@@ -78,7 +78,7 @@
           </template>
         </el-table-column> -->
 
-        <!-- <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="scope">
             <el-button link @click="getDetails(scope.row)">查看</el-button>
             <el-button link @click="updateBotFunc(scope.row)">编辑</el-button>
@@ -86,7 +86,7 @@
               删除
             </el-button>
           </template>
-        </el-table-column> -->
+        </el-table-column>
       </el-table>
 
       <el-pagination

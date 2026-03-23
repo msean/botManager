@@ -56,6 +56,7 @@ func (l *NotPermissionAwareWithAdmin) NeedAdmin() bool {
 func (l *NotPermissionAwareWithAdmin) SetPermission(p *cache.LedgerPermissionCache) {
 	l.confModel = p
 }
+
 func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 
 	global.GVA_LOG.Debug("ParserChain Handle", zap.Any("bot", botModel))

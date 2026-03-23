@@ -95,7 +95,7 @@ func (svc *BotService) DeleteBotByIds(ctx context.Context, IDs []string) (err er
 		return
 	}
 
-	if err = global.GVA_MYSQL.Delete(&[]bot.Bot{}, "bot_id in ?", IDs).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.Bot{}, "bot_id in (?)", IDs).Error; err != nil {
 		global.GVA_LOG.Error("BotService", zap.Any("ids", IDs), zap.Error(err))
 		return
 	}
