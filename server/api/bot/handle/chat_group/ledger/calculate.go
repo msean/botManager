@@ -6,8 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
+	"github.com/msean/botmanager/server/utils"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
+	"go.uber.org/zap"
 )
 
 type CalcHandler struct {
@@ -28,6 +31,7 @@ func (c *CalcHandler) Match(botModel bot.Bot, update botapi.Update) (match bool)
 	// 匹配表达式：数字 + 运算符 + 数字
 	reg := regexp.MustCompile(`^\s*(-?\d+(\.\d+)?)\s*([\+\-\*/])\s*(-?\d+(\.\d+)?)\s*$`)
 
+	global.GVA_LOG.Debug("CalcHandler", zap.Any(">>>>>>>", reg.MatchString(input)))
 	if reg.MatchString(input) {
 		return true
 	}
@@ -49,7 +53,7 @@ func (c *CalcHandler) Handle() (err error) {
 		return
 	}
 
-	reply := fmt.Sprintf("=%v", result)
+	reply := fmt.Sprintf("%v", utils.FloatReserve(result, 2))
 
 	msg := botapi.NewMessage(c.chatGroupID, reply)
 	msg.ReplyToMessageID = c.msg.Message.MessageID
