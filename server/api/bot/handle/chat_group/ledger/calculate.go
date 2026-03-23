@@ -53,7 +53,7 @@ func (c *CalcHandler) Handle() (err error) {
 		return
 	}
 
-	reply := fmt.Sprintf("%v", utils.FloatReserve(result, 2))
+	reply := fmt.Sprintf("%v", utils.FloatReserve(result, 4))
 
 	msg := botapi.NewMessage(c.chatGroupID, reply)
 	msg.ReplyToMessageID = c.msg.Message.MessageID
