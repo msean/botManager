@@ -95,6 +95,7 @@ func (handler *BotHandler) HandleChannel(botModel bot.Bot, tgMsg botapi.Update) 
 
 // HandelChatGroup 处理群聊消息
 func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update) (err error) {
+	global.GVA_LOG.Debug("CacheGet failed", zap.Any("redis", global.GVA_REDIS))
 	var has bool
 	chatGroupID := bot_handler.GetChatID(tgMsg)
 	chatGroup := cache.NewBotChatGroupCache(botModel.BotID, chatGroupID)
