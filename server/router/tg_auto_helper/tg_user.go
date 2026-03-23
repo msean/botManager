@@ -21,7 +21,7 @@ func (s *TgUserRouter) InitTgUserRouter(Router *gin.RouterGroup, PublicRouter *g
 		tgUserRouter.PUT("updateTgUser", tgUserApi.UpdateTgUser)
 		tgUserRouter.POST("sendCode", tgUserApi.SendCode)
 		tgUserRouter.POST("verifyCode", tgUserApi.VerifyCode)
-		tgUserRouter.POST("verifyPassword", tgUserApi.VerifyPassword)
+		// tgUserRouter.POST("verifyPassword", tgUserApi.VerifyPassword)
 	}
 	{
 		tgUserRouterWithoutRecord.GET("getTgUserList", tgUserApi.GetTgUserList) // 获取telegram用户管理列表

@@ -45,5 +45,6 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	{
 		tg_auto_helperRouter := router.RouterGroupApp.Tg_auto_helper
 		tg_auto_helperRouter.InitTgUserRouter(privateGroup, publicGroup)
+		tg_auto_helperRouter.Init(privateGroup, publicGroup)
 	}
 }

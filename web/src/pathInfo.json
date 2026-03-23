@@ -111,6 +111,7 @@
   "/src/view/systemTools/pubPlug/pubPlug.vue": "PubPlug",
   "/src/view/systemTools/system/system.vue": "Config",
   "/src/view/systemTools/version/version.vue": "SysVersion",
+  "/src/view/tgAutoHelper/collectGroup/collectGroup.vue": "CollectGroup",
   "/src/view/tgAutoHelper/index.vue": "TgAutoHelper",
   "/src/view/tgAutoHelper/tgUser/tgUser.vue": "TgUser",
   "/src/view/tgAutoHelper/tgUser/tgUserForm.vue": "TgUserForm",

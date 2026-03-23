@@ -4,9 +4,6 @@ import (
 	"os"
 
 	"github.com/msean/botmanager/server/global"
-	"github.com/msean/botmanager/server/model/bot"
-	"github.com/msean/botmanager/server/model/ledger"
-	"github.com/msean/botmanager/server/model/recharge"
 	"github.com/msean/botmanager/server/model/tg_auto_helper"
 
 	"go.uber.org/zap"
@@ -88,22 +85,25 @@ func RegisterTables() {
 func bizModel() error {
 	db := global.GVA_MYSQL
 	err := db.AutoMigrate(
-		bot.BotBanContent{},
-		bot.Bot{},
-		bot.BanRecord{},
-		bot.BotChatGroup{},
-		bot.BotBanGroupMem{},
-		bot.BotTask{},
-		bot.BotChannel{},
-		bot.BotCmdConfig{},
-		bot.BotChatGroupRelatedChannelFollow{},
-		recharge.RechargeConfig{},
-		recharge.UserRechargeRecord{},
-		recharge.UserWallet{},
-		recharge.AdPublishRecord{},
-		ledger.Ledger{},
-		ledger.LedgerPermission{},
-		tg_auto_helper.TgUser{},
+		// bot.BotBanContent{},
+		// bot.Bot{},
+		// bot.BanRecord{},
+		// bot.BotChatGroup{},
+		// bot.BotBanGroupMem{},
+		// bot.BotTask{},
+		// bot.BotChannel{},
+		// bot.BotCmdConfig{},
+		// bot.BotChatGroupRelatedChannelFollow{},
+		// recharge.RechargeConfig{},
+		// recharge.UserRechargeRecord{},
+		// recharge.UserWallet{},
+		// recharge.AdPublishRecord{},
+		// ledger.Ledger{},
+		// ledger.LedgerPermission{},
+		// tg_auto_helper.TgUser{},
+		// tg_auto_helper.CollectGroupInfo{},
+		tg_auto_helper.CollectGroupTask{},
+		tg_auto_helper.CollectUser{},
 	)
 	if err != nil {
 		return err

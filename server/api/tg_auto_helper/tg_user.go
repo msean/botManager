@@ -77,8 +77,15 @@ func (api *TgUserApi) GetTgUserList(c *gin.Context) {
 
 // SendCode
 func (api *TgUserApi) SendCode(c *gin.Context) {
-	ID := c.PostForm("id")
-	user, err := tgUserService.GetTgUser(c.Request.Context(), ID)
+	type SendCodeReq struct {
+		ID int `json:"id"`
+	}
+	var req SendCodeReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailWithMessage("参数错误", c)
+		return
+	}
+	user, err := tgUserService.GetTgUser(c.Request.Context(), req.ID)
 	if err != nil {
 		response.FailWithMessage("用户不存在", c)
 		return
@@ -94,36 +101,26 @@ func (api *TgUserApi) SendCode(c *gin.Context) {
 
 // VerifyCode
 func (api *TgUserApi) VerifyCode(c *gin.Context) {
-	ID := c.PostForm("id")
-	code := c.PostForm("code")
+	type Body struct {
+		ID   int    `json:"id"`
+		Code string `json:"code"`
+	}
+	var req Body
 
-	user, err := tgUserService.GetTgUser(c.Request.Context(), ID)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailWithMessage("参数错误", c)
+		return
+	}
+
+	user, err := tgUserService.GetTgUser(c.Request.Context(), req.ID)
 	if err != nil {
 		response.FailWithMessage("用户不存在", c)
 		return
 	}
 
-	if err := tgUserService.VerifyCode(c.Request.Context(), &user, code); err != nil {
+	if err := tgUserService.VerifyCode(c.Request.Context(), &user, req.Code); err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
 	response.OkWithMessage("验证码验证成功", c)
-}
-
-// VerifyPassword
-func (api *TgUserApi) VerifyPassword(c *gin.Context) {
-	ID := c.PostForm("id")
-	password := c.PostForm("password")
-
-	user, err := tgUserService.GetTgUser(c.Request.Context(), ID)
-	if err != nil {
-		response.FailWithMessage("用户不存在", c)
-		return
-	}
-
-	if err := tgUserService.VerifyPassword(c.Request.Context(), &user, password); err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
-	response.OkWithMessage("登录完成", c)
 }
