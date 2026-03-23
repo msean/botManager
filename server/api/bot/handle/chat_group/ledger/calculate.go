@@ -3,9 +3,9 @@ package ledger
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
+	"github.com/Knetic/govaluate"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/utils"
@@ -19,6 +19,8 @@ type CalcHandler struct {
 	msg         botapi.Update
 }
 
+// ================= 匹配 =================
+
 func (c *CalcHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
 
 	msg := update.Message
@@ -28,23 +30,32 @@ func (c *CalcHandler) Match(botModel bot.Bot, update botapi.Update) (match bool)
 	c.chatGroupID = msg.Chat.ID
 	c.msg = update
 
-	// 匹配表达式：数字 + 运算符 + 数字
-	reg := regexp.MustCompile(`^\s*(-?\d+(\.\d+)?)\s*([\+\-\*/])\s*(-?\d+(\.\d+)?)\s*$`)
+	// 👉 预处理（兼容 TG 输入）
+	input = normalizeExpr(input)
 
-	global.GVA_LOG.Debug("CalcHandler", zap.Any(">>>>>>>", reg.MatchString(input)))
+	// 👉 判断是不是表达式（核心）
+	reg := regexp.MustCompile(`^[0-9\.\+\-\*/\(\) ]+$`)
+
 	if reg.MatchString(input) {
+		global.GVA_LOG.Debug("Calc match", zap.String("expr", input))
 		return true
 	}
 
 	return false
 }
 
+// ================= 处理 =================
+
 func (c *CalcHandler) Handle() (err error) {
 
 	input := strings.TrimSpace(c.msg.Message.Text)
 
+	// 👉 预处理
+	input = normalizeExpr(input)
+
 	result, err := calc(input)
 	if err != nil {
+		global.GVA_LOG.Error("calc error", zap.Error(err))
 		return
 	}
 
@@ -53,7 +64,7 @@ func (c *CalcHandler) Handle() (err error) {
 		return
 	}
 
-	reply := fmt.Sprintf("%v", utils.FloatReserve(result, 4))
+	reply := fmt.Sprintf("%v", utils.FloatReserve(result, 6))
 
 	msg := botapi.NewMessage(c.chatGroupID, reply)
 	msg.ReplyToMessageID = c.msg.Message.MessageID
@@ -62,32 +73,40 @@ func (c *CalcHandler) Handle() (err error) {
 	return
 }
 
+// ================= 表达式计算 =================
+
 func calc(expr string) (float64, error) {
 
-	reg := regexp.MustCompile(`^\s*(-?\d+(\.\d+)?)\s*([\+\-\*/])\s*(-?\d+(\.\d+)?)\s*$`)
-	match := reg.FindStringSubmatch(expr)
-
-	if len(match) < 5 {
-		return 0, fmt.Errorf("invalid expression")
+	// 安全限制（防止乱输入）
+	if len(expr) > 50 {
+		return 0, fmt.Errorf("expression too long")
 	}
 
-	a, _ := strconv.ParseFloat(match[1], 64)
-	op := match[3]
-	b, _ := strconv.ParseFloat(match[4], 64)
-
-	switch op {
-	case "+":
-		return a + b, nil
-	case "-":
-		return a - b, nil
-	case "*":
-		return a * b, nil
-	case "/":
-		if b == 0 {
-			return 0, fmt.Errorf("division by zero")
-		}
-		return a / b, nil
+	e, err := govaluate.NewEvaluableExpression(expr)
+	if err != nil {
+		return 0, err
 	}
 
-	return 0, fmt.Errorf("unsupported operator")
+	result, err := e.Evaluate(nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.(float64), nil
+}
+
+// ================= 预处理 =================
+
+func normalizeExpr(expr string) string {
+
+	expr = strings.TrimSpace(expr)
+
+	// 中文符号替换
+	expr = strings.ReplaceAll(expr, "×", "*")
+	expr = strings.ReplaceAll(expr, "✖", "*")
+	expr = strings.ReplaceAll(expr, "÷", "/")
+	expr = strings.ReplaceAll(expr, "（", "(")
+	expr = strings.ReplaceAll(expr, "）", ")")
+
+	return expr
 }
