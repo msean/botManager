@@ -36,10 +36,10 @@ type LedgerPermission struct {
 
 // TableName 帐薄 Ledger自定义表名 ledger
 func (Ledger) TableName() string {
-	return "bot_ledger"
+	return "bot_ledger2"
 }
 
 // TableName 帐薄权限管理 LedgerPermission自定义表名 ledger_permission
 func (LedgerPermission) TableName() string {
-	return "bot_ledger_permission"
+	return "bot_ledger2_permission"
 }
