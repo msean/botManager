@@ -69,7 +69,7 @@ func (c *CalcHandler) Handle() (err error) {
 
 func calc(expr string) (float64, error) {
 
-	if len(expr) > 50 {
+	if len(expr) > 80 {
 		return 0, fmt.Errorf("expression too long")
 	}
 
