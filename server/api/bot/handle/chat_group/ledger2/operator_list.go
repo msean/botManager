@@ -63,16 +63,10 @@ func (l *ListOprUserHandler) Handle() error {
 		return l.reply("当前没有设置操作人")
 	}
 
-	// 拼装展示（带@）
-	var lines []string
-	for _, u := range users {
-		lines = append(lines, "@"+u)
-	}
-
 	content := fmt.Sprintf(
-		"当前操作人（%d人）：\n%s",
-		len(lines),
-		strings.Join(lines, "\n"),
+		"允许操作人（%d人）：\n%s",
+		len(users),
+		strings.Join(users, "\n"),
 	)
 
 	return l.reply(content)
