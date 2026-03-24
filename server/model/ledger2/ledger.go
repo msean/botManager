@@ -11,17 +11,15 @@ type Ledger struct {
 	OprUserFirstName string  `json:"oprUsername" form:"oprUsername" gorm:"column:opr_first_name;"`                           //操作人的用户名称
 	OprUserLastName  string  `json:"OprUserLastName" form:"OprUserLastName" gorm:"column:opr_last_name;"`                    //操作人的用户名称
 	OprUserNickname  string  `json:"oprUserNickname" form:"oprUserNickname" gorm:"comment:操作人昵称;column:opr_user_nick_name;"` //操作人昵称
-	ActionType       int     `json:"actionType" form:"actionType" gorm:"comment:操作类型;column:action_type;"`                   //操作类型 1 入款 2 下发
-	Amount           float64 `json:"amount" form:"amount" gorm:"comment:操作金额;type:decimal(32,2);column:amount;"`             //操作金额
-	BotID            int64   `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;"`
-	ChatGroupID      int64   `json:"chatGroupID" form:"chatGroupID" gorm:"comment:所在群组;column:chat_group_id;"` //所在群组
-	MessageID        int64   `json:"messageID" form:"messageID" gorm:"index;comment:消息ID;column:message_id;"`  //消息ID
-	RawInput         string  `json:"rawInput" form:"rawInput" gorm:"comment:原始输入;column:raw_input;"`           //原始输入
-	Remark           string  `json:"remark" form:"remark" gorm:"comment:备注;column:remark;"`                    //
-	// CurrentFeeRate   float64 `json:"currentFeeRate" form:"currentFeeRate" gorm:"comment:当前费率;column:current_fee_rate"`
-	// BotName       string `json:"botName" form:"botName" gorm:"-;"`
-	// ChatGroupName string `json:"chatGroupName" form:"chatGroupName" gorm:"-;"`
-	// AmountWithFee    float64 `json:"amount_with_fee" form:"amount_with_fee" gorm:"comment:操作金额;type:decimal(32,2);column:amount_with_fee;"` //操作金额
+	ActionType       int     `json:"actionType" form:"actionType" gorm:"comment:操作类型;column:action_type;"`                   //1 收入 2 支出
+	Amount           float64 `json:"amount" form:"amount" gorm:"comment:操作金额;type:decimal(32,2);column:amount;"`             //金额
+	BotID            int64   `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;"`                                 // 金额
+	UserName         string  `json:"userName" form:"userName" gorm:"comment:姓名;column:user_name;"`                           // botID
+	Account          string  `json:"account" form:"account" gorm:"comment:账号;column:account;"`                               // 姓名
+	ChatGroupID      int64   `json:"chatGroupID" form:"chatGroupID" gorm:"comment:账号;column:chat_group_id;"`                 //账号
+	MessageID        int     `json:"messageID" form:"messageID" gorm:"index;comment:消息ID;column:message_id;"`                //消息ID
+	RawInput         string  `json:"rawInput" form:"rawInput" gorm:"comment:原始输入;column:raw_input;"`                         //原始输入
+	Remark           string  `json:"remark" form:"remark" gorm:"comment:备注;column:remark;"`                                  // 备注
 }
 
 type LedgerPermission struct {
@@ -32,6 +30,15 @@ type LedgerPermission struct {
 	BotID         int64  `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id"`
 	ChatGroupID   int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群聊ID;column:chat_group_id;"` //群聊ID
 	OprUsers      string `json:"oprUsers" form:"oprUsers" gorm:"comment:操作人;column:opr_users;type:text;"`  //操作人
+}
+
+type LedgerSession struct {
+	global.GVA_MODEL
+	ID          uint   `gorm:"primaryKey"`
+	BotID       int64  `gorm:"index;column:bot_id"`
+	ChatGroupID int64  `gorm:"index;column:chat_group_id"`
+	WorkDate    string `gorm:"index;column:work_date"` // 2026-03-24
+	IsActive    int    `gorm:"column:is_active;default:0"`
 }
 
 // TableName 帐薄 Ledger自定义表名 ledger

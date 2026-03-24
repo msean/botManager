@@ -108,6 +108,7 @@ func bizModel() error {
 		ledger.LedgerPermission{},
 		ledger2.Ledger{},
 		ledger2.LedgerPermission{},
+		ledger2.LedgerSession{},
 	)
 	if err != nil {
 		return err
