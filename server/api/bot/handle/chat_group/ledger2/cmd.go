@@ -1,12 +1,15 @@
 package ledger2
 
 import (
+	"errors"
+
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
-	"github.com/msean/botmanager/server/model/ledger"
+	"github.com/msean/botmanager/server/model/ledger2"
 	"github.com/msean/botmanager/server/service/cache"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type (
@@ -33,10 +36,6 @@ type (
 	}
 )
 
-func (l *ShouldPermissionAwareWithOutAdmin) SetPermission(p *cache.LedgerPermissionCache) {
-	l.confModel = p
-}
-
 func (l *ShouldPermissionAwareWithOutAdmin) NeedPermission() bool {
 	return true
 }
@@ -51,10 +50,6 @@ func (l *OnlyAdminAware) NeedPermission() bool {
 
 func (l *OnlyAdminAware) NeedAdmin() bool {
 	return true
-}
-
-func (l *OnlyAdminAware) SetPermission(p *cache.LedgerPermissionCache) {
-	l.confModel = p
 }
 
 func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
@@ -87,7 +82,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 
 			// 业务权限（Ledger 操作人） 非管理员用户 管理员用户可以操作任何
 			if p.NeedPermission() && !isAdminUser {
-				permission, has, permit, err := HasPerMission(botModel, update)
+				has, permit, err := HasPerMission(botModel, update)
 				// 没有的话直接返回
 				if !has {
 					return nil
@@ -98,30 +93,6 @@ func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 				if !isAdminUser && !permit {
 					return nil
 				}
-
-				p.SetPermission(permission)
-			}
-
-			if isAdminUser {
-				permission, has, _, err := HasPerMission(botModel, update)
-				global.GVA_LOG.Debug("ParserChain Handle", zap.Any("has", has), zap.Any("err", err), zap.Any("permission", permission))
-				if err != nil {
-					return nil
-				}
-
-				if !has {
-					// 不存在就创建
-					permissionModel := ledger.LedgerPermission{
-						BotID:       botModel.BotID,
-						ChatGroupID: chatGroupID,
-					}
-					if err = global.GVA_MYSQL.Create(&permissionModel).Error; err != nil {
-						return err
-						// }
-					}
-					permission = cache.NewLedgerPermissionCache(botModel.BotID, chatGroupID)
-				}
-				p.SetPermission(permission)
 			}
 		}
 
@@ -150,40 +121,8 @@ func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 	return chain.Handle(botModel, tgMsg)
 }
 
-// 检测非admin用户是否有权限
-func HasPerMission(botModel bot.Bot, tgMsg botapi.Update) (ledgerPermission *cache.LedgerPermissionCache, has bool, permit bool, err error) {
-
-	chatGroupID := tgMsg.Message.Chat.ID
-	userID := tgMsg.Message.From.ID
-	userName := tgMsg.Message.From.UserName
-
-	ledgerPermission = cache.NewLedgerPermissionCache(botModel.BotID, chatGroupID)
-
-	if has, err = cache.CacheGetItem(ledgerPermission); err != nil {
-		global.GVA_LOG.Error("Ledger HasPerMission", zap.Error(err))
-		return
-	}
-
-	global.GVA_LOG.Debug("Ledger HasPerMission", zap.Any("has", has), zap.Error(err), zap.Any("ledgerPermission", ledgerPermission))
-	if !has {
-		return
-	}
-
-	if !ledgerPermission.HasUserPermission(userID, userName) {
-		return
-	}
-
-	permit = true
-	return
-}
-
 // 是否是admin 用户
 func IsChatAdmin(botToken string, chatID int64, userID int64, userName string) (bool, error) {
-	// 写死
-	if userID == 7449031746 || userID == 8099503790 || userName == "xmpaymo" {
-		return true, nil
-	}
-
 	bot, err := botapi.NewBotAPI(botToken)
 	if err != nil {
 		return false, err
@@ -207,4 +146,30 @@ func IsChatAdmin(botToken string, chatID int64, userID int64, userName string) (
 	default:
 		return false, nil
 	}
+}
+
+func HasPerMission(botModel bot.Bot, tgMsg botapi.Update) (
+	has bool,
+	permit bool,
+	err error,
+) {
+	chatGroupID := tgMsg.Message.Chat.ID
+	var permission ledger2.LedgerPermission
+
+	err = global.GVA_MYSQL.Where(
+		"bot_id = ? AND chat_group_id = ?",
+		botModel.BotID,
+		chatGroupID,
+	).First(&permission).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 没配置权限
+			return false, false, nil
+		}
+		return false, false, err
+	}
+
+	has = true
+	return has, false, nil
 }

@@ -32,6 +32,7 @@ func (l *AddOprUserHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 	}
 
 	users := parseAtUsers(text)
+	global.GVA_LOG.Debug("AddOprUserHandler", zap.Any("users", users))
 	if len(users) == 0 {
 		return false
 	}

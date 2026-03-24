@@ -135,6 +135,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		if botModel.IsForLedger != 1 {
 			return
 		}
+		global.GVA_LOG.Debug("in IsForLedger")
 		defer func() {
 			if r := recover(); r != nil {
 				global.GVA_LOG.Error(
@@ -154,6 +155,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		if botModel.IsForMsgMgr != 1 {
 			return
 		}
+		global.GVA_LOG.Debug("in msgmanage")
 		defer func() {
 			if r := recover(); r != nil {
 				global.GVA_LOG.Error(
@@ -173,6 +175,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		if botModel.IsForMsgMgr != 1 {
 			return
 		}
+		global.GVA_LOG.Debug("in msgmass")
 		defer func() {
 			if r := recover(); r != nil {
 				global.GVA_LOG.Error(
@@ -192,6 +195,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 		if botModel.IsForLedger2 != 1 {
 			return
 		}
+		global.GVA_LOG.Debug("in IsForLedger2")
 		defer func() {
 			if r := recover(); r != nil {
 				global.GVA_LOG.Error(
