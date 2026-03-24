@@ -1,14 +1,15 @@
 package ledger2
 
 import (
+	"errors"
 	"strings"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger2"
-	"github.com/msean/botmanager/server/service/cache"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 )
 
@@ -45,7 +46,6 @@ func (l *AddOprUserHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 }
 
 func (l *AddOprUserHandler) Handle() error {
-
 	var permission ledger2.LedgerPermission
 
 	err := global.GVA_MYSQL.Where(
@@ -54,7 +54,15 @@ func (l *AddOprUserHandler) Handle() error {
 		l.chatGroupID,
 	).First(&permission).Error
 
-	if err != nil {
+	// ✅ 如果是“没找到”，就创建
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		permission = ledger2.LedgerPermission{
+			BotID:       l.botModel.BotID,
+			ChatGroupID: l.chatGroupID,
+			OprUsers:    "",
+		}
+	} else if err != nil {
+		// ❗其他错误才返回
 		global.GVA_LOG.Error("AddOprUserHandler Handle",
 			zap.Any("bot", l.botModel),
 			zap.Error(err),
@@ -62,6 +70,7 @@ func (l *AddOprUserHandler) Handle() error {
 		return err
 	}
 
+	// ===== 原有逻辑 =====
 	existing := splitUsers(permission.OprUsers)
 
 	userMap := make(map[string]struct{})
@@ -80,15 +89,10 @@ func (l *AddOprUserHandler) Handle() error {
 
 	permission.OprUsers = strings.Join(finalUsers, ",")
 
-	if err = global.GVA_MYSQL.Model(&permission).
-		Update("opr_users", permission.OprUsers).Error; err != nil {
+	// ✅ 关键：用 Save（有ID就更新，没ID就插入）
+	if err = global.GVA_MYSQL.Save(&permission).Error; err != nil {
 		return err
 	}
-
-	_ = cache.NewLedgerPermissionCache(
-		l.botModel.BotID,
-		l.chatGroupID,
-	).Release()
 
 	return l.reply("操作成功")
 }
