@@ -49,24 +49,16 @@ func (l *OnlyAdminAware) NeedAdmin() bool {
 
 func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 
-	global.GVA_LOG.Debug("ParserChain Handle", zap.Any("bot", botModel))
-
-	global.GVA_LOG.Debug("ParserChain Handle2", zap.Any("bot", botModel))
 	chatGroupID := update.Message.Chat.ID
 
-	global.GVA_LOG.Debug("ParserChain Handle3", zap.Any("bot", botModel))
-
 	for _, parser := range c.parsers {
-		global.GVA_LOG.Debug("ParserChain Handle4", zap.Any("bot", botModel))
 		if !parser.Match(botModel, update) {
 			continue
 		}
 
-		global.GVA_LOG.Debug("ParserChain Handle5", zap.Any("parser", parser))
 		// 权限感知
 		if p, ok := parser.(PermissionAware); ok {
 
-			global.GVA_LOG.Debug("ParserChain Handle6", zap.Any("parser", parser))
 			var isAdminUser bool
 			isAdminUser, err := IsChatAdmin(
 				botModel.Token,
@@ -74,15 +66,15 @@ func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 				update.Message.From.ID,
 				update.Message.From.UserName,
 			)
-			global.GVA_LOG.Debug("ParserChain Handle7", zap.Any("err", err), zap.Any("ok", ok))
 			if err != nil || !ok {
+				if err != nil {
+					global.GVA_LOG.Error("Handle", zap.Any("update", update), zap.Error(err))
+				}
 				return nil // 静默失败，不给回复
 			}
 
-			global.GVA_LOG.Debug("ParserChain Handle8", zap.Any("isAdminUser", isAdminUser))
 			// 管理员权限（最高优先级）
 			if p.NeedAdmin() && !isAdminUser {
-				global.GVA_LOG.Info("ParserChain not isAdminUser", zap.Any("user", update.Message.Chat.UserName))
 				return nil
 			}
 

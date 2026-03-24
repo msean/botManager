@@ -76,6 +76,9 @@ func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 				update.Message.From.UserName,
 			)
 			if err != nil || !ok {
+				if err != nil {
+					global.GVA_LOG.Error("Handle", zap.Any("update", update), zap.Error(err))
+				}
 				return nil // 静默失败，不给回复
 			}
 
