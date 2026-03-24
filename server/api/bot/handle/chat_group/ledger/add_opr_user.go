@@ -16,7 +16,7 @@ type AddOprUserHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
 	userID      string
-	NotPermissionAwareWithAdmin
+	OnlyAdminAware
 }
 
 func (l *AddOprUserHandler) Match(botModel bot.Bot, update botapi.Update) bool {

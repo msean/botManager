@@ -6,6 +6,7 @@ import (
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger"
+	"github.com/msean/botmanager/server/model/ledger2"
 	"github.com/msean/botmanager/server/model/recharge"
 
 	"go.uber.org/zap"
@@ -105,6 +106,8 @@ func bizModel() error {
 		recharge.AdPublishRecord{},
 		ledger.Ledger{},
 		ledger.LedgerPermission{},
+		ledger2.Ledger{},
+		ledger2.LedgerPermission{},
 	)
 	if err != nil {
 		return err

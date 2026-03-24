@@ -28,7 +28,7 @@ type (
 	ShouldPermissionAwareWithOutAdmin struct {
 		confModel *cache.LedgerPermissionCache
 	}
-	NotPermissionAwareWithAdmin struct {
+	OnlyAdminAware struct {
 		confModel *cache.LedgerPermissionCache
 	}
 )
@@ -45,15 +45,15 @@ func (l *ShouldPermissionAwareWithOutAdmin) NeedAdmin() bool {
 	return false
 }
 
-func (l *NotPermissionAwareWithAdmin) NeedPermission() bool {
+func (l *OnlyAdminAware) NeedPermission() bool {
 	return false
 }
 
-func (l *NotPermissionAwareWithAdmin) NeedAdmin() bool {
+func (l *OnlyAdminAware) NeedAdmin() bool {
 	return true
 }
 
-func (l *NotPermissionAwareWithAdmin) SetPermission(p *cache.LedgerPermissionCache) {
+func (l *OnlyAdminAware) SetPermission(p *cache.LedgerPermissionCache) {
 	l.confModel = p
 }
 
