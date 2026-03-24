@@ -15,7 +15,7 @@ import (
 type StartLedgerHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
-	OnlyAdminAware
+	ShouldPermissionAwareWithOutAdmin
 }
 
 func (l *StartLedgerHandler) Match(botModel bot.Bot, update botapi.Update) bool {
