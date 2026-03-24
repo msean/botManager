@@ -19,8 +19,6 @@ type CalcHandler struct {
 	msg         botapi.Update
 }
 
-// ================= 匹配 =================
-
 func (c *CalcHandler) Match(botModel bot.Bot, update botapi.Update) (match bool) {
 
 	msg := update.Message
@@ -30,42 +28,38 @@ func (c *CalcHandler) Match(botModel bot.Bot, update botapi.Update) (match bool)
 	c.chatGroupID = msg.Chat.ID
 	c.msg = update
 
-	// 👉 预处理（兼容 TG 输入）
 	input = normalizeExpr(input)
 
-	// 👉 判断是不是表达式（核心）
-	reg := regexp.MustCompile(`^[0-9\.\+\-\*/\(\) ]+$`)
-
-	if reg.MatchString(input) {
-		global.GVA_LOG.Debug("Calc match", zap.String("expr", input))
-		return true
+	if !strings.ContainsAny(input, "+-*/") {
+		return false
 	}
 
-	return false
+	reg := regexp.MustCompile(`^[0-9\.\+\-\*/\(\) ]+$`)
+	if !reg.MatchString(input) {
+		return false
+	}
+
+	numReg := regexp.MustCompile(`^\s*-?\d+(\.\d+)?\s*$`)
+	if numReg.MatchString(input) {
+		return false
+	}
+
+	return true
 }
-
-// ================= 处理 =================
-
 func (c *CalcHandler) Handle() (err error) {
-
 	input := strings.TrimSpace(c.msg.Message.Text)
-
-	// 👉 预处理
 	input = normalizeExpr(input)
-
 	result, err := calc(input)
 	if err != nil {
-		global.GVA_LOG.Error("calc error", zap.Error(err))
+		global.GVA_LOG.Error("CalcHandler calc error", zap.Error(err))
 		return
 	}
-
 	botSender, err := botapi.NewBotAPI(c.botModel.Token)
 	if err != nil {
 		return
 	}
 
 	reply := fmt.Sprintf("%v", utils.FloatReserve(result, 6))
-
 	msg := botapi.NewMessage(c.chatGroupID, reply)
 	msg.ReplyToMessageID = c.msg.Message.MessageID
 
@@ -73,11 +67,8 @@ func (c *CalcHandler) Handle() (err error) {
 	return
 }
 
-// ================= 表达式计算 =================
-
 func calc(expr string) (float64, error) {
 
-	// 安全限制（防止乱输入）
 	if len(expr) > 50 {
 		return 0, fmt.Errorf("expression too long")
 	}
@@ -95,13 +86,10 @@ func calc(expr string) (float64, error) {
 	return result.(float64), nil
 }
 
-// ================= 预处理 =================
-
 func normalizeExpr(expr string) string {
 
 	expr = strings.TrimSpace(expr)
 
-	// 中文符号替换
 	expr = strings.ReplaceAll(expr, "×", "*")
 	expr = strings.ReplaceAll(expr, "✖", "*")
 	expr = strings.ReplaceAll(expr, "÷", "/")
