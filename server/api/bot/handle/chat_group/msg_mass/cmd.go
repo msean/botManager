@@ -28,7 +28,7 @@ type (
 		parsers []Parser
 	}
 	ShouldPermissionAwareWithOutAdmin struct{}
-	NotPermissionAwareWithAdmin       struct{}
+	OnlyAdminAware                    struct{}
 )
 
 func (l *ShouldPermissionAwareWithOutAdmin) NeedPermission() bool {
@@ -39,11 +39,11 @@ func (l *ShouldPermissionAwareWithOutAdmin) NeedAdmin() bool {
 	return false
 }
 
-func (l *NotPermissionAwareWithAdmin) NeedPermission() bool {
+func (l *OnlyAdminAware) NeedPermission() bool {
 	return false
 }
 
-func (l *NotPermissionAwareWithAdmin) NeedAdmin() bool {
+func (l *OnlyAdminAware) NeedAdmin() bool {
 	return true
 }
 
