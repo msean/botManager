@@ -56,7 +56,7 @@ func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 			continue
 		}
 
-		// 权限感知
+		// 权限检查
 		if p, ok := parser.(PermissionAware); ok {
 
 			var isAdminUser bool
@@ -70,10 +70,9 @@ func (c *ParserChain) Handle(botModel bot.Bot, update botapi.Update) error {
 				if err != nil {
 					global.GVA_LOG.Error("Handle", zap.Any("update", update), zap.Error(err))
 				}
-				return nil // 静默失败，不给回复
+				return nil
 			}
 
-			// 管理员权限（最高优先级）
 			if p.NeedAdmin() && !isAdminUser {
 				return nil
 			}
