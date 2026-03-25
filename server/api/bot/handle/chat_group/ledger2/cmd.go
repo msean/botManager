@@ -2,6 +2,7 @@ package ledger2
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -152,6 +153,8 @@ func HasPerMission(botModel bot.Bot, tgMsg botapi.Update) (
 	err error,
 ) {
 	chatGroupID := tgMsg.Message.Chat.ID
+	username := tgMsg.Message.From.UserName
+
 	var permission ledger2.LedgerPermission
 
 	err = global.GVA_MYSQL.Where(
@@ -162,12 +165,20 @@ func HasPerMission(botModel bot.Bot, tgMsg botapi.Update) (
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 没配置权限
 			return false, false, nil
 		}
 		return false, false, err
 	}
 
 	has = true
-	return has, false, nil
+
+	userList := splitUsers(permission.OprUsers)
+
+	for _, u := range userList {
+		if strings.EqualFold(u, username) {
+			return true, true, nil
+		}
+	}
+
+	return true, false, nil
 }
