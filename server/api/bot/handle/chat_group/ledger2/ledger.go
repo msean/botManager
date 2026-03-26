@@ -61,7 +61,7 @@ func (l *LedgerRecordHandler) Match(botModel bot.Bot, update botapi.Update) bool
 	// ✅ 核心：余额特殊处理
 	if account == "余额" {
 		action = 3
-		l.account = ""
+		account = ""
 		if sign == "-" {
 			amount = -amount
 		}
