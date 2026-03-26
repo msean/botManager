@@ -12,7 +12,6 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger2"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
-	"github.com/xuri/excelize/v2"
 )
 
 type LedgerSummaryHandler struct {
@@ -21,10 +20,8 @@ type LedgerSummaryHandler struct {
 	ShouldPermissionAwareWithOutAdmin
 }
 
-// ================== 匹配 ==================
 func (l *LedgerSummaryHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 
-	// ✅ 处理按钮点击（导出）
 	if update.CallbackQuery != nil {
 
 		data := update.CallbackQuery.Data
@@ -58,8 +55,6 @@ func (l *LedgerSummaryHandler) Match(botModel bot.Bot, update botapi.Update) boo
 
 	return true
 }
-
-// ================== 主处理 ==================
 func (l *LedgerSummaryHandler) Handle() error {
 
 	today := time.Now().Format("2006-01-02")
@@ -73,14 +68,14 @@ func (l *LedgerSummaryHandler) Handle() error {
 		return l.reply("📊 今日暂无账单")
 	}
 
-	groupMap, totalIn, totalOut := l.buildStat(list)
+	groupMap, totalIn, totalOut, totalBalanceAdjust := l.buildStat(list)
 
 	var builder strings.Builder
 	builder.WriteString("📊 今日账单统计\n\n")
 
 	for k, v := range groupMap {
 
-		balance := v.in - v.out
+		balance := v.in - v.out + v.balance
 
 		builder.WriteString(fmt.Sprintf(
 			"%s\n收入：%.2f\n收入笔数：%d\n支出：%.2f\n支出笔数：%d\n余额：%.2f\n\n",
@@ -88,7 +83,7 @@ func (l *LedgerSummaryHandler) Handle() error {
 		))
 	}
 
-	totalBalance := totalIn - totalOut
+	totalBalance := totalIn - totalOut + totalBalanceAdjust
 
 	builder.WriteString("——————\n")
 	builder.WriteString(fmt.Sprintf(
@@ -120,18 +115,18 @@ func (l *LedgerSummaryHandler) getListByDate(date string) ([]ledger2.Ledger, err
 	return list, err
 }
 
-// ================== 统计 ==================
 type stat struct {
 	in       float64
 	out      float64
+	balance  float64 // ✅ 余额调整
 	inCount  int
 	outCount int
 }
 
-func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*stat, float64, float64) {
+func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*stat, float64, float64, float64) {
 
 	groupMap := make(map[string]*stat)
-	var totalIn, totalOut float64
+	var totalIn, totalOut, totalBalanceAdjust float64
 
 	for _, v := range list {
 
@@ -141,21 +136,27 @@ func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*sta
 			groupMap[key] = &stat{}
 		}
 
-		if v.ActionType == 1 {
+		switch v.ActionType {
+
+		case 1: // 收入
 			groupMap[key].in += v.Amount
 			groupMap[key].inCount++
 			totalIn += v.Amount
-		} else {
+
+		case 2: // 支出
 			groupMap[key].out += v.Amount
 			groupMap[key].outCount++
 			totalOut += v.Amount
+
+		case 3: // ✅ 余额调整
+			groupMap[key].balance += v.Amount
+			totalBalanceAdjust += v.Amount
 		}
 	}
 
-	return groupMap, totalIn, totalOut
+	return groupMap, totalIn, totalOut, totalBalanceAdjust
 }
 
-// ================== 回复 ==================
 func (l *LedgerSummaryHandler) reply(text string) error {
 
 	botSender, err := botapi.NewBotAPI(l.botModel.Token)
@@ -167,7 +168,6 @@ func (l *LedgerSummaryHandler) reply(text string) error {
 
 	msg := botapi.NewMessage(l.chatGroupID, text)
 
-	// ✅ 按钮
 	msg.ReplyMarkup = botapi.NewInlineKeyboardMarkup(
 		botapi.NewInlineKeyboardRow(
 			botapi.NewInlineKeyboardButtonData(
@@ -181,7 +181,6 @@ func (l *LedgerSummaryHandler) reply(text string) error {
 	return err
 }
 
-// ================== 导出处理 ==================
 func (l *LedgerSummaryHandler) handleExport(date string) {
 
 	list, err := l.getListByDate(date)
@@ -192,7 +191,7 @@ func (l *LedgerSummaryHandler) handleExport(date string) {
 
 	filePath := fmt.Sprintf("ledger_%s.xlsx", date)
 
-	err = l.generateExcel(list, filePath, date)
+	err = l.generateCSV(list, filePath, date)
 	if err != nil {
 		l.reply("导出失败")
 		return
@@ -204,48 +203,6 @@ func (l *LedgerSummaryHandler) handleExport(date string) {
 	botSender.Send(doc)
 
 	_ = os.Remove(filePath)
-}
-
-// ================== Excel ==================
-func (l *LedgerSummaryHandler) generateExcel(list []ledger2.Ledger, filePath string, date string) error {
-
-	f := excelize.NewFile()
-	sheet := "Sheet1"
-
-	headers := []string{"日期", "账户", "收入", "收入笔数", "支出", "支出笔数", "余额"}
-
-	for i, h := range headers {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
-		f.SetCellValue(sheet, cell, h)
-	}
-
-	groupMap, totalIn, totalOut := l.buildStat(list)
-
-	row := 2
-
-	for k, v := range groupMap {
-
-		balance := v.in - v.out
-
-		f.SetCellValue(sheet, fmt.Sprintf("A%d", row), date)
-		f.SetCellValue(sheet, fmt.Sprintf("B%d", row), k)
-		f.SetCellValue(sheet, fmt.Sprintf("C%d", row), v.in)
-		f.SetCellValue(sheet, fmt.Sprintf("D%d", row), v.inCount)
-		f.SetCellValue(sheet, fmt.Sprintf("E%d", row), v.out)
-		f.SetCellValue(sheet, fmt.Sprintf("F%d", row), v.outCount)
-		f.SetCellValue(sheet, fmt.Sprintf("G%d", row), balance)
-
-		row++
-	}
-
-	totalBalance := totalIn - totalOut
-
-	f.SetCellValue(sheet, fmt.Sprintf("A%d", row), "合计")
-	f.SetCellValue(sheet, fmt.Sprintf("C%d", row), totalIn)
-	f.SetCellValue(sheet, fmt.Sprintf("E%d", row), totalOut)
-	f.SetCellValue(sheet, fmt.Sprintf("G%d", row), totalBalance)
-
-	return f.SaveAs(filePath)
 }
 
 func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath string, date string) error {
@@ -265,10 +222,10 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 		return err
 	}
 
-	// ===== 统计 =====
 	type stat struct {
 		in       float64
 		out      float64
+		balance  float64
 		inCount  int
 		outCount int
 	}
@@ -276,27 +233,33 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 	groupMap := make(map[string]*stat)
 
 	for _, v := range list {
+
 		key := v.UserName + "+" + v.Account
 
 		if _, ok := groupMap[key]; !ok {
 			groupMap[key] = &stat{}
 		}
 
-		if v.ActionType == 1 {
+		switch v.ActionType {
+
+		case 1:
 			groupMap[key].in += v.Amount
 			groupMap[key].inCount++
-		} else {
+
+		case 2:
 			groupMap[key].out += v.Amount
 			groupMap[key].outCount++
+
+		case 3:
+			groupMap[key].balance += v.Amount
 		}
 	}
 
-	// ===== 写数据 =====
-	var totalIn, totalOut float64
+	var totalIn, totalOut, totalBalanceAdjust float64
 
 	for k, v := range groupMap {
 
-		balance := v.in - v.out
+		balance := v.in - v.out + v.balance
 
 		row := []string{
 			date,
@@ -314,10 +277,11 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 
 		totalIn += v.in
 		totalOut += v.out
+		totalBalanceAdjust += v.balance
 	}
 
-	// ===== 合计 =====
-	totalBalance := totalIn - totalOut
+	// 合计
+	totalBalance := totalIn - totalOut + totalBalanceAdjust
 
 	totalRow := []string{
 		"合计",

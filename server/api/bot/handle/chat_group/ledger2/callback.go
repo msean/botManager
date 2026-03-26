@@ -19,17 +19,14 @@ func handleCallback(botModel bot.Bot, update botapi.Update) error {
 
 	data := update.CallbackQuery.Data
 
-	// ✅ 只处理导出
 	if !strings.HasPrefix(data, "export_excel_") {
 		return nil
 	}
 
-	// ✅ 解析日期
 	date := strings.TrimPrefix(data, "export_excel_")
 
 	chatID := update.CallbackQuery.Message.Chat.ID
 
-	// ✅ 查询数据
 	var list []ledger2.Ledger
 	err := global.GVA_MYSQL.Where(
 		"bot_id = ? AND chat_group_id = ? AND DATE(created_at) = ?",
@@ -42,7 +39,6 @@ func handleCallback(botModel bot.Bot, update botapi.Update) error {
 		return err
 	}
 
-	// ✅ 没数据提示
 	if len(list) == 0 {
 		botSender, _ := botapi.NewBotAPI(botModel.Token)
 		msg := botapi.NewMessage(chatID, "📊 "+date+" 暂无数据")
@@ -50,7 +46,6 @@ func handleCallback(botModel bot.Bot, update botapi.Update) error {
 		return nil
 	}
 
-	// ✅ 文件名（带日期）
 	filePath := fmt.Sprintf("ledger_%s.csv", date)
 
 	handler := LedgerSummaryHandler{
@@ -58,13 +53,11 @@ func handleCallback(botModel bot.Bot, update botapi.Update) error {
 		chatGroupID: chatID,
 	}
 
-	// ✅ 生成 Excel（带日期）
 	err = handler.generateCSV(list, filePath, date)
 	if err != nil {
 		return err
 	}
 
-	// ✅ 发送文件
 	botSender, err := botapi.NewBotAPI(botModel.Token)
 	if err != nil {
 		return err
@@ -76,7 +69,6 @@ func handleCallback(botModel bot.Bot, update botapi.Update) error {
 		return err
 	}
 
-	// ✅ 删除文件
 	_ = os.Remove(filePath)
 
 	return nil

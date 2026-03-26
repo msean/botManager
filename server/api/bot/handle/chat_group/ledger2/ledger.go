@@ -38,7 +38,7 @@ func (l *LedgerRecordHandler) Match(botModel bot.Bot, update botapi.Update) bool
 	}
 
 	// 👉 正则解析
-	// 格式：章三+账号 +100 或 章三+账号-200
+	// 格式：章三+账号 +100 或 章三+账号-200 或 章三+余额+100
 	re := regexp.MustCompile(`^(.+?)\+(.+?)\s*([+-])\s*(\d+(\.\d+)?)$`)
 	match := re.FindStringSubmatch(text)
 
@@ -56,9 +56,20 @@ func (l *LedgerRecordHandler) Match(botModel bot.Bot, update botapi.Update) bool
 		return false
 	}
 
-	action := 1
-	if sign == "-" {
-		action = 2
+	action := 1 // 默认收入
+
+	// ✅ 核心：余额特殊处理
+	if account == "余额" {
+		action = 3
+
+		if sign == "-" {
+			amount = -amount
+		}
+	} else {
+		// 正常收入/支出
+		if sign == "-" {
+			action = 2
+		}
 	}
 
 	l.botModel = botModel
@@ -119,8 +130,10 @@ func (l *LedgerRecordHandler) Handle() error {
 
 	if l.action == 1 {
 		return l.reply(fmt.Sprintf("✅ 收入记录成功：%s +%.2f", l.userName, l.amount))
-	} else {
+	} else if l.action == 2 {
 		return l.reply(fmt.Sprintf("✅ 支出记录成功：%s -%.2f", l.userName, l.amount))
+	} else {
+		return l.reply(fmt.Sprintf("✅ 余额调整成功：%s %+ .2f", l.userName, l.amount))
 	}
 }
 
