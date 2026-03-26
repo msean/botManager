@@ -22,6 +22,7 @@ type LedgerSummaryHandler struct {
 
 func (l *LedgerSummaryHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 
+	// ✅ 导出按钮
 	if update.CallbackQuery != nil {
 
 		data := update.CallbackQuery.Data
@@ -33,13 +34,13 @@ func (l *LedgerSummaryHandler) Match(botModel bot.Bot, update botapi.Update) boo
 			l.botModel = botModel
 			l.chatGroupID = update.CallbackQuery.Message.Chat.ID
 
-			go l.handleExport(date) // 异步执行
+			go l.handleExport(date)
 
 			return true
 		}
 	}
 
-	// ✅ 处理“下课”
+	// ✅ 下课
 	if update.Message == nil || update.Message.Text == "" {
 		return false
 	}
@@ -55,6 +56,7 @@ func (l *LedgerSummaryHandler) Match(botModel bot.Bot, update botapi.Update) boo
 
 	return true
 }
+
 func (l *LedgerSummaryHandler) Handle() error {
 
 	today := time.Now().Format("2006-01-02")
@@ -100,7 +102,6 @@ func (l *LedgerSummaryHandler) Handle() error {
 	return l.reply(builder.String())
 }
 
-// ================== 查询 ==================
 func (l *LedgerSummaryHandler) getListByDate(date string) ([]ledger2.Ledger, error) {
 
 	var list []ledger2.Ledger
@@ -118,7 +119,7 @@ func (l *LedgerSummaryHandler) getListByDate(date string) ([]ledger2.Ledger, err
 type stat struct {
 	in       float64
 	out      float64
-	balance  float64 // ✅ 余额调整
+	balance  float64
 	inCount  int
 	outCount int
 }
@@ -126,11 +127,10 @@ type stat struct {
 func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*stat, float64, float64, float64) {
 
 	groupMap := make(map[string]*stat)
-	userAccountMap := make(map[string]string) // ✅ 用户 -> 唯一账户
+	userAccountMap := make(map[string]string)
 
 	var totalIn, totalOut, totalBalanceAdjust float64
 
-	// ✅ 先确定每个用户的账户（跳过余额类型）
 	for _, v := range list {
 		if v.ActionType != 3 {
 			userAccountMap[v.UserName] = v.Account
@@ -141,10 +141,11 @@ func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*sta
 
 		account := v.Account
 
-		// ✅ 如果是余额调整 → 强制归到真实账户
 		if v.ActionType == 3 {
 			if acc, ok := userAccountMap[v.UserName]; ok {
 				account = acc
+			} else {
+				account = "余额" // ✅ 关键修复
 			}
 		}
 
@@ -155,17 +156,14 @@ func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*sta
 		}
 
 		switch v.ActionType {
-
 		case 1:
 			groupMap[key].in += v.Amount
 			groupMap[key].inCount++
 			totalIn += v.Amount
-
 		case 2:
 			groupMap[key].out += v.Amount
 			groupMap[key].outCount++
 			totalOut += v.Amount
-
 		case 3:
 			groupMap[key].balance += v.Amount
 			totalBalanceAdjust += v.Amount
@@ -207,7 +205,7 @@ func (l *LedgerSummaryHandler) handleExport(date string) {
 		return
 	}
 
-	filePath := fmt.Sprintf("ledger_%s.xlsx", date)
+	filePath := fmt.Sprintf("ledger_%s.csv", date)
 
 	err = l.generateCSV(list, filePath, date)
 	if err != nil {
@@ -231,17 +229,13 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 	}
 	defer file.Close()
 
-	// ✅ 防止 Excel 打开中文乱码
 	_, _ = file.WriteString("\xEF\xBB\xBF")
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	// 表头
 	header := []string{"日期", "账户", "收入", "收入笔数", "支出", "支出笔数", "余额"}
-	if err := writer.Write(header); err != nil {
-		return err
-	}
+	writer.Write(header)
 
 	type stat struct {
 		in       float64
@@ -252,8 +246,6 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 	}
 
 	groupMap := make(map[string]*stat)
-
-	// ✅ 用户 -> 唯一账户（过滤掉余额类型）
 	userAccountMap := make(map[string]string)
 
 	for _, v := range list {
@@ -262,18 +254,15 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 		}
 	}
 
-	// ✅ 统计
 	for _, v := range list {
 
 		account := v.Account
 
-		// 👉 核心：余额归到真实账户
 		if v.ActionType == 3 {
 			if acc, ok := userAccountMap[v.UserName]; ok {
 				account = acc
 			} else {
-				// ❗ 没有真实账户，直接跳过（避免出现 xxx+余额）
-				continue
+				account = "余额" // ✅ 修复点
 			}
 		}
 
@@ -284,15 +273,12 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 		}
 
 		switch v.ActionType {
-
 		case 1:
 			groupMap[key].in += v.Amount
 			groupMap[key].inCount++
-
 		case 2:
 			groupMap[key].out += v.Amount
 			groupMap[key].outCount++
-
 		case 3:
 			groupMap[key].balance += v.Amount
 		}
@@ -300,7 +286,6 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 
 	var totalIn, totalOut, totalBalanceAdjust float64
 
-	// ✅ 写入数据
 	for k, v := range groupMap {
 
 		balance := v.in - v.out + v.balance
@@ -315,19 +300,16 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 			fmt.Sprintf("%.2f", balance),
 		}
 
-		if err := writer.Write(row); err != nil {
-			return err
-		}
+		writer.Write(row)
 
 		totalIn += v.in
 		totalOut += v.out
 		totalBalanceAdjust += v.balance
 	}
 
-	// ✅ 合计
 	totalBalance := totalIn - totalOut + totalBalanceAdjust
 
-	totalRow := []string{
+	writer.Write([]string{
 		"合计",
 		"",
 		fmt.Sprintf("%.2f", totalIn),
@@ -335,11 +317,7 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 		fmt.Sprintf("%.2f", totalOut),
 		"",
 		fmt.Sprintf("%.2f", totalBalance),
-	}
-
-	if err := writer.Write(totalRow); err != nil {
-		return err
-	}
+	})
 
 	return nil
 }
