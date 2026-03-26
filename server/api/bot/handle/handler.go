@@ -207,7 +207,7 @@ func (handler *BotHandler) HandelChatGroup(botModel bot.Bot, tgMsg botapi.Update
 			}
 		}()
 
-		ledger2.Handle(botModel, tgMsg)
+		ledger2.Dispatch(botModel, tgMsg, *chatGroup)
 	}()
 
 	return
