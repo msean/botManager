@@ -84,7 +84,6 @@ func (l *LedgerRecordHandler) Match(botModel bot.Bot, update botapi.Update) bool
 
 	return true
 }
-
 func (l *LedgerRecordHandler) Handle() error {
 
 	active, err := IsTodayActive(l.botModel.BotID, l.chatGroupID)
@@ -104,6 +103,24 @@ func (l *LedgerRecordHandler) Handle() error {
 	}
 	if count > 0 {
 		return nil
+	}
+
+	// ✅ 新增：账户唯一校验
+	var exist ledger2.Ledger
+	err = global.GVA_MYSQL.
+		Where("bot_id = ? AND chat_group_id = ? AND user_name = ?", l.botModel.BotID, l.chatGroupID, l.userName).
+		Order("id ASC").
+		First(&exist).Error
+
+	if err == nil {
+		if exist.Account != l.account {
+			return l.reply(fmt.Sprintf(
+				"❌ 账户错误：%s 已绑定账户【%s】，不能使用【%s】",
+				l.userName,
+				exist.Account,
+				l.account,
+			))
+		}
 	}
 
 	record := ledger2.Ledger{

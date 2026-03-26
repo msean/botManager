@@ -126,11 +126,29 @@ type stat struct {
 func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*stat, float64, float64, float64) {
 
 	groupMap := make(map[string]*stat)
+	userAccountMap := make(map[string]string) // ✅ 用户 -> 唯一账户
+
 	var totalIn, totalOut, totalBalanceAdjust float64
+
+	// ✅ 先确定每个用户的账户（跳过余额类型）
+	for _, v := range list {
+		if v.ActionType != 3 {
+			userAccountMap[v.UserName] = v.Account
+		}
+	}
 
 	for _, v := range list {
 
-		key := v.UserName + "+" + v.Account
+		account := v.Account
+
+		// ✅ 如果是余额调整 → 强制归到真实账户
+		if v.ActionType == 3 {
+			if acc, ok := userAccountMap[v.UserName]; ok {
+				account = acc
+			}
+		}
+
+		key := v.UserName + "+" + account
 
 		if _, ok := groupMap[key]; !ok {
 			groupMap[key] = &stat{}
@@ -138,17 +156,17 @@ func (l *LedgerSummaryHandler) buildStat(list []ledger2.Ledger) (map[string]*sta
 
 		switch v.ActionType {
 
-		case 1: // 收入
+		case 1:
 			groupMap[key].in += v.Amount
 			groupMap[key].inCount++
 			totalIn += v.Amount
 
-		case 2: // 支出
+		case 2:
 			groupMap[key].out += v.Amount
 			groupMap[key].outCount++
 			totalOut += v.Amount
 
-		case 3: // ✅ 余额调整
+		case 3:
 			groupMap[key].balance += v.Amount
 			totalBalanceAdjust += v.Amount
 		}
@@ -213,6 +231,9 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 	}
 	defer file.Close()
 
+	// ✅ 防止 Excel 打开中文乱码
+	_, _ = file.WriteString("\xEF\xBB\xBF")
+
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
@@ -232,9 +253,31 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 
 	groupMap := make(map[string]*stat)
 
+	// ✅ 用户 -> 唯一账户（过滤掉余额类型）
+	userAccountMap := make(map[string]string)
+
+	for _, v := range list {
+		if v.ActionType != 3 {
+			userAccountMap[v.UserName] = v.Account
+		}
+	}
+
+	// ✅ 统计
 	for _, v := range list {
 
-		key := v.UserName + "+" + v.Account
+		account := v.Account
+
+		// 👉 核心：余额归到真实账户
+		if v.ActionType == 3 {
+			if acc, ok := userAccountMap[v.UserName]; ok {
+				account = acc
+			} else {
+				// ❗ 没有真实账户，直接跳过（避免出现 xxx+余额）
+				continue
+			}
+		}
+
+		key := v.UserName + "+" + account
 
 		if _, ok := groupMap[key]; !ok {
 			groupMap[key] = &stat{}
@@ -257,6 +300,7 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 
 	var totalIn, totalOut, totalBalanceAdjust float64
 
+	// ✅ 写入数据
 	for k, v := range groupMap {
 
 		balance := v.in - v.out + v.balance
@@ -280,7 +324,7 @@ func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath strin
 		totalBalanceAdjust += v.balance
 	}
 
-	// 合计
+	// ✅ 合计
 	totalBalance := totalIn - totalOut + totalBalanceAdjust
 
 	totalRow := []string{
