@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -94,6 +95,10 @@ func (l *LedgerRecordHandler) Handle() error {
 		return nil
 	}
 
+	// ✅ 当前日期
+	today := time.Now().Format("2006-01-02")
+
+	// ✅ 防重复（消息ID）
 	var count int64
 	err = global.GVA_MYSQL.Model(&ledger2.Ledger{}).
 		Where("message_id = ?", l.msg.MessageID).
@@ -105,10 +110,17 @@ func (l *LedgerRecordHandler) Handle() error {
 		return nil
 	}
 
-	// ✅ 新增：账户唯一校验
+	// ===============================
+	// ✅ 账户唯一校验（只查当天）
+	// ===============================
 	var exist ledger2.Ledger
 	err = global.GVA_MYSQL.
-		Where("bot_id = ? AND chat_group_id = ? AND user_name = ?", l.botModel.BotID, l.chatGroupID, l.userName).
+		Where("bot_id = ? AND chat_group_id = ? AND user_name = ? AND work_date = ?",
+			l.botModel.BotID,
+			l.chatGroupID,
+			l.userName,
+			today,
+		).
 		Order("id ASC").
 		First(&exist).Error
 
@@ -139,6 +151,9 @@ func (l *LedgerRecordHandler) Handle() error {
 
 		MessageID: l.msg.MessageID,
 		RawInput:  l.rawText,
+
+		// ✅ 关键新增
+		WorkDate: today,
 	}
 
 	if err := global.GVA_MYSQL.Create(&record).Error; err != nil {

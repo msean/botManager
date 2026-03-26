@@ -107,7 +107,7 @@ func (l *LedgerSummaryHandler) getListByDate(date string) ([]ledger2.Ledger, err
 	var list []ledger2.Ledger
 
 	err := global.GVA_MYSQL.Where(
-		"bot_id = ? AND chat_group_id = ? AND DATE(created_at) = ?",
+		"bot_id = ? AND chat_group_id = ? AND work_date = ?",
 		l.botModel.BotID,
 		l.chatGroupID,
 		date,
