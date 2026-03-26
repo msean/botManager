@@ -61,7 +61,7 @@ func (l *LedgerRecordHandler) Match(botModel bot.Bot, update botapi.Update) bool
 	// ✅ 核心：余额特殊处理
 	if account == "余额" {
 		action = 3
-
+		l.account = ""
 		if sign == "-" {
 			amount = -amount
 		}
@@ -113,7 +113,7 @@ func (l *LedgerRecordHandler) Handle() error {
 		First(&exist).Error
 
 	if err == nil {
-		if exist.Account != l.account {
+		if exist.Account != l.account && l.account != "" {
 			return l.reply(fmt.Sprintf(
 				"❌ 账户错误：%s 已绑定账户【%s】，不能使用【%s】",
 				l.userName,
