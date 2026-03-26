@@ -115,11 +115,12 @@ func (l *LedgerRecordHandler) Handle() error {
 	// ===============================
 	var exist ledger2.Ledger
 	err = global.GVA_MYSQL.
-		Where("bot_id = ? AND chat_group_id = ? AND user_name = ? AND work_date = ?",
+		Where("bot_id = ? AND chat_group_id = ? AND user_name = ? AND work_date = ? AND account != ?",
 			l.botModel.BotID,
 			l.chatGroupID,
 			l.userName,
 			today,
+			"",
 		).
 		Order("id ASC").
 		First(&exist).Error
