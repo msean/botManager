@@ -1,8 +1,10 @@
 package ledger2
 
 import (
+	"encoding/csv"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -244,4 +246,92 @@ func (l *LedgerSummaryHandler) generateExcel(list []ledger2.Ledger, filePath str
 	f.SetCellValue(sheet, fmt.Sprintf("G%d", row), totalBalance)
 
 	return f.SaveAs(filePath)
+}
+
+func (l *LedgerSummaryHandler) generateCSV(list []ledger2.Ledger, filePath string, date string) error {
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// 表头
+	header := []string{"日期", "账户", "收入", "收入笔数", "支出", "支出笔数", "余额"}
+	if err := writer.Write(header); err != nil {
+		return err
+	}
+
+	// ===== 统计 =====
+	type stat struct {
+		in       float64
+		out      float64
+		inCount  int
+		outCount int
+	}
+
+	groupMap := make(map[string]*stat)
+
+	for _, v := range list {
+		key := v.UserName + "+" + v.Account
+
+		if _, ok := groupMap[key]; !ok {
+			groupMap[key] = &stat{}
+		}
+
+		if v.ActionType == 1 {
+			groupMap[key].in += v.Amount
+			groupMap[key].inCount++
+		} else {
+			groupMap[key].out += v.Amount
+			groupMap[key].outCount++
+		}
+	}
+
+	// ===== 写数据 =====
+	var totalIn, totalOut float64
+
+	for k, v := range groupMap {
+
+		balance := v.in - v.out
+
+		row := []string{
+			date,
+			k,
+			fmt.Sprintf("%.2f", v.in),
+			strconv.Itoa(v.inCount),
+			fmt.Sprintf("%.2f", v.out),
+			strconv.Itoa(v.outCount),
+			fmt.Sprintf("%.2f", balance),
+		}
+
+		if err := writer.Write(row); err != nil {
+			return err
+		}
+
+		totalIn += v.in
+		totalOut += v.out
+	}
+
+	// ===== 合计 =====
+	totalBalance := totalIn - totalOut
+
+	totalRow := []string{
+		"合计",
+		"",
+		fmt.Sprintf("%.2f", totalIn),
+		"",
+		fmt.Sprintf("%.2f", totalOut),
+		"",
+		fmt.Sprintf("%.2f", totalBalance),
+	}
+
+	if err := writer.Write(totalRow); err != nil {
+		return err
+	}
+
+	return nil
 }

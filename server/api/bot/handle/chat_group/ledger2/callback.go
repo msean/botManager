@@ -59,7 +59,7 @@ func handleCallback(botModel bot.Bot, update botapi.Update) error {
 	}
 
 	// ✅ 生成 Excel（带日期）
-	err = handler.generateExcel(list, filePath, date)
+	err = handler.generateCSV(list, filePath, date)
 	if err != nil {
 		return err
 	}
