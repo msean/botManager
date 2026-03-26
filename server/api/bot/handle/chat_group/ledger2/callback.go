@@ -51,7 +51,7 @@ func handleCallback(botModel bot.Bot, update botapi.Update) error {
 	}
 
 	// ✅ 文件名（带日期）
-	filePath := fmt.Sprintf("ledger_%s.xlsx", date)
+	filePath := fmt.Sprintf("ledger_%s.csv", date)
 
 	handler := LedgerSummaryHandler{
 		botModel:    botModel,
