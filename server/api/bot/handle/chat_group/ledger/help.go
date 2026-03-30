@@ -10,6 +10,7 @@ import (
 type HelpHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
+	ShouldPermissionAwareWithOutAdmin
 }
 
 func (h *HelpHandler) Match(botModel bot.Bot, update botapi.Update) bool {
