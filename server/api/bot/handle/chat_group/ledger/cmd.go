@@ -143,6 +143,7 @@ func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 	}
 	chain := NewParserChain(
 		&HelpHandler{},
+		&RateHandler{},
 		&LedgerHandler{},
 		&LedgerShowFeeRateHandler{},
 		&LedgerSetFeeRateHandler{},
@@ -150,7 +151,6 @@ func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 		&CleanHandler{},
 		&CalcHandler{},
 	)
-
 	return chain.Handle(botModel, tgMsg)
 }
 
