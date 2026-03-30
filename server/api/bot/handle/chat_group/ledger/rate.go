@@ -45,7 +45,7 @@ func (r *RateHandler) Handle() error {
 		return r.reply("❌ 获取汇率失败")
 	}
 
-	avg, _ := getTop10USDTToCNY()
+	// _, _ = getTop10USDTToCNY()
 
 	text := "💱 USDT 场外汇率（OKX）\n\n"
 
@@ -53,7 +53,7 @@ func (r *RateHandler) Handle() error {
 		text += fmt.Sprintf("第%d档：%.2f\n", i+1, p)
 	}
 
-	text += fmt.Sprintf("\n📊 平均价：%.2f", avg)
+	// text += fmt.Sprintf("\n📊 平均价：%.2f", avg)
 
 	return r.reply(text)
 }
