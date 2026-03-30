@@ -56,7 +56,6 @@ func (r *RateHandler) Handle() error {
 
 	return r.reply(text)
 }
-
 func getTop10USDTToCNY() ([]float64, error) {
 	url := "https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=cny&baseCurrency=usdt&side=sell"
 
@@ -73,10 +72,13 @@ func getTop10USDTToCNY() ([]float64, error) {
 		return nil, err
 	}
 
-	// 结构体（只解析需要的字段）
+	// ✅ 正确解析结构
 	var result struct {
-		Data []struct {
-			Price string `json:"price"`
+		Code int `json:"code"`
+		Data struct {
+			Sell []struct {
+				Price string `json:"price"`
+			} `json:"sell"`
 		} `json:"data"`
 	}
 
@@ -84,26 +86,27 @@ func getTop10USDTToCNY() ([]float64, error) {
 		return nil, err
 	}
 
-	if len(result.Data) == 0 {
-		return nil, fmt.Errorf("no data")
+	if len(result.Data.Sell) == 0 {
+		return nil, fmt.Errorf("no sell data")
 	}
 
 	// ✅ 取前10档
 	limit := 10
-	if len(result.Data) < 10 {
-		limit = len(result.Data)
+	if len(result.Data.Sell) < 10 {
+		limit = len(result.Data.Sell)
 	}
 
 	prices := make([]float64, 0, limit)
 
 	for i := 0; i < limit; i++ {
 		var price float64
-		fmt.Sscanf(result.Data[i].Price, "%f", &price)
+		fmt.Sscanf(result.Data.Sell[i].Price, "%f", &price)
 		prices = append(prices, price)
 	}
 
 	return prices, nil
 }
+
 func (r *RateHandler) reply(text string) error {
 	botSender, err := botapi.NewBotAPI(r.botModel.Token)
 	if err != nil {
