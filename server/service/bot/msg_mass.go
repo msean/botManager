@@ -93,7 +93,7 @@ func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info bo
 		db = db.Limit(limit).Offset(offset)
 	}
 
-	if err = db.Find(&records).Error; err != nil {
+	if err = db.Order("created desc").Find(&records).Error; err != nil {
 		return
 	}
 
