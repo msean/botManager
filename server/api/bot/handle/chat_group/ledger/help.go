@@ -64,6 +64,10 @@ func (h *HelpHandler) Handle() error {
 下发1000  
 下发1000 张三  
 说明：xx1是下发金额， xx2是下发账户姓名
+
+7、查看汇率
+命令：汇率/hl
+说明：来源于okex
 `
 	return h.reply(text)
 }
