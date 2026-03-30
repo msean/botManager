@@ -88,12 +88,10 @@ func (r *RateHandler) getUSDTData(payType string) string {
 	var result struct {
 		Code int `json:"code"`
 		Data struct {
-			Data struct {
-				Buy []struct {
-					Price    string `json:"price"`
-					NickName string `json:"nickName"`
-				} `json:"buy"`
-			} `json:"data"`
+			Buy []struct {
+				Price    string `json:"price"`
+				NickName string `json:"nickName"`
+			} `json:"buy"`
 		} `json:"data"`
 	}
 
@@ -101,12 +99,12 @@ func (r *RateHandler) getUSDTData(payType string) string {
 		return msg + "解析失败\n\n"
 	}
 
-	if result.Code != 0 || len(result.Data.Data.Buy) == 0 {
+	if result.Code != 0 || len(result.Data.Buy) == 0 {
 		return msg + "暂无数据\n\n"
 	}
 
 	// 取前10
-	list := result.Data.Data.Buy
+	list := result.Data.Buy
 	limit := 10
 	if len(list) < 10 {
 		limit = len(list)
