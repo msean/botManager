@@ -69,7 +69,7 @@ func (r *RateHandler) getUSDTData(payType string) string {
 	typeCN := typeMap[payType]
 	msg := fmt.Sprintf("\n类型： %s\n", typeCN)
 
-	url := fmt.Sprintf("https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=CNY&baseCurrency=USDT&side=buy&paymentMethod=%s&page=1&rows=10", payType)
+	url := fmt.Sprintf("https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=CNY&baseCurrency=USDT&side=sell&paymentMethod=%s&page=1&rows=10", payType)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 
@@ -88,10 +88,10 @@ func (r *RateHandler) getUSDTData(payType string) string {
 	var result struct {
 		Code int `json:"code"`
 		Data struct {
-			Buy []struct {
+			Sell []struct {
 				Price    string `json:"price"`
 				NickName string `json:"nickName"`
-			} `json:"buy"`
+			} `json:"sell"`
 		} `json:"data"`
 	}
 
@@ -99,12 +99,12 @@ func (r *RateHandler) getUSDTData(payType string) string {
 		return msg + "解析失败\n\n"
 	}
 
-	if result.Code != 0 || len(result.Data.Buy) == 0 {
+	if result.Code != 0 || len(result.Data.Sell) == 0 {
 		return msg + "暂无数据\n\n"
 	}
 
 	// 取前10
-	list := result.Data.Buy
+	list := result.Data.Sell
 	limit := 10
 	if len(list) < 10 {
 		limit = len(list)
