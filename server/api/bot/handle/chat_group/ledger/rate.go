@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,23 +57,28 @@ func (r *RateHandler) Handle() error {
 
 	return r.reply(text)
 }
+
 func getTop10USDTToCNY() ([]float64, error) {
-	url := "https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=cny&baseCurrency=usdt&side=sell"
+	url := "https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=cny&baseCurrency=usdt&side=sell&page=1&size=20"
 
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
 
-	resp, err := client.Get(url)
+	req, _ := http.NewRequest("GET", url, nil)
+
+	// ✅ 非常关键：伪装浏览器（否则返回空）
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	body, _ := io.ReadAll(resp.Body)
 
-	// ✅ 正确解析结构
 	var result struct {
 		Code int `json:"code"`
 		Data struct {
@@ -86,11 +92,11 @@ func getTop10USDTToCNY() ([]float64, error) {
 		return nil, err
 	}
 
+	// 🔍 调试用（建议你先开）
 	if len(result.Data.Sell) == 0 {
-		return nil, fmt.Errorf("no sell data")
+		return nil, fmt.Errorf("no sell data, raw: %s", string(body))
 	}
 
-	// ✅ 取前10档
 	limit := 10
 	if len(result.Data.Sell) < 10 {
 		limit = len(result.Data.Sell)
@@ -99,8 +105,7 @@ func getTop10USDTToCNY() ([]float64, error) {
 	prices := make([]float64, 0, limit)
 
 	for i := 0; i < limit; i++ {
-		var price float64
-		fmt.Sscanf(result.Data.Sell[i].Price, "%f", &price)
+		price, _ := strconv.ParseFloat(result.Data.Sell[i].Price, 64)
 		prices = append(prices, price)
 	}
 
