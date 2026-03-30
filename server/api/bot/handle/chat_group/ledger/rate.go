@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
+	"go.uber.org/zap"
 )
 
 type RateHandler struct {
@@ -61,6 +63,7 @@ func getTop10USDTToCNY() ([]float64, error) {
 
 	resp, err := client.Get(url)
 	if err != nil {
+		global.GVA_LOG.Error("getTop10USDTToCNY", zap.Error(err))
 		return nil, err
 	}
 	defer resp.Body.Close()
