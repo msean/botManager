@@ -115,6 +115,7 @@ func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 		&StartLedgerHandler{},
 		&LedgerRecordHandler{},
 		&LedgerSummaryHandler{},
+		&ResetLedgerHandler{},
 	)
 
 	return chain.Handle(botModel, tgMsg)
