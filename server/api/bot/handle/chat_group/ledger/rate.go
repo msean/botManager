@@ -5,19 +5,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
-	"go.uber.org/zap"
 )
 
 type RateHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
+	text        string
 }
 
 func (r *RateHandler) Match(botModel bot.Bot, update botapi.Update) bool {
@@ -26,54 +24,62 @@ func (r *RateHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 	}
 
 	text := strings.TrimSpace(update.Message.Text)
+	text = strings.ToUpper(text)
 
-	if text != "hl" && text != "汇率" {
+	if text != "Q" && text != "K" && text != "Z" && text != "V" {
 		return false
 	}
 
 	r.botModel = botModel
 	r.chatGroupID = update.Message.Chat.ID
+	r.text = text
 
 	return true
 }
 
 func (r *RateHandler) Handle() error {
 
-	prices, err := getTop10USDTToCNY()
-	if err != nil {
-		global.GVA_LOG.Error("getTop10USDTToCNY", zap.Error(err))
-		return r.reply("❌ 获取汇率失败")
+	now := time.Now().Format("2006-01-02 15:04:05")
+	msg := fmt.Sprintf("欧易 USDT 实时汇率 %s\n", now)
+
+	switch r.text {
+	case "Q":
+		msg += r.getUSDTData("bank")
+		msg += r.getUSDTData("aliPay")
+		msg += r.getUSDTData("wxPay")
+	case "K":
+		msg += r.getUSDTData("bank")
+	case "Z":
+		msg += r.getUSDTData("aliPay")
+	case "V":
+		msg += r.getUSDTData("wxPay")
 	}
 
-	// _, _ = getTop10USDTToCNY()
-
-	text := "💱 USDT 场外汇率（OKX）\n\n"
-
-	for i, p := range prices {
-		text += fmt.Sprintf("第%d档：%.2f\n", i+1, p)
-	}
-
-	// text += fmt.Sprintf("\n📊 平均价：%.2f", avg)
-
-	return r.reply(text)
+	return r.reply(msg)
 }
 
-func getTop10USDTToCNY() ([]float64, error) {
-	url := "https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=cny&baseCurrency=usdt&side=sell&page=1&size=20"
+func (r *RateHandler) getUSDTData(payType string) string {
 
-	client := &http.Client{
-		Timeout: 5 * time.Second,
+	typeMap := map[string]string{
+		"bank":   "银行卡",
+		"aliPay": "支付宝",
+		"wxPay":  "微信",
 	}
 
-	req, _ := http.NewRequest("GET", url, nil)
+	typeCN := typeMap[payType]
+	msg := fmt.Sprintf("\n类型： %s\n", typeCN)
 
-	// ✅ 非常关键：伪装浏览器（否则返回空）
+	url := fmt.Sprintf("https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=CNY&baseCurrency=USDT&side=buy&paymentMethod=%s&page=1&rows=10", payType)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return msg + "请求失败\n\n"
 	}
 	defer resp.Body.Close()
 
@@ -82,34 +88,38 @@ func getTop10USDTToCNY() ([]float64, error) {
 	var result struct {
 		Code int `json:"code"`
 		Data struct {
-			Sell []struct {
-				Price string `json:"price"`
-			} `json:"sell"`
+			Data struct {
+				Sell []struct {
+					Price    string   `json:"price"`
+					NickName string   `json:"nickName"`
+					Methods  []string `json:"paymentMethods"`
+				} `json:"sell"`
+			} `json:"data"`
 		} `json:"data"`
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, err
+		return msg + "解析失败\n\n"
 	}
 
-	// 🔍 调试用（建议你先开）
-	if len(result.Data.Sell) == 0 {
-		return nil, fmt.Errorf("no sell data, raw: %s", string(body))
+	if result.Code != 0 || len(result.Data.Data.Sell) == 0 {
+		return msg + "暂无数据\n\n"
 	}
 
+	// 取前10
+	list := result.Data.Data.Sell
 	limit := 10
-	if len(result.Data.Sell) < 10 {
-		limit = len(result.Data.Sell)
+	if len(list) < 10 {
+		limit = len(list)
 	}
-
-	prices := make([]float64, 0, limit)
 
 	for i := 0; i < limit; i++ {
-		price, _ := strconv.ParseFloat(result.Data.Sell[i].Price, 64)
-		prices = append(prices, price)
+		item := list[i]
+		msg += fmt.Sprintf("%s           %s\n", item.Price, item.NickName)
 	}
 
-	return prices, nil
+	msg += "\n\n"
+	return msg
 }
 
 func (r *RateHandler) reply(text string) error {
