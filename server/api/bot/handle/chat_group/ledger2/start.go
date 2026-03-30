@@ -1,7 +1,6 @@
 package ledger2
 
 import (
-	"errors"
 	"strings"
 	"time"
 
@@ -9,23 +8,22 @@ import (
 	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/model/ledger2"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
-	"gorm.io/gorm"
 )
 
-type StartLedgerHandler struct {
+type ResetLedgerHandler struct {
 	botModel    bot.Bot
 	chatGroupID int64
 	ShouldPermissionAwareWithOutAdmin
 }
 
-func (l *StartLedgerHandler) Match(botModel bot.Bot, update botapi.Update) bool {
+func (l *ResetLedgerHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 	if update.Message == nil || update.Message.Text == "" {
 		return false
 	}
 
 	text := strings.TrimSpace(update.Message.Text)
 
-	if text != "开始" {
+	if text != "上课" {
 		return false
 	}
 
@@ -35,20 +33,36 @@ func (l *StartLedgerHandler) Match(botModel bot.Bot, update botapi.Update) bool 
 	return true
 }
 
-func (l *StartLedgerHandler) Handle() error {
-	var session ledger2.LedgerSession
+func (l *ResetLedgerHandler) Handle() error {
 
 	today := time.Now().Format("2006-01-02")
 
-	err := global.GVA_MYSQL.Where(
+	tx := global.GVA_MYSQL.Begin()
+
+	// ============================
+	// ✅ 1. 删除当天账单
+	// ============================
+	err := tx.Where(
+		"bot_id = ? AND chat_group_id = ? AND work_date = ?",
+		l.botModel.BotID,
+		l.chatGroupID,
+		today,
+	).Delete(&ledger2.Ledger{}).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	var session ledger2.LedgerSession
+
+	err = tx.Where(
 		"bot_id = ? AND chat_group_id = ? AND work_date = ?",
 		l.botModel.BotID,
 		l.chatGroupID,
 		today,
 	).First(&session).Error
 
-	// ✅ 今天没开始过 → 创建
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil {
+		// 没有就创建
 		session = ledger2.LedgerSession{
 			BotID:       l.botModel.BotID,
 			ChatGroupID: l.chatGroupID,
@@ -56,31 +70,27 @@ func (l *StartLedgerHandler) Handle() error {
 			IsActive:    1,
 		}
 
-		if err := global.GVA_MYSQL.Create(&session).Error; err != nil {
+		if err := tx.Create(&session).Error; err != nil {
+			tx.Rollback()
 			return err
 		}
+	} else {
+		// 有就重置
+		session.IsActive = 1
+		if err := tx.Save(&session).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 
-		return l.reply("✅ 今日记账已开始")
-	} else if err != nil {
+	if err := tx.Commit().Error; err != nil {
 		return err
 	}
 
-	// ✅ 今天已经开始过
-	if session.IsActive == 1 {
-		return l.reply("⚠️ 今日已经开始记账了")
-	}
-
-	// ✅ 如果被关过 → 重新开启
-	session.IsActive = 1
-
-	if err := global.GVA_MYSQL.Save(&session).Error; err != nil {
-		return err
-	}
-
-	return l.reply("✅ 今日记账已重新开启")
+	return l.reply("🔄 今日账单已清空，已重新开始记账")
 }
 
-func (l *StartLedgerHandler) reply(text string) error {
+func (l *ResetLedgerHandler) reply(text string) error {
 	botSender, err := botapi.NewBotAPI(l.botModel.Token)
 	if err != nil {
 		return err
@@ -88,27 +98,4 @@ func (l *StartLedgerHandler) reply(text string) error {
 	msg := botapi.NewMessage(l.chatGroupID, text)
 	_, err = botSender.Send(msg)
 	return err
-}
-
-func IsTodayActive(botID, chatGroupID int64) (bool, error) {
-	var session ledger2.LedgerSession
-
-	today := time.Now().Format("2006-01-02")
-
-	err := global.GVA_MYSQL.Where(
-		"bot_id = ? AND chat_group_id = ? AND work_date = ? AND is_active = 1",
-		botID,
-		chatGroupID,
-		today,
-	).First(&session).Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, nil
-	}
-
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
 }
