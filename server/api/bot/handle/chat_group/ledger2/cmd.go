@@ -109,6 +109,7 @@ func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 		return
 	}
 	chain := NewParserChain(
+		&HelpHandler{},
 		&AddOprUserHandler{},
 		&DelOprUserHandler{},
 		&ListOprUserHandler{},
