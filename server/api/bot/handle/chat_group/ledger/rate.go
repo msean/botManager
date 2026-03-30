@@ -96,11 +96,11 @@ func (r *RateHandler) getUSDTData(payType string) string {
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		return msg + "解析失败\n\n"
+		return msg + "解析失败\n"
 	}
 
 	if result.Code != 0 || len(result.Data.Sell) == 0 {
-		return msg + "暂无数据\n\n"
+		return msg + "暂无数据\n"
 	}
 
 	// 取前10
@@ -115,7 +115,7 @@ func (r *RateHandler) getUSDTData(payType string) string {
 		msg += fmt.Sprintf("%s           %s\n", item.Price, item.NickName)
 	}
 
-	msg += "\n\n"
+	msg += "\n"
 	return msg
 }
 
