@@ -36,7 +36,7 @@ func (r *RateHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 
 func (r *RateHandler) Handle() error {
 
-	rate, err := getUSDTToCNY()
+	rate, err := getTop10USDTToCNY()
 	if err != nil {
 		return r.reply("❌ 获取汇率失败，请稍后再试")
 	}
@@ -50,49 +50,53 @@ func (r *RateHandler) Handle() error {
 	return r.reply(text)
 }
 
-// ============================
-// 获取 OKX 汇率
-// ============================
-func getUSDTToCNY() (float64, error) {
+func getTop10USDTToCNY() ([]float64, error) {
+	url := "https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=cny&baseCurrency=usdt&side=sell"
 
-	url := "https://www.okx.com/api/v5/market/ticker?instId=USDT-CNY"
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
+	client := &http.Client{Timeout: 5 * time.Second}
 
 	resp, err := client.Get(url)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
+	// 结构体（只解析需要的字段）
 	var result struct {
-		Code string `json:"code"`
 		Data []struct {
-			Last string `json:"last"`
+			Price string `json:"price"`
 		} `json:"data"`
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if len(result.Data) == 0 {
-		return 0, fmt.Errorf("no data")
+		return nil, fmt.Errorf("no data")
 	}
 
-	var rate float64
-	fmt.Sscanf(result.Data[0].Last, "%f", &rate)
+	// ✅ 取前10档
+	limit := 10
+	if len(result.Data) < 10 {
+		limit = len(result.Data)
+	}
 
-	return rate, nil
+	prices := make([]float64, 0, limit)
+
+	for i := 0; i < limit; i++ {
+		var price float64
+		fmt.Sscanf(result.Data[i].Price, "%f", &price)
+		prices = append(prices, price)
+	}
+
+	return prices, nil
 }
-
 func (r *RateHandler) reply(text string) error {
 	botSender, err := botapi.NewBotAPI(r.botModel.Token)
 	if err != nil {
