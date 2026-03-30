@@ -1,4 +1,4 @@
-package ledger
+package msgmass
 
 import (
 	"strings"
@@ -33,37 +33,21 @@ func (h *HelpHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 func (h *HelpHandler) Handle() error {
 
 	text := `
-普通记账机器人帮助菜单
+群发机器人帮助菜单
 1、增加操作人
 命令：增加操作人 xx  
 示例：增加操作人 bot  
 说明：xx是群用户，将 bot 设置为可操作账单人（仅管理员）
 
-2、清空今日账单 
-命令：清空今日账单 
-说明：删除今天所有账单记录
-
-3、费率设置
-命令：设置费率 xx  
-示例：设置费率 2.3 
-说明：xx是要设置的费率 
-
-4、查看费率  
-命令：查看费率
-
-5、入款操作
-命令：+xx1 xx2
+2、艾特设置 
+命令：艾特设置 xx1,xx2
 示例：
-+800  
-+800 张三  
-说明：xx1是入款金额， xx2是入款账户姓名
+艾特设置 bot1
+艾特设置 bot1,bot2 
+说明：多个艾特用户用,分割
 
-6、下发操作
-命令：下发xx1 xx2
-示例：
-下发1000  
-下发1000 张三  
-说明：xx1是下发金额， xx2是下发账户姓名
+3、查看群艾特用户
+命令：艾特查看 
 `
 	return h.reply(text)
 }
