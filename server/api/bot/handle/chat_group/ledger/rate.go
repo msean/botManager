@@ -36,16 +36,20 @@ func (r *RateHandler) Match(botModel bot.Bot, update botapi.Update) bool {
 
 func (r *RateHandler) Handle() error {
 
-	rate, err := getTop10USDTToCNY()
+	prices, err := getTop10USDTToCNY()
 	if err != nil {
-		return r.reply("❌ 获取汇率失败，请稍后再试")
+		return r.reply("❌ 获取汇率失败")
 	}
 
-	text := fmt.Sprintf(
-		"💱 当前汇率（欧易）\n\nUSDT ≈ %.2f CNY\n\n⏰ 更新时间：%s",
-		rate,
-		time.Now().Format("2006-01-02 15:04:05"),
-	)
+	avg, _ := getTop10USDTToCNY()
+
+	text := "💱 USDT 场外汇率（OKX）\n\n"
+
+	for i, p := range prices {
+		text += fmt.Sprintf("第%d档：%.2f\n", i+1, p)
+	}
+
+	text += fmt.Sprintf("\n📊 平均价：%.2f", avg)
 
 	return r.reply(text)
 }
