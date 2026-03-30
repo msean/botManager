@@ -69,7 +69,7 @@ func (ledgerService *LedgerService) GetLedgerInfoList(ctx context.Context, info 
 		db = db.Limit(limit).Offset(offset)
 	}
 
-	if err = db.Order("created desc").Find(&ledgers).Error; err != nil {
+	if err = db.Order("created_at desc").Find(&ledgers).Error; err != nil {
 		return
 	}
 
