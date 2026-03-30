@@ -40,6 +40,7 @@ func (r *RateHandler) Handle() error {
 
 	prices, err := getTop10USDTToCNY()
 	if err != nil {
+		global.GVA_LOG.Error("getTop10USDTToCNY", zap.Error(err))
 		return r.reply("❌ 获取汇率失败")
 	}
 
@@ -63,7 +64,6 @@ func getTop10USDTToCNY() ([]float64, error) {
 
 	resp, err := client.Get(url)
 	if err != nil {
-		global.GVA_LOG.Error("getTop10USDTToCNY", zap.Error(err))
 		return nil, err
 	}
 	defer resp.Body.Close()
