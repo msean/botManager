@@ -72,6 +72,18 @@
           </template>
         </el-table-column>
 
+        <!-- 是否记账 -->
+        <el-table-column label="自动广告发布" width="140">
+          <template #default="scope">
+            <el-switch
+              v-model="scope.row.isAdPublish"
+              :active-value="1"
+              :inactive-value="2"
+              @change="val => AdPublishSwitch(scope.row, val)"
+            />
+          </template>
+        </el-table-column>
+
         <!-- <el-table-column label="创建时间" width="180">
           <template #default="scope">
             {{ formatDate(scope.row.createdAt) }}
@@ -80,7 +92,7 @@
 
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="scope">
-            <el-button link @click="getDetails(scope.row)">查看</el-button>
+            <!-- <el-button link @click="getDetails(scope.row)">查看</el-button> -->
             <el-button link @click="updateBotFunc(scope.row)">编辑</el-button>
             <el-button link type="danger" @click="deleteRow(scope.row)">
               删除
@@ -127,12 +139,36 @@
           />
         </el-form-item>
 
+        <el-form-item label="是否开启群发">
+          <el-switch
+            v-model="formData.isForMsgMgr"
+            :active-value="1"
+            :inactive-value="2"
+          />
+        </el-form-item>
+
+        <el-form-item label="是否开启群发">
+          <el-switch
+            v-model="formData.isForMsgMass"
+            :active-value="1"
+            :inactive-value="2"
+          />
+        </el-form-item>
+
+         <el-form-item label="是否开启广告发布">
+          <el-switch
+            v-model="formData.isAdPublish"
+            :active-value="1"
+            :inactive-value="2"
+          />
+        </el-form-item>
+
         <el-button type="primary" @click="enterDialog">确定</el-button>
       </el-form>
     </el-drawer>
 
     <!-- 查看详情 -->
-    <el-drawer v-model="detailShow" size="400px" title="查看机器人">
+    <!-- <el-drawer v-model="detailShow" size="400px" title="查看机器人">
       <el-descriptions border :column="1">
         <el-descriptions-item label="名称">
           {{ detailForm.name }}
@@ -147,7 +183,7 @@
           {{ detailForm.isForMsgMgr === 1 ? '开启' : '关闭' }}
         </el-descriptions-item>
       </el-descriptions>
-    </el-drawer>
+    </el-drawer> -->
   </div>
 </template>
 
@@ -257,6 +293,22 @@ const onLedgerSwitchChange = async (row, newVal) => {
   })
   if (res.code !== 0) {
     row.isForLedger = oldVal
+    ElMessage.error('更新失败，已回滚')
+  } else {
+    ElMessage.success('更新成功')
+  }
+}
+
+
+/** 开启广告自动发布 */
+const AdPublishSwitch = async (row, newVal) => {
+  const oldVal = newVal === 1 ? 2 : 1
+  const res = await updateBot({
+    botID: row.botID,
+    isAdPublish: newVal
+  })
+  if (res.code !== 0) {
+    row.isAdPublish = oldVal
     ElMessage.error('更新失败，已回滚')
   } else {
     ElMessage.success('更新成功')

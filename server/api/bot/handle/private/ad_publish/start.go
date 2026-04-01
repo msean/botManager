@@ -1,4 +1,4 @@
-package private
+package adpublish
 
 import (
 	"github.com/msean/botmanager/server/global/constant"
