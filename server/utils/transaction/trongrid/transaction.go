@@ -1,4 +1,4 @@
-package utils
+package trongrid
 
 import (
 	"context"
@@ -6,34 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sync"
 	"time"
-
-	"golang.org/x/time/rate"
 )
-
-var (
-	trxLimiterOnce sync.Once
-	trxLimiter     *rate.Limiter
-	clientOnce     sync.Once
-	httpClient     *http.Client
-)
-
-func getTronLimiter() *rate.Limiter {
-	trxLimiterOnce.Do(func() {
-		trxLimiter = rate.NewLimiter(rate.Limit(1), 1)
-	})
-	return trxLimiter
-}
-
-func getHTTPClient() *http.Client {
-	clientOnce.Do(func() {
-		httpClient = &http.Client{
-			Timeout: 10 * time.Second,
-		}
-	})
-	return httpClient
-}
 
 type (
 	TronResponseData struct {
@@ -57,13 +31,20 @@ type (
 	}
 )
 
-func FetchTransactions(account string, limit int) (*TronResponse, error) {
+func FetchTransactions(account string, limit int, contract string) (*TronResponse, error) {
 
-	contract := "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
-	url := fmt.Sprintf(
-		"https://api.trongrid.io/v1/accounts/%s/transactions/trc20?limit=%d&contract_address=%s",
-		account, limit, contract,
-	)
+	var url string
+	if contract != "" {
+		url = fmt.Sprintf(
+			"https://api.trongrid.io/v1/accounts/%s/transactions/trc20?limit=%d&contract_address=%s",
+			account, limit, contract,
+		)
+	} else {
+		url = fmt.Sprintf(
+			"https://api.trongrid.io/v1/accounts/%s/transactions/trc20?limit=%d",
+			account, limit,
+		)
+	}
 
 	limiter := getTronLimiter()
 	client := getHTTPClient()

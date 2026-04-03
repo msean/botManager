@@ -7,7 +7,7 @@ import (
 
 	"github.com/msean/botmanager/server/model/bot"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
-	"github.com/msean/botmanager/server/utils/transaction"
+	"github.com/msean/botmanager/server/utils/transaction/tronscan"
 )
 
 var tronAddressRegex = regexp.MustCompile(`^T[1-9A-HJ-NP-Za-km-z]{33}$`)
@@ -53,42 +53,57 @@ func (p *TronAddressParser) Handle() error {
 
 func BuildAddressReport(address string) (string, error) {
 
-	acc, err := transaction.GetAccountInfo(address)
+	info, err := tronscan.GetAccountInfo(address)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("获取账户信息失败: %v", err)
 	}
 
-	stats, err := transaction.GetTxStats(address)
+	now := time.Now()
+
+	// 今日
+	todayStart, todayEnd := tronscan.GetDayRange(now)
+	todayStat, err := tronscan.CalcUSDTStat(address, todayStart, todayEnd)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("获取今日数据失败: %v", err)
 	}
 
-	msg := fmt.Sprintf(`
-地址：%s
+	// 昨日
+	yesterday := now.AddDate(0, 0, -1)
+	yStart, yEnd := tronscan.GetDayRange(yesterday)
+	yStat, err := tronscan.CalcUSDTStat(address, yStart, yEnd)
+	if err != nil {
+		return "", fmt.Errorf("获取昨日数据失败: %v", err)
+	}
 
-💰 TRX余额：%.2f
-💵 USDT余额：%.2f
+	// 0点USDT余额
+	zeroUSDT := tronscan.CalcUSDTZeroBalance(
+		info.USDTBalance,
+		todayStat.In,
+		todayStat.Out,
+	)
 
-📊 累计交易：%d
-⏱ 激活时间：%s
-
-📅 今日
-收入：%.2f
-支出：%.2f
-
-📆 昨日
-收入：%.2f
-支出：%.2f
-`,
-		address,
-		acc.TRXBalance,
-		acc.USDTBalance,
-		acc.TotalTxCount,
-		time.UnixMilli(stats.FirstTime).Format("2006-01-02 15:04:05"),
-		stats.TodayIn,
-		stats.TodayOut,
-		stats.YesterdayIn,
-		stats.YesterdayOut,
+	// ===== 构建返回文本 =====
+	msg := fmt.Sprintf(
+		"📊 地址统计\n\n"+
+			"📍 地址：%s\n\n"+
+			"💰 当前余额：\n"+
+			"USDT：%.2f\n"+
+			"TRX：%.2f\n\n"+
+			"📅 今日：\n"+
+			"收入：%.2f USDT\n"+
+			"支出：%.2f USDT\n\n"+
+			"📆 昨日：\n"+
+			"收入：%.2f USDT\n"+
+			"支出：%.2f USDT\n\n"+
+			"🕛 今日0点余额：%.2f USDT"+
+			address,
+		info.USDTBalance,
+		info.TRXBalance,
+		todayStat.In,
+		todayStat.Out,
+		yStat.In,
+		yStat.Out,
+		zeroUSDT,
 	)
 
 	return msg, nil

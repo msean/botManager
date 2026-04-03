@@ -13,6 +13,7 @@ import (
 	"github.com/msean/botmanager/server/utils"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	bot_api "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
+	"github.com/msean/botmanager/server/utils/transaction/trongrid"
 	"go.uber.org/zap"
 )
 
@@ -132,13 +133,13 @@ func (pay *Pay) GetPaymentAddr() (paymentAddr string, err error) {
 	return
 }
 
-func MatchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx utils.TronResponseData) (match bool) {
+func MatchTransaction(paymentAddr string, order recharge.UserRechargeRecord, trx trongrid.TronResponseData) (match bool) {
 	if trx.To != paymentAddr {
 		return
 	}
 
 	global.GVA_LOG.Info("reconcileAccount matchTransaction", zap.Uint("orderID", order.ID), zap.Any("trx", trx))
-	amount := utils.ParseAmount(trx.Value, trx.TokenInfo.Decimals)
+	amount := trongrid.ParseAmount(trx.Value, trx.TokenInfo.Decimals)
 
 	if math.Abs(amount-order.Price) > 0.000001 {
 		return
