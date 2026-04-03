@@ -8,6 +8,7 @@ import (
 
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
+	"github.com/msean/botmanager/server/model/bot"
 	"github.com/msean/botmanager/server/service/cache"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
@@ -37,7 +38,11 @@ var (
 	confirmAdExpire     = 30 * time.Minute // 确认广告超时有效时间
 )
 
-func Handle(update botapi.Update, token string, botID int64) (err error) {
+func Entrance(update botapi.Update, botModel bot.Bot) (err error) {
+
+	token := botModel.Token
+	botID := botModel.BotID
+
 	var text string
 	var chatID int64
 
