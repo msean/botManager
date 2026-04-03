@@ -8,6 +8,7 @@ import (
 
 type BotChatGroupSearch struct {
 	CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
+	BotID          int         `json:"botID" form:"botID"`
 	request.PageInfo
 }
 

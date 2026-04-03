@@ -75,6 +75,9 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupInfoList(ctx cont
 	// 创建db
 	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{})
 	var botChatGroups []*bot.BotChatGroup
+	if info.BotID != 0 {
+		db = db.Where("bot_id = ?", info.BotID)
+	}
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
 		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
