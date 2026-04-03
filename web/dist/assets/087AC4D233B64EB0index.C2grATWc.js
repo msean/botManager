@@ -1,0 +1,4 @@
+/*! 
+ Build based on gin-vue-admin 
+ Time : 1775209193000 */
+import{Y as e,d as a,c as s,e as n,b as t,w as u,Z as i,k as l,_ as o,y as d,$ as r}from"./087AC4D233B64EB0index.CY2Uk30z.js";const m=Object.assign({name:"System"},{__name:"index",setup(m){const c=e();return(e,m)=>{const f=a("router-view");return n(),s("div",null,[t(f,null,{default:u(({Component:e})=>[t(i,{mode:"out-in",name:"el-fade-in-linear"},{default:u(()=>[(n(),l(o,{include:d(c).keepAliveRouters},[(n(),l(r(e)))],1032,["include"]))]),_:2},1024)]),_:1})])}}});export{m as default};
