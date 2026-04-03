@@ -161,7 +161,7 @@ func SyncChatGroup(botModel bot.Bot, tgMsg botapi.Update, chatGroup *cache.BotCh
 			BotID:         botModel.BotID,
 			ChatGroupID:   chatID,
 			ChatGroupName: chatName,
-			SyncMessage:   1,  // 默认不开启吧
+			SyncMessage:   2,  // 默认不开启吧
 			MaxWords:      -1, // 无限制
 			BanForward:    1,  // 禁用
 		}
