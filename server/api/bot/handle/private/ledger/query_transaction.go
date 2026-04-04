@@ -62,7 +62,7 @@ func BuildAddressReport(address string) (string, error) {
 	// ===== 2. 获取今日 + 昨日统计（trongrid）=====
 	todayStat, yesterdayStat, err := trongrid.CalcTodayYesterday(address)
 	if err != nil {
-		return "", fmt.Errorf("获取交易统计失败: %v", err)
+		return "", fmt.Errorf("获取交易统计失败: %v, 请稍后再尝试", err)
 	}
 
 	// ===== 3. 计算今日0点余额 =====
