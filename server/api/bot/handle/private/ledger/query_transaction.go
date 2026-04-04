@@ -3,13 +3,11 @@ package ledger
 import (
 	"fmt"
 	"regexp"
-	"time"
 
-	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
+	"github.com/msean/botmanager/server/utils/transaction/trongrid"
 	"github.com/msean/botmanager/server/utils/transaction/tronscan"
-	"go.uber.org/zap"
 )
 
 var tronAddressRegex = regexp.MustCompile(`^T[1-9A-HJ-NP-Za-km-z]{33}$`)
@@ -55,39 +53,26 @@ func (p *TronAddressParser) Handle() error {
 
 func BuildAddressReport(address string) (string, error) {
 
+	// ===== 1. 获取余额（tronscan）=====
 	info, err := tronscan.GetAccountInfo(address)
-	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("account info", info))
 	if err != nil {
 		return "", fmt.Errorf("获取账户信息失败: %v", err)
 	}
 
-	now := time.Now()
-
-	// 今日
-	todayStart, todayEnd := tronscan.GetDayRange(now)
-	todayStat, err := tronscan.CalcUSDTStat(address, todayStart, todayEnd)
-	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("today stat", todayStat))
+	// ===== 2. 获取今日 + 昨日统计（trongrid）=====
+	todayStat, yesterdayStat, err := trongrid.CalcTodayYesterday(address)
 	if err != nil {
-		return "", fmt.Errorf("获取今日数据失败: %v", err)
+		return "", fmt.Errorf("获取交易统计失败: %v", err)
 	}
 
-	// 昨日
-	yesterday := now.AddDate(0, 0, -1)
-	yStart, yEnd := tronscan.GetDayRange(yesterday)
-	yStat, err := tronscan.CalcUSDTStat(address, yStart, yEnd)
-	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("yesterday stat", yStat))
-	if err != nil {
-		return "", fmt.Errorf("获取昨日数据失败: %v", err)
-	}
-
-	// 0点USDT余额
+	// ===== 3. 计算今日0点余额 =====
 	zeroUSDT := tronscan.CalcUSDTZeroBalance(
 		info.USDTBalance,
 		todayStat.In,
 		todayStat.Out,
 	)
 
-	// ===== 构建返回文本 =====
+	// ===== 4. 构建消息 =====
 	msg := fmt.Sprintf(
 		"📊 地址统计\n\n"+
 			"📍 地址：%s\n\n"+
@@ -100,14 +85,14 @@ func BuildAddressReport(address string) (string, error) {
 			"📆 昨日：\n"+
 			"收入：%.2f USDT\n"+
 			"支出：%.2f USDT\n\n"+
-			"🕛 今日0点余额：%.2f USDT"+
-			address,
+			"🕛 今日0点余额：%.2f USDT",
+		address,
 		info.USDTBalance,
 		info.TRXBalance,
 		todayStat.In,
 		todayStat.Out,
-		yStat.In,
-		yStat.Out,
+		yesterdayStat.In,
+		yesterdayStat.Out,
 		zeroUSDT,
 	)
 

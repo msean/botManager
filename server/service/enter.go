@@ -111,7 +111,7 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		buttons = bot_handler.ParseContentFromCfg(*cmdCfg, constant.ButtonTypeInline)
 		global.GVA_LOG.Debug("handleBot", zap.Any("buttons", buttons))
 	}
-	trxResp, err := trongrid.FetchTransactions(paymentAddr, 20, "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
+	trxResp, err := trongrid.FetchTransactions(paymentAddr, 20, trongrid.USDTContract)
 	if err != nil || !trxResp.Success {
 		global.GVA_LOG.Error("获取链上交易失败", zap.Error(err))
 		return
@@ -121,12 +121,12 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
-	trxResp.Data = append(trxResp.Data, trongrid.TronResponseData{TransactionID: "mock_tx_1001", BlockTimestamp: 1764746290000, From: "TEST_FROM_ADDRESS", To: "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E", Type: "Transfer", Value: "10004000", TokenInfo: struct {
-		Symbol   string `json:"symbol"`
-		Address  string `json:"address"`
-		Decimals int    `json:"decimals"`
-		Name     string `json:"name"`
-	}{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
+	// trxResp.Data = append(trxResp.Data, trongrid.TronResponseData{TransactionID: "mock_tx_1001", BlockTimestamp: 1764746290000, From: "TEST_FROM_ADDRESS", To: "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E", Type: "Transfer", Value: "10004000", TokenInfo: struct {
+	// 	Symbol   string `json:"symbol"`
+	// 	Address  string `json:"address"`
+	// 	Decimals int    `json:"decimals"`
+	// 	Name     string `json:"name"`
+	// }{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
 	var orders []recharge.UserRechargeRecord
 	err = global.GVA_MYSQL.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
 	if err != nil {

@@ -9,27 +9,36 @@ import (
 	"time"
 )
 
+const USDTContract = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+
 type (
+	TronResponse struct {
+		Data []TronResponseData `json:"data"`
+		Meta struct {
+			Fingerprint string `json:"fingerprint"`
+		} `json:"meta"`
+		Success bool `json:"success"`
+	}
 	TronResponseData struct {
 		TransactionID  string `json:"transaction_id"`
 		BlockTimestamp int64  `json:"block_timestamp"`
 		From           string `json:"from"`
 		To             string `json:"to"`
-		Type           string `json:"type"`
 		Value          string `json:"value"`
+		Type           string `json:"type"`
 		TokenInfo      struct {
+			Decimals int    `json:"decimals"`
 			Symbol   string `json:"symbol"`
 			Address  string `json:"address"`
-			Decimals int    `json:"decimals"`
 			Name     string `json:"name"`
 		} `json:"token_info"`
 	}
-
-	TronResponse struct {
-		Data    []TronResponseData `json:"data"`
-		Success bool               `json:"success"`
-	}
 )
+
+type DayStat struct {
+	In  float64
+	Out float64
+}
 
 func FetchTransactions(account string, limit int, contract string) (*TronResponse, error) {
 
@@ -90,13 +99,4 @@ func FetchTransactions(account string, limit int, contract string) (*TronRespons
 	}
 
 	return nil, lastErr
-}
-
-func ParseAmount(value string, decimals int) float64 {
-	var v float64
-	fmt.Sscanf(value, "%f", &v)
-	for i := 0; i < decimals; i++ {
-		v /= 10
-	}
-	return v
 }
