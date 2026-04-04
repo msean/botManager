@@ -78,13 +78,13 @@ func BuildAddressReport(address string) (string, error) {
 				"支出：%.2f USDT\n\n"+
 				"🕛 今日0点余额：%.2f USDT",
 			address,
-			0,
-			0,
-			0,
-			0,
-			0,
-			0,
-			0,
+			0.00,
+			0.00,
+			0.00,
+			0.00,
+			0.00,
+			0.00,
+			0.00,
 		)
 		return msg, nil
 	}
