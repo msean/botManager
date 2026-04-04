@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/msean/botmanager/server/global"
+	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -48,6 +50,7 @@ func doRequest(url string, result interface{}) error {
 
 		resp, err := client.Get(url)
 		if err != nil {
+			global.GVA_LOG.Error("tronGrid doRequest", zap.Any("url", url), zap.Any("resp", resp), zap.Error(err))
 			lastErr = err
 			time.Sleep(time.Millisecond * 300)
 			continue
@@ -57,6 +60,7 @@ func doRequest(url string, result interface{}) error {
 		resp.Body.Close()
 
 		if resp.StatusCode != 200 {
+			global.GVA_LOG.Error("tronGrid doRequest", zap.Any("url", url), zap.Any("resp", resp), zap.Error(err))
 			lastErr = errors.New("http error")
 			time.Sleep(time.Millisecond * 300)
 			continue
