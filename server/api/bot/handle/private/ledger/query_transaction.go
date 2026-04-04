@@ -74,7 +74,7 @@ func BuildAddressReport(address string) (string, error) {
 
 	// ===== 4. 构建消息 =====
 	msg := fmt.Sprintf(
-		"您的地址%s\n\n"+
+		"您的地址：%s\n\n"+
 			"USDT余额：%.2f\n"+
 			"TRX余额：%.2f\n\n"+
 			"今日：\n"+
