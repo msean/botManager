@@ -35,8 +35,6 @@ func ParseAmount(value string, decimals int) float64 {
 
 func CalcTodayYesterday(address string) (*DayStat, *DayStat, error) {
 
-	addr := strings.ToLower(address)
-
 	now := time.Now()
 	todayStart := GetDayStart(now)
 	yesterdayStart := GetDayStart(now.AddDate(0, 0, -1))
@@ -51,7 +49,7 @@ func CalcTodayYesterday(address string) (*DayStat, *DayStat, error) {
 
 		url := fmt.Sprintf(
 			"https://api.trongrid.io/v1/accounts/%s/transactions/trc20?limit=%d&contract_address=%s",
-			addr, limit, USDTContract,
+			address, limit, USDTContract,
 		)
 
 		if fingerprint != "" {
