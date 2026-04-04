@@ -58,10 +58,13 @@ func CalcTodayYesterday(address string) (*DayStat, *DayStat, error) {
 		global.GVA_LOG.Debug("CalcTodayYesterday", zap.Any("url", url))
 
 		var resp TronResponse
-		err := doRequest(url, &resp)
+		addIsUnvalid, err := doRequest(url, &resp)
 		if err != nil {
 			global.GVA_LOG.Error("CalcTodayYesterday", zap.Error(err), zap.Any("url", url))
 			return nil, nil, err
+		}
+		if addIsUnvalid {
+			return nil, nil, nil
 		}
 
 		if len(resp.Data) == 0 {

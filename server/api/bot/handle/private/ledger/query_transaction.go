@@ -65,6 +65,30 @@ func BuildAddressReport(address string) (string, error) {
 		return "", fmt.Errorf("获取交易统计失败: %v, 请稍后再尝试", err)
 	}
 
+	if todayStat == nil {
+		msg := fmt.Sprintf(
+			"您的地址：%s\n\n"+
+				"USDT余额：%.2f\n"+
+				"TRX余额：%.2f\n\n"+
+				"今日：\n"+
+				"收入：%.2f USDT\n"+
+				"支出：%.2f USDT\n\n"+
+				"昨日：\n"+
+				"收入：%.2f USDT\n"+
+				"支出：%.2f USDT\n\n"+
+				"🕛 今日0点余额：%.2f USDT",
+			address,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+		)
+		return msg, nil
+	}
+
 	// ===== 3. 计算今日0点余额 =====
 	zeroUSDT := tronscan.CalcUSDTZeroBalance(
 		info.USDTBalance,

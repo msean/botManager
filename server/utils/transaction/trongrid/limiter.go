@@ -3,14 +3,12 @@ package trongrid
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/msean/botmanager/server/global"
-	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -37,20 +35,22 @@ func getHTTPClient() *http.Client {
 	return httpClient
 }
 
-func doRequest(url string, result interface{}) error {
+// addIsUnInvalid 是
+func doRequest(url string, result interface{}) (addIsUnInvalid bool, err error) {
+
 	limiter := getTronLimiter()
 	client := getHTTPClient()
 
 	var lastErr error
 
-	for i := 0; i < 3; i++ { // ✅ 重试3次
+	for i := 0; i < 3; i++ {
+
 		if err := limiter.Wait(context.Background()); err != nil {
-			return err
+			return false, err
 		}
 
 		resp, err := client.Get(url)
 		if err != nil {
-			global.GVA_LOG.Error("tronGrid doRequest", zap.Any("url", url), zap.Any("resp", resp), zap.Error(err))
 			lastErr = err
 			time.Sleep(time.Millisecond * 1100)
 			continue
@@ -59,20 +59,35 @@ func doRequest(url string, result interface{}) error {
 		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 
+		// ===== 1. 先解析错误结构 =====
+		var errResp struct {
+			Success    bool   `json:"success"`
+			Error      string `json:"error"`
+			StatusCode int    `json:"statusCode"`
+		}
+
+		_ = json.Unmarshal(body, &errResp)
+
+		// 🚨 地址无效（你要的逻辑）
+		if errResp.Error == "A valid account address is required." {
+			return true, nil
+		}
+
+		// ===== 2. HTTP错误 =====
 		if resp.StatusCode != 200 {
-			global.GVA_LOG.Error("tronGrid doRequest", zap.Any("url", url), zap.Any("resp", resp), zap.Error(err))
-			lastErr = errors.New("http error")
+			lastErr = fmt.Errorf("http error: %d", resp.StatusCode)
 			time.Sleep(time.Millisecond * 1100)
 			continue
 		}
 
+		// ===== 3. 正常解析 =====
 		if err := json.Unmarshal(body, result); err != nil {
 			lastErr = err
 			continue
 		}
 
-		return nil
+		return false, nil
 	}
 
-	return lastErr
+	return false, lastErr
 }
