@@ -89,10 +89,10 @@ func CalcTodayYesterday(address string) (*DayStat, *DayStat, error) {
 			// ===== 今日 =====
 			if ts >= todayStart {
 
-				if to == addr {
+				if to == address {
 					todayStat.In += amount
 				}
-				if from == addr {
+				if from == address {
 					todayStat.Out += amount
 				}
 				continue
@@ -101,10 +101,10 @@ func CalcTodayYesterday(address string) (*DayStat, *DayStat, error) {
 			// ===== 昨日 =====
 			if ts >= yesterdayStart {
 
-				if to == addr {
+				if to == address {
 					yesterdayStat.In += amount
 				}
-				if from == addr {
+				if from == address {
 					yesterdayStat.Out += amount
 				}
 			}
