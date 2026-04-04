@@ -74,15 +74,13 @@ func BuildAddressReport(address string) (string, error) {
 
 	// ===== 4. 构建消息 =====
 	msg := fmt.Sprintf(
-		"📊 地址统计\n\n"+
-			"📍 地址：%s\n\n"+
-			"💰 当前余额：\n"+
-			"USDT：%.2f\n"+
-			"TRX：%.2f\n\n"+
-			"📅 今日：\n"+
+		"您的地址%s\n\n"+
+			"USDT余额：%.2f\n"+
+			"TRX余额：%.2f\n\n"+
+			"今日：\n"+
 			"收入：%.2f USDT\n"+
 			"支出：%.2f USDT\n\n"+
-			"📆 昨日：\n"+
+			"昨日：\n"+
 			"收入：%.2f USDT\n"+
 			"支出：%.2f USDT\n\n"+
 			"🕛 今日0点余额：%.2f USDT",
