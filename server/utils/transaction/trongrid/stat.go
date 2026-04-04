@@ -3,7 +3,6 @@ package trongrid
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/msean/botmanager/server/global"
@@ -83,8 +82,8 @@ func CalcTodayYesterday(address string) (*DayStat, *DayStat, error) {
 			decimals := tx.TokenInfo.Decimals
 			amount := val / float64(pow10(decimals))
 
-			from := strings.ToLower(tx.From)
-			to := strings.ToLower(tx.To)
+			from := tx.From
+			to := tx.To
 
 			// ===== 今日 =====
 			if ts >= todayStart {
