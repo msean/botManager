@@ -55,7 +55,7 @@ func GetUSDTTransfers(address string, start, end int64) ([]Trc20TransferData, er
 	err := doRequest(url, &resp)
 	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("body", resp))
 	if err != nil {
-		global.GVA_LOG.Error("GetUSDTTransfers", zap.Error(err))
+		global.GVA_LOG.Error("GetUSDTTransfers", zap.Error(err), zap.Any("url", url))
 		return nil, err
 	}
 

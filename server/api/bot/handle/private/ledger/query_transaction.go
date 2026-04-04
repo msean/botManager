@@ -5,9 +5,11 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
 	"github.com/msean/botmanager/server/utils/transaction/tronscan"
+	"go.uber.org/zap"
 )
 
 var tronAddressRegex = regexp.MustCompile(`^T[1-9A-HJ-NP-Za-km-z]{33}$`)
@@ -54,6 +56,7 @@ func (p *TronAddressParser) Handle() error {
 func BuildAddressReport(address string) (string, error) {
 
 	info, err := tronscan.GetAccountInfo(address)
+	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("account info", info))
 	if err != nil {
 		return "", fmt.Errorf("获取账户信息失败: %v", err)
 	}
@@ -63,6 +66,7 @@ func BuildAddressReport(address string) (string, error) {
 	// 今日
 	todayStart, todayEnd := tronscan.GetDayRange(now)
 	todayStat, err := tronscan.CalcUSDTStat(address, todayStart, todayEnd)
+	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("today stat", todayStat))
 	if err != nil {
 		return "", fmt.Errorf("获取今日数据失败: %v", err)
 	}
@@ -71,6 +75,7 @@ func BuildAddressReport(address string) (string, error) {
 	yesterday := now.AddDate(0, 0, -1)
 	yStart, yEnd := tronscan.GetDayRange(yesterday)
 	yStat, err := tronscan.CalcUSDTStat(address, yStart, yEnd)
+	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("yesterday stat", yStat))
 	if err != nil {
 		return "", fmt.Errorf("获取昨日数据失败: %v", err)
 	}

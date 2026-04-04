@@ -3,6 +3,9 @@ package tronscan
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/msean/botmanager/server/global"
+	"go.uber.org/zap"
 )
 
 type accountResp struct {
@@ -25,7 +28,10 @@ func GetAccountInfo(address string) (*AccountInfo, error) {
 	url := fmt.Sprintf("https://apilist.tronscan.org/api/account?address=%s", address)
 
 	var resp accountResp
-	if err := doRequest(url, &resp); err != nil {
+	err := doRequest(url, &resp)
+	global.GVA_LOG.Debug("GetUSDTTransfers", zap.Any("body", resp))
+	if err != nil {
+		global.GVA_LOG.Error("GetUSDTTransfers", zap.Any("body", err))
 		return nil, err
 	}
 
