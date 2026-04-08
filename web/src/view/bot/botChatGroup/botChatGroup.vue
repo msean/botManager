@@ -43,7 +43,18 @@
 
     <!-- 表格 -->
     <div class="gva-table-box">
-      <el-table :data="tableData" row-key="ID">
+      <div style="margin-bottom: 10px;">
+        <el-button
+          type="danger"
+          :disabled="!multipleSelection.length"
+          @click="onDelete"
+        >
+          删除选中群聊
+        </el-button>
+      </div>
+
+      <el-table :data="tableData" row-key="ID" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column label="机器人" prop="botName" width="180" />
         <el-table-column label="群组名称" prop="chatGroupName" width="280" />
 
@@ -159,7 +170,8 @@
 <script setup>
 import {
   getBotChatGroupList,
-  updateBotChatGroup
+  updateBotChatGroup,
+  deleteBotChatGroupByIds
 } from '@/api/bot/botChatGroup'
 
 import { getBotChoice } from '@/api/bot/bot'
@@ -168,6 +180,29 @@ import { getBotChoiceWithChatGroup } from '@/api/bot/bot'
 import { ElMessage } from 'element-plus'
 import { ref, onMounted, computed } from 'vue'
 
+const multipleSelection = ref([])
+
+const handleSelectionChange = (val) => {
+  multipleSelection.value = val
+}
+
+const onDelete = async () => {
+  if (!multipleSelection.value.length) {
+    ElMessage.warning('请选择要删除的数据')
+    return
+  }
+
+  const ids = multipleSelection.value.map(item => item.ID)
+
+  const res = await deleteBotChatGroupByIds({ ids })
+
+  if (res.code === 0) {
+    ElMessage.success('删除成功')
+    getTableData()
+  } else {
+    ElMessage.error(res.msg || '删除失败')
+  }
+}
 /* 机器人 */
 const botOptions = ref([])
 const loadBots = async () => {

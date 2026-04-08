@@ -44,7 +44,7 @@ func (botChatGroupService *BotChatGroupService) DeleteBotChatGroupByIds(ctx cont
 	for _, id := range ids {
 		cache.ReleaseBotChatGroup(id)
 	}
-	if err = global.GVA_MYSQL.Delete(&[]bot.BotChatGroup{}, "id in ?", IDs).Error; err != nil {
+	if err = global.GVA_MYSQL.Delete(&[]bot.BotChatGroup{}, "id in (?)", IDs).Error; err != nil {
 		return
 	}
 

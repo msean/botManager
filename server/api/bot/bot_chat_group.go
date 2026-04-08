@@ -78,7 +78,7 @@ func (botChatGroupApi *BotChatGroupApi) DeleteBotChatGroupByIds(c *gin.Context) 
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
-	IDs := c.QueryArray("IDs[]")
+	IDs := c.QueryArray("ids[]")
 	err := botChatGroupService.DeleteBotChatGroupByIds(ctx, IDs)
 	if err != nil {
 		global.GVA_LOG.Error("批量删除失败!", zap.Error(err))
