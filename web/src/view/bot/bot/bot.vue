@@ -141,7 +141,7 @@
 
         <el-form-item label="是否开启群发">
           <el-switch
-            v-model="formData.isForMsgMgr"
+            v-model="formData.isForMsgMass"
             :active-value="1"
             :inactive-value="2"
           />
