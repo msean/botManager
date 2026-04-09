@@ -1,8 +1,10 @@
 package bot
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -231,4 +233,66 @@ func (api *BotChatGroupApi) ChatHistory(c *gin.Context) {
 		"list":    list,
 		"hasMore": hasMore,
 	}, "ok", c)
+}
+
+func (api *BotChatGroupApi) GetClassfyList(c *gin.Context) {
+	var search request.BotChatGroupClassifySearch
+	if err := c.ShouldBindQuery(&search); err != nil {
+		response.FailWithMessage(fmt.Sprintf("保存失败:%s", err.Error()), c)
+		return
+	}
+
+	spew.Dump(">>>>>>>>", search)
+	list, total, err := botChatGroupService.ClassfyList(search)
+	if err != nil {
+		response.FailWithMessage("获取失败", c)
+		return
+	}
+	response.OkWithDetailed(gin.H{
+		"list":  list,
+		"total": total,
+	}, "成功", c)
+}
+
+// 保存
+func (api *BotChatGroupApi) SaveClassify(c *gin.Context) {
+	var data bot.BotChatGroupClassify
+	if err := c.ShouldBindJSON(&data); err != nil {
+		response.FailWithMessage(fmt.Sprintf("保存失败:%s", err.Error()), c)
+		return
+	}
+
+	fmt.Println(">>>>>>>>>SaveClassify", data)
+	if err := botChatGroupService.SaveClassify(data); err != nil {
+		response.FailWithMessage("保存失败", c)
+		return
+	}
+	response.Ok(c)
+}
+
+// 删除
+func (api *BotChatGroupApi) DeleteClassify(c *gin.Context) {
+	var req struct {
+		Ids []uint `json:"ids"`
+	}
+	_ = c.ShouldBindJSON(&req)
+
+	if err := botChatGroupService.DeleteClassify(req.Ids); err != nil {
+		response.FailWithMessage("删除失败", c)
+		return
+	}
+	response.Ok(c)
+}
+
+// 删除
+func (api *BotChatGroupApi) ClassifyChoice(c *gin.Context) {
+	list, err := botChatGroupService.ClassifyChoice()
+	if err != nil {
+		response.FailWithMessage("获取失败", c)
+		return
+	}
+	response.OkWithDetailed(gin.H{
+		"list": list,
+	}, "成功", c)
+	response.Ok(c)
 }

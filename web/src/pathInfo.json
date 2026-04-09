@@ -10,6 +10,7 @@
   "/src/view/bot/botChannel/botChannel.vue": "BotChannel",
   "/src/view/bot/botChannel/botChannelForm.vue": "BotChannelForm",
   "/src/view/bot/botChatGroup/botChatGroup.vue": "BotChatGroup",
+  "/src/view/bot/botChatGroup/botChatGroupClassify.vue": "BotChatGroupClassify",
   "/src/view/bot/botChatGroup/botChatGroupForm.vue": "BotChatGroupForm",
   "/src/view/bot/botChatHistory/chatHistory.vue": "ChatHistory",
   "/src/view/bot/botChatHistory/components/ChatBubble.vue": "ChatBubble",

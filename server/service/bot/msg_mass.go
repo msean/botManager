@@ -159,7 +159,7 @@ func (svc *BotMsgMassService) GetHistory(ctx context.Context, info botReq.BotMas
 		db = db.Limit(limit).Offset(offset)
 	}
 
-	if err = db.Find(&records).Error; err != nil {
+	if err = db.Order("created_at").Find(&records).Error; err != nil {
 		return
 	}
 

@@ -117,3 +117,36 @@ export const getChatMessageList = (params) => {
     params
   })
 }
+
+
+export const getBotChatGroupClassifyList = (params) => {
+  return service({
+    url: '/botChatGroup/getBotChatGroupClassifyList',
+    method: 'get',
+    params
+  })
+}
+
+export const saveBotChatGroupClassify = (data) => {
+  return service({
+    url: '/botChatGroup/saveBotChatGroupClassify',
+    method: 'post',
+    data
+  })
+}
+
+export const deleteBotChatGroupClassify = (data) => {
+  return service({
+    url: '/botChatGroup/deleteBotChatGroupClassify',
+    method: 'delete',
+    data
+  })
+}
+
+export const chooseChatGroupClassify = (params) => {
+  return service({
+    url: '/botChatGroup/chooseChatGroupClassify',
+    method: 'get',
+    params
+  })
+}

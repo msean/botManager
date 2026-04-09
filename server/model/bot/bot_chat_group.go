@@ -22,6 +22,12 @@ type BotChatGroup struct {
 	Members               string `json:"members" form:"members" gorm:"comment:成员;column:members;type:text;"`                        //成员
 }
 
+type BotChatGroupClassify struct {
+	global.GVA_MODEL
+	Title      string `json:"title" form:"title" gorm:"column:title"`                                         //机器人ID
+	ChatGroups string `json:"chatGroups" form:"chatGroups" gorm:"comment:群组列表;column:chat_groups;type:text;"` //群组ID                                //成员
+}
+
 type BotChatGroupRelatedChannelFollow struct {
 	UserID      int64     `json:"userID" form:"userID" gorm:"column:user_id;index"`
 	BotID       int64     `json:"botID" form:"botID" gorm:"column:bot_id"`
@@ -37,4 +43,9 @@ func (BotChatGroupRelatedChannelFollow) TableName() string {
 // TableName 机器人群组列表 BotChatGroup自定义表名 bot_chat_group
 func (BotChatGroup) TableName() string {
 	return "bot_chat_group"
+}
+
+// TableName 机器人群组列表 BotChatGroup自定义表名 bot_chat_group
+func (BotChatGroupClassify) TableName() string {
+	return "bot_chat_group_classify"
 }

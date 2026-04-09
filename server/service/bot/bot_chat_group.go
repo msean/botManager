@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/msean/botmanager/server/dao"
@@ -78,6 +79,9 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupInfoList(ctx cont
 	if info.BotID != 0 {
 		db = db.Where("bot_id = ?", info.BotID)
 	}
+	if info.Name != "" {
+		db = db.Where("chat_group_name LIKE ?", "%"+info.Name+"%")
+	}
 	// 如果有条件搜索 下方会自动创建搜索语句
 	if len(info.CreatedAtRange) == 2 {
 		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
@@ -115,4 +119,39 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupInfoList(ctx cont
 func (botChatGroupService *BotChatGroupService) GetBotChatGroupPublic(ctx context.Context) {
 	// 此方法为获取数据源定义的数据
 	// 请自行实现
+}
+
+// 列表
+func (s *BotChatGroupService) ClassfyList(info botReq.BotChatGroupClassifySearch) (list []bot.BotChatGroupClassify, total int64, err error) {
+	db := global.GVA_MYSQL.Model(&bot.BotChatGroupClassify{})
+
+	err = db.Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	offset := (info.Page - 1) * info.PageSize
+	fmt.Println(">>>>>>>>>", info.Page, info.PageSize, offset)
+	err = db.Limit(info.PageSize).Offset(offset).Order("id desc").Find(&list).Error
+	return
+}
+
+// 创建 / 更新
+func (s *BotChatGroupService) SaveClassify(data bot.BotChatGroupClassify) error {
+	if data.ID == 0 {
+		return global.GVA_MYSQL.Create(&data).Error
+	}
+	return global.GVA_MYSQL.Save(&data).Error
+}
+
+// 删除
+func (s *BotChatGroupService) DeleteClassify(ids []uint) error {
+	return global.GVA_MYSQL.Delete(&bot.BotChatGroupClassify{}, "id in (?)", ids).Error
+}
+
+// 列表
+func (s *BotChatGroupService) ClassifyChoice() (list []bot.BotChatGroupClassify, err error) {
+	db := global.GVA_MYSQL.Model(&bot.BotChatGroupClassify{})
+	err = db.Order("id desc").Find(&list).Error
+	return
 }

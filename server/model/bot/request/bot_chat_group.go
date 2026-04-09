@@ -9,7 +9,13 @@ import (
 type BotChatGroupSearch struct {
 	CreatedAtRange []time.Time `json:"createdAtRange" form:"createdAtRange[]"`
 	BotID          int         `json:"botID" form:"botID"`
+	Name           string      `json:"chatGroupName" form:"chatGroupName"`
 	request.PageInfo
+}
+
+type BotChatGroupClassifySearch struct {
+	Page     int `json:"page" form:"page"`
+	PageSize int `json:"pageSize" form:"pageSize"`
 }
 
 // api/dto/bot_chat_message.go

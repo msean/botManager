@@ -17,6 +17,10 @@ func (s *BotChatGroupRouter) InitBotChatGroupRouter(Router *gin.RouterGroup, Pub
 		botChatGroupRouter.DELETE("deleteBotChatGroup", botChatGroupApi.DeleteBotChatGroup)           // 删除机器人群组列表
 		botChatGroupRouter.DELETE("deleteBotChatGroupByIds", botChatGroupApi.DeleteBotChatGroupByIds) // 批量删除机器人群组列表
 		botChatGroupRouter.PUT("updateBotChatGroup", botChatGroupApi.UpdateBotChatGroup)              // 更新机器人群组列表
+		botChatGroupRouter.GET("getBotChatGroupClassifyList", botChatGroupApi.GetClassfyList)
+		botChatGroupRouter.POST("saveBotChatGroupClassify", botChatGroupApi.SaveClassify)
+		botChatGroupRouter.DELETE("deleteBotChatGroupClassify", botChatGroupApi.DeleteClassify)
+		botChatGroupRouter.GET("chooseChatGroupClassify", botChatGroupApi.ClassifyChoice)
 	}
 	{
 		botChatGroupRouterWithoutRecord.GET("findBotChatGroup", botChatGroupApi.FindBotChatGroup)       // 根据ID获取机器人群组列表
