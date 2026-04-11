@@ -22,7 +22,7 @@ func (s *BotRouter) InitBotRouter(Router *gin.RouterGroup, PublicRouter *gin.Rou
 	{
 		botMgrRouterWithoutRecord.GET("get", botApi.FindBot)     // 根据ID获取机器人
 		botMgrRouterWithoutRecord.GET("list", botApi.GetBotList) // 获取机器人列表
-		botMgrRouterWithoutRecord.GET("choice", botApi.All)      // 
+		botMgrRouterWithoutRecord.GET("choice", botApi.All)      //
 		botMgrRouterWithoutRecord.GET("choice_with_chat_group", botApi.AllWithChatGroupAndChannel)
 	}
 	{

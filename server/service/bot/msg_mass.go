@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
 	botReq "github.com/msean/botmanager/server/model/bot/request"
+	"github.com/msean/botmanager/server/model/system/request"
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"go.uber.org/zap"
 )
@@ -60,21 +63,87 @@ func (botMsgMassService *BotMsgMassService) GetBotMsgMass(ctx context.Context, I
 	return
 }
 
-// GetBotMsgMassInfoList 分页获取机器人群发记录
-// Author [yourname](https://github.com/yourname)
-func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info botReq.BotMsgMassSearch) (list []*bot.BotChatGroup, total int64, err error) {
-	limit := info.PageSize
-	offset := info.PageSize * (info.Page - 1)
-
-	var botOpenMsgMass []int64
-	if err = global.GVA_MYSQL.Model(&bot.Bot{}).Where("is_for_msg_mass=1").Pluck("bot_id", &botOpenMsgMass).Error; err != nil {
+func GetBelongs(ctx *gin.Context) (chatGroupIDs []int64, err error) {
+	claimsVal := ctx.Value("claims")
+	if claimsVal == nil {
+		err = errors.New("获取用户失败")
 		return
 	}
 
-	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{}).Where("bot_id in (?)", botOpenMsgMass)
-	var records []*bot.BotChatGroup
+	claims, ok := claimsVal.(*request.CustomClaims)
+	if !ok {
+		err = errors.New("解析claims失败")
+		return
+	}
 
-	// 条件过滤
+	userID := claims.BaseClaims.ID
+	userName := claims.Username
+	authorityId := claims.AuthorityId
+	isAdmin := userName == "msgmass" || authorityId == 1
+	if isAdmin {
+		var botOpenMsgMass []int64
+		if err = global.GVA_MYSQL.Model(&bot.Bot{}).
+			Where("is_for_msg_mass=1").
+			Pluck("bot_id", &botOpenMsgMass).Error; err != nil {
+			return
+		}
+
+		err = global.GVA_MYSQL.Model(&bot.BotChatGroup{}).
+			Where("bot_id in (?)", botOpenMsgMass).
+			Pluck("chat_group_id", &chatGroupIDs).Error
+		if err != nil {
+			return
+		}
+		return
+	}
+	var classifies []bot.BotChatGroupClassify
+	likeStr := fmt.Sprintf("%%%d%%", userID)
+
+	if err = global.GVA_MYSQL.Model(&bot.BotChatGroupClassify{}).
+		Where("users LIKE ?", likeStr).
+		Find(&classifies).Error; err != nil {
+		return
+	}
+	groupSet := make(map[int64]struct{})
+	for _, c := range classifies {
+		if c.ChatGroups == "" {
+			continue
+		}
+		ids := strings.Split(c.ChatGroups, ",")
+		for _, idStr := range ids {
+			id, _ := strconv.ParseInt(idStr, 10, 64)
+			if id != 0 {
+				groupSet[id] = struct{}{}
+			}
+		}
+	}
+
+	for id := range groupSet {
+		chatGroupIDs = append(chatGroupIDs, id)
+	}
+
+	return
+}
+
+// GetBotMsgMassInfoList 分页获取机器人群发记录
+// Author [yourname](https://github.com/yourname)
+// GetBotMsgMassInfoList 分页获取机器人群发记录（带权限控制）
+func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx *gin.Context, info botReq.BotMsgMassSearch) (list []*bot.BotChatGroup, total int64, err error) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+
+	var chatGroupIDs []int64
+	if chatGroupIDs, err = GetBelongs(ctx); err != nil {
+		return
+	}
+	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{})
+
+	if len(chatGroupIDs) > 0 {
+		db = db.Where("chat_group_id IN ?", chatGroupIDs)
+	} else {
+		return []*bot.BotChatGroup{}, 0, nil
+	}
+
 	if info.BotID != nil {
 		db = db.Where("bot_id = ?", *info.BotID)
 	}
@@ -84,6 +153,8 @@ func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info bo
 	if len(info.CreatedAtRange) == 2 {
 		db = db.Where("created_at BETWEEN ? AND ?", info.CreatedAtRange[0], info.CreatedAtRange[1])
 	}
+
+	var records []*bot.BotChatGroup
 
 	if err = db.Count(&total).Error; err != nil {
 		return
@@ -97,23 +168,24 @@ func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx context.Context, info bo
 		return
 	}
 
-	// 获取机器人和群聊映射
-	var botIDs, chatGroupIDs []int64
+	var botIDs []int64
+	var groupIDs []int64
+
 	for _, r := range records {
 		botIDs = append(botIDs, r.BotID)
-		chatGroupIDs = append(chatGroupIDs, r.ChatGroupID)
+		groupIDs = append(groupIDs, r.ChatGroupID)
 	}
 
 	botMapper, err := dao.BotDao.MappByIDList(global.GVA_MYSQL, botIDs)
 	if err != nil {
 		return
 	}
-	chatGroupMapper, err := dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, chatGroupIDs)
+
+	chatGroupMapper, err := dao.BotChatGroupDao.MappByChatGroupIDList(global.GVA_MYSQL, groupIDs)
 	if err != nil {
 		return
 	}
 
-	// 填充名称
 	for _, r := range records {
 		if b, ok := botMapper[r.BotID]; ok {
 			r.BotName = b.Name
@@ -133,11 +205,15 @@ func (botMsgMassService *BotMsgMassService) GetBotMsgMassPublic(ctx context.Cont
 
 // GetBotMassMsgRecordInfoList 分页获取群发历史记录记录
 // Author [yourname](https://github.com/yourname)
-func (svc *BotMsgMassService) GetHistory(ctx context.Context, info botReq.BotMassMsgRecordSearch) (list []*bot.BotMassMsgRecord, total int64, err error) {
+func (svc *BotMsgMassService) GetHistory(ctx *gin.Context, info botReq.BotMassMsgRecordSearch) (list []*bot.BotMassMsgRecord, total int64, err error) {
+	var permitGroupIDs []int64
+	if permitGroupIDs, err = GetBelongs(ctx); err != nil {
+		return
+	}
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 
-	db := global.GVA_MYSQL.Model(&bot.BotMassMsgRecord{})
+	db := global.GVA_MYSQL.Model(&bot.BotMassMsgRecord{}).Where("chat_group_id in (?)", permitGroupIDs)
 	var records []*bot.BotMassMsgRecord
 
 	// 条件过滤

@@ -1,239 +1,308 @@
 <template>
-  <div>
-    <!-- 表格 -->
-    <div class="gva-table-box">
-      <div style="margin-bottom: 10px;">
-        <el-button type="primary" @click="openDialog()">新增分组</el-button>
-    <el-button
-      type="danger"
-      :disabled="!multipleSelection.length"
-      @click="onDelete"
-    >
-      删除
-    </el-button>
-  </div>
+<div>
 
-  <el-table
-    :data="tableData"
-    row-key="ID"
-    @selection-change="handleSelectionChange"
-  >
-    <el-table-column type="selection" width="55" />
+  <el-button type="primary" @click="openDialog()">新增分组</el-button>
+
+  <!-- 表格 -->
+  <el-table :data="tableData">
 
     <el-table-column label="分组名称" prop="title" />
 
-    <el-table-column label="群组列表">
+    <!-- 群 -->
+    <el-table-column label="群组">
       <template #default="{ row }">
         <el-tag
-          v-for="g in getGroupNames(row)"
-          :key="g.chatGroupID"
+          v-for="g in getNames(row.chatGroups, chatGroupMapper)"
+          :key="g.id"
           style="margin:2px"
         >
-          {{ g.chatGroupName }}
+          {{ g.name }}
         </el-tag>
+
+        <el-tag v-if="hasMore(row.chatGroups)">...</el-tag>
       </template>
     </el-table-column>
 
-    <el-table-column label="操作" width="220">
+    <!-- 用户 -->
+    <el-table-column label="用户">
       <template #default="{ row }">
-        <el-button link type="primary" @click="onView(row)">查看</el-button>
-        <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-        <el-button link type="danger" @click="onDeleteRow(row)">删除</el-button>
+        <el-tag
+          v-for="u in getNames(row.permitUsers, userMapper)"
+          :key="u.id"
+          style="margin:2px"
+        >
+          {{ u.name }}
+        </el-tag>
+
+        <el-tag v-if="hasMore(row.permitUsers)">...</el-tag>
       </template>
     </el-table-column>
+
+    <!-- 操作 -->
+    <el-table-column label="操作">
+      <template #default="{ row }">
+        <el-button link @click="openDialog(row)">编辑</el-button>
+        <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+      </template>
+    </el-table-column>
+
   </el-table>
 
-  <el-pagination
-    layout="total, prev, pager, next"
-    :total="total"
-    :page-size="pageSize"
-    :current-page="page"
-    @current-change="handleCurrentChange"
-  />
-</div>
 
-<!-- 弹窗 -->
-<el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
-  <el-form label-width="80px">
-    <el-form-item label="分组名称">
-      <el-input v-model="form.title" placeholder="请输入分组名称" />
-    </el-form-item>
+  <!-- 编辑弹窗 -->
+  <el-dialog v-model="dialogVisible" title="编辑分组">
 
-    <el-form-item label="选择群组">
-      <el-checkbox-group v-model="checkedGroups">
-        <el-checkbox
-          v-for="g in allGroups"
-          :key="g.chatGroupID"
-          :label="g.chatGroupID"
+    <el-form>
+      <el-form-item label="名称">
+        <el-input v-model="form.title" />
+      </el-form-item>
+
+      <!-- 群 -->
+      <el-form-item label="群组">
+        <el-tag
+          v-for="id in groupIDs"
+          :key="id"
+          closable
+          @close="groupIDs = groupIDs.filter(i => i !== id)"
         >
-          {{ g.chatGroupName }}
-        </el-checkbox>
-      </el-checkbox-group>
-    </el-form-item>
-  </el-form>
+          {{ chatGroupMapper[id] || id }}
+        </el-tag>
 
-  <template #footer>
-    <el-button @click="dialogVisible=false">取消</el-button>
-    <el-button type="primary" @click="onSubmit">保存</el-button>
-  </template>
-</el-dialog>
+        <el-button @click="openGroupSelect">➕</el-button>
+      </el-form-item>
 
-<!-- 查看弹窗 -->
-<el-dialog v-model="viewVisible" title="查看分组" width="400px">
-  <p><b>分组名称：</b>{{ viewData.title }}</p>
-  <div>
-    <b>群组：</b>
-    <el-tag
-      v-for="g in getGroupNames(viewData)"
-      :key="g.chatGroupID"
-      style="margin:2px"
-    >
-      {{ g.chatGroupName }}
-    </el-tag>
-  </div>
-</el-dialog>
-  </div>
+      <!-- 用户 -->
+      <el-form-item label="用户">
+        <el-tag
+          v-for="id in userIDs"
+          :key="id"
+          closable
+          @close="userIDs = userIDs.filter(i => i !== id)"
+        >
+          {{ userMapper[id] || id }}
+        </el-tag>
+
+        <el-button @click="openUserSelect">➕</el-button>
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <el-button @click="dialogVisible=false">取消</el-button>
+      <el-button type="primary" @click="onSubmit">保存</el-button>
+    </template>
+
+  </el-dialog>
+
+
+  <!-- 群选择（已改：机器人 + 群） -->
+  <el-dialog v-model="groupSelectVisible" title="选择群" @closed="onGroupDialogClose">
+
+    <el-select v-model="selectedBot" placeholder="选择机器人" style="width:100%">
+      <el-option
+        v-for="b in botList"
+        :key="b.botID"
+        :label="b.name"
+        :value="b.botID"
+      />
+    </el-select>
+
+    <el-checkbox-group v-model="tempGroupIDs" style="margin-top:10px">
+      <el-checkbox
+        v-for="g in currentGroups"
+        :key="g.chatGroupID"
+        :label="g.chatGroupID"
+      >
+        {{ g.chatGroupName }}
+      </el-checkbox>
+    </el-checkbox-group>
+
+    <template #footer>
+      <el-button @click="groupSelectVisible=false">取消</el-button>
+      <el-button type="primary" @click="confirmGroupSelect">确认</el-button>
+    </template>
+
+  </el-dialog>
+
+
+  <!-- 用户选择（已改：加确认按钮） -->
+  <el-dialog v-model="userSelectVisible" title="选择用户">
+    <el-checkbox-group v-model="userIDs">
+      <el-checkbox
+        v-for="u in allUsers"
+        :key="u.ID"
+        :label="u.ID"
+      >
+        {{ u.nickName }}
+      </el-checkbox>
+    </el-checkbox-group>
+
+    <template #footer>
+      <el-button @click="userSelectVisible=false">取消</el-button>
+      <el-button type="primary" @click="confirmUserSelect">确认</el-button>
+    </template>
+  </el-dialog>
+
+</div>
 </template>
 
+
 <script setup>
+import { ref, onMounted, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getBotChatGroupClassifyList,
   saveBotChatGroupClassify,
-  deleteBotChatGroupClassify,
+  deleteBotChatGroupClassify
 } from '@/api/bot/botChatGroup'
 
-import { getBotChoice } from '@/api/bot/bot'
+import { getBotChoiceWithChatGroup } from '@/api/bot/bot'
+import { userAll } from '@/api/user'
 
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-
-/* 表格数据 */
+/* 数据 */
 const tableData = ref([])
-const total = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
+const chatGroupMapper = ref({})
+const userMapper = ref({})
 
-/* 多选 */
-const multipleSelection = ref([])
-
-const handleSelectionChange = (val) => {
-  multipleSelection.value = val
-}
-
-/* 获取列表 */
+/* 加载 */
 const getTableData = async () => {
-  const res = await getBotChatGroupClassifyList({
-    page: page.value,
-    pageSize: pageSize.value
-  })
+  const res = await getBotChatGroupClassifyList({ page:1,pageSize:10 })
   if (res.code === 0) {
     tableData.value = res.data.list
-    total.value = res.data.total
+    chatGroupMapper.value = res.data.chatGroupMapper || {}
+    userMapper.value = res.data.userMapper || {}
   }
 }
-
 onMounted(getTableData)
 
-/* 所有群 */
-const allGroups = ref([])
 
-const loadGroups = async () => {
-  const res = await getBotChatGroupList({ page: 1, pageSize: 999 })
-  if (res.code === 0) {
-    allGroups.value = res.data.list
-  }
-}
-loadGroups()
-
-/* 显示群名称 */
-const getGroupNames = (row) => {
-  if (!row || !row.chatGroups) return []
-  const ids = row.chatGroups.split(',').map(Number)
-  return allGroups.value.filter(g => ids.includes(g.chatGroupID))
+// ===== 工具方法 =====
+const getNames = (idsStr, mapper) => {
+  if (!idsStr) return []
+  const ids = idsStr.split(',')
+  return ids.slice(0,10).map(id => ({
+    id,
+    name: mapper[id] || id
+  }))
 }
 
-/* 弹窗 */
+const hasMore = (idsStr) => {
+  if (!idsStr) return false
+  return idsStr.split(',').length > 10
+}
+
+
+// ===== 编辑 =====
 const dialogVisible = ref(false)
-const dialogTitle = ref('新增分组')
 const form = ref({})
-const checkedGroups = ref([])
+const groupIDs = ref([])
+const userIDs = ref([])
 
-/* 打开弹窗 */
 const openDialog = (row) => {
   dialogVisible.value = true
+  form.value = row || {}
 
-  if (row) {
-    dialogTitle.value = '编辑分组'
-    form.value = { ...row }
-    checkedGroups.value = row.chatGroups
-      ? row.chatGroups.split(',').map(Number)
-      : []
-  } else {
-    dialogTitle.value = '新增分组'
-    form.value = {}
-    checkedGroups.value = []
+  groupIDs.value = row?.chatGroups
+    ? row.chatGroups.split(',').map(Number)
+    : []
+
+  userIDs.value = row?.permitUsers
+    ? row.permitUsers.split(',').map(Number)
+    : []
+}
+
+
+// ===== 删除（新增） =====
+const onDelete = async (row) => {
+  await ElMessageBox.confirm('确认删除该分组？')
+
+  const res = await deleteBotChatGroupClassify({
+    ids: [row.ID]
+  })
+
+  if (res.code === 0) {
+    ElMessage.success('删除成功')
+    getTableData()
   }
 }
 
-/* 保存 */
+
+// ===== 群选择（已改） =====
+const groupSelectVisible = ref(false)
+const botList = ref([])
+const selectedBot = ref(null)
+const currentGroups = ref([])
+const tempGroupIDs = ref([])
+
+const openGroupSelect = async () => {
+  groupSelectVisible.value = true
+
+  selectedBot.value = null
+  currentGroups.value = []
+
+  tempGroupIDs.value = [...groupIDs.value]
+
+  const res = await getBotChoiceWithChatGroup()
+  botList.value = res.data || []
+}
+
+watch(selectedBot, (val) => {
+  const bot = botList.value.find(b => b.botID === val)
+  currentGroups.value = bot?.botChatGroups || []
+})
+
+const confirmGroupSelect = () => {
+  const set = new Set([...groupIDs.value, ...tempGroupIDs.value])
+  groupIDs.value = Array.from(set)
+
+  currentGroups.value.forEach(g => {
+    if (groupIDs.value.includes(g.chatGroupID)) {
+      chatGroupMapper.value[g.chatGroupID] = g.chatGroupName
+    }
+  })
+
+  groupSelectVisible.value = false
+}
+
+
+// ===== 用户选择（已改） =====
+const userSelectVisible = ref(false)
+const allUsers = ref([])
+
+const openUserSelect = async () => {
+  userSelectVisible.value = true
+  const res = await userAll()
+  allUsers.value = res.data.list || []
+}
+
+const confirmUserSelect = () => {
+  allUsers.value.forEach(u => {
+    if (userIDs.value.includes(u.ID)) {
+      userMapper.value[u.ID] = u.nickName
+    }
+  })
+  userSelectVisible.value = false
+}
+
+
+// ===== 保存 =====
 const onSubmit = async () => {
   const res = await saveBotChatGroupClassify({
     ...form.value,
-    chatGroups: checkedGroups.value.join(',')
+    chatGroups: groupIDs.value.join(','),
+    permitUsers: userIDs.value.join(','),
+    refresh: true
   })
 
   if (res.code === 0) {
-    ElMessage.success('操作成功')
+    ElMessage.success('成功')
     dialogVisible.value = false
     getTableData()
-  } else {
-    ElMessage.error(res.msg || '失败')
   }
 }
 
-/* 删除（批量） */
-const onDelete = async () => {
-  if (!multipleSelection.value.length) {
-    ElMessage.warning('请选择数据')
-    return
-  }
-
-  await ElMessageBox.confirm('确定删除吗？', '提示')
-
-  const ids = multipleSelection.value.map(i => i.ID)
-
-  const res = await deleteBotChatGroupClassify({ ids })
-
-  if (res.code === 0) {
-    ElMessage.success('删除成功')
-    getTableData()
-  }
-}
-
-/* 删除（单个） */
-const onDeleteRow = async (row) => {
-  await ElMessageBox.confirm('确定删除该分组吗？', '提示')
-
-  const res = await deleteBotChatGroupClassify({ ids: [row.ID] })
-
-  if (res.code === 0) {
-    ElMessage.success('删除成功')
-    getTableData()
-  }
-}
-
-/* 查看 */
-const viewVisible = ref(false)
-const viewData = ref({})
-
-const onView = (row) => {
-  viewData.value = row
-  viewVisible.value = true
-}
-
-/* 分页 */
-const handleCurrentChange = (p) => {
-  page.value = p
-  getTableData()
+const onGroupDialogClose = () => {
+  tempGroupIDs.value = []
+  selectedBot.value = null
+  currentGroups.value = []
 }
 </script>

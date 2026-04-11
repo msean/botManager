@@ -2,8 +2,8 @@ package bot
 
 import (
 	"context"
-	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
@@ -122,7 +122,7 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupPublic(ctx contex
 }
 
 // 列表
-func (s *BotChatGroupService) ClassfyList(info botReq.BotChatGroupClassifySearch) (list []bot.BotChatGroupClassify, total int64, err error) {
+func (s *BotChatGroupService) ClassfyList(info botReq.BotChatGroupClassifySearch) (list []bot.BotChatGroupClassify, chatGroupMapper map[int64]string, userMapper map[int64]string, total int64, err error) {
 	db := global.GVA_MYSQL.Model(&bot.BotChatGroupClassify{})
 
 	err = db.Count(&total).Error
@@ -131,17 +131,80 @@ func (s *BotChatGroupService) ClassfyList(info botReq.BotChatGroupClassifySearch
 	}
 
 	offset := (info.Page - 1) * info.PageSize
-	fmt.Println(">>>>>>>>>", info.Page, info.PageSize, offset)
-	err = db.Limit(info.PageSize).Offset(offset).Order("id desc").Find(&list).Error
+	if err = db.Limit(info.PageSize).Offset(offset).Order("id desc").Find(&list).Error; err != nil {
+		return
+	}
+	var chatGroupList []int64
+	var userList []int64
+	for _, item := range list {
+		chatGroupIDList := strings.Split(item.ChatGroups, ",")
+		for _, chatGroupID := range chatGroupIDList {
+			if i, e := strconv.Atoi(chatGroupID); e == nil {
+				chatGroupList = append(chatGroupList, int64(i))
+			}
+		}
+		userIDList := strings.Split(item.Users, ",")
+		for _, _user := range userIDList {
+			if i, e := strconv.Atoi(_user); e == nil {
+				userList = append(userList, int64(i))
+			}
+		}
+	}
+	if chatGroupMapper, err = dao.BotChatGroupDao.MappNameByChatGroupIDList(global.GVA_MYSQL, chatGroupList); err != nil {
+		return
+	}
+
+	if userMapper, err = dao.SysDao.NameMapperFromIDList(global.GVA_MYSQL, userList); err != nil {
+		return
+	}
+
 	return
 }
 
 // 创建 / 更新
 func (s *BotChatGroupService) SaveClassify(data bot.BotChatGroupClassify) error {
+	db := global.GVA_MYSQL
 	if data.ID == 0 {
-		return global.GVA_MYSQL.Create(&data).Error
+		return db.Create(&data).Error
 	}
-	return global.GVA_MYSQL.Save(&data).Error
+
+	if data.Refresh {
+		return db.Save(&data).Error
+	}
+
+	var old bot.BotChatGroupClassify
+	if err := db.Where("id = ?", data.ID).First(&old).Error; err != nil {
+		return err
+	}
+
+	groupMap := make(map[string]struct{})
+
+	if old.ChatGroups != "" {
+		for _, v := range strings.Split(old.ChatGroups, ",") {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				groupMap[v] = struct{}{}
+			}
+		}
+	}
+
+	if data.ChatGroups != "" {
+		for _, v := range strings.Split(data.ChatGroups, ",") {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				groupMap[v] = struct{}{}
+			}
+		}
+	}
+
+	var result []string
+	for k := range groupMap {
+		result = append(result, k)
+	}
+
+	newChatGroups := strings.Join(result, ",")
+
+	return db.Model(&old).Update("chat_groups", newChatGroups).Error
 }
 
 // 删除

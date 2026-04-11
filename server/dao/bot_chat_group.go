@@ -36,3 +36,16 @@ func (dao *botChatGroupDao) FromID(db *gorm.DB, botChatGroupID int) (botChatGrou
 	has = true
 	return
 }
+
+func (dao *botChatGroupDao) MappNameByChatGroupIDList(db *gorm.DB, chatGroupIDList []int64) (mapper map[int64]string, err error) {
+	var models []bot.BotChatGroup
+	mapper = make(map[int64]string)
+	if err = db.Find(&models, "chat_group_id in (?)", chatGroupIDList).Error; err != nil {
+		return
+	}
+	for _, model := range models {
+		mapper[model.ChatGroupID] = model.ChatGroupName
+	}
+	return
+}
+

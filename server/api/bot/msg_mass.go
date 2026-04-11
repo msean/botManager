@@ -146,7 +146,7 @@ func (botMsgMassApi *BotMsgMassApi) FindBotMsgMass(c *gin.Context) {
 // @Router /botMsgMass/getBotMsgMassList [get]
 func (botMsgMassApi *BotMsgMassApi) GetBotMsgMassList(c *gin.Context) {
 	// 创建业务用Context
-	ctx := c.Request.Context()
+	// ctx := c.Request.Context()
 
 	var pageInfo botReq.BotMsgMassSearch
 	err := c.ShouldBindQuery(&pageInfo)
@@ -154,7 +154,7 @@ func (botMsgMassApi *BotMsgMassApi) GetBotMsgMassList(c *gin.Context) {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	list, total, err := botMsgMassService.GetBotMsgMassInfoList(ctx, pageInfo)
+	list, total, err := botMsgMassService.GetBotMsgMassInfoList(c, pageInfo)
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败:"+err.Error(), c)
@@ -188,16 +188,13 @@ func (botMsgMassApi *BotMsgMassApi) SendBotMsgMass(c *gin.Context) {
 }
 
 func (botMsgMassApi *BotMsgMassApi) GetHistory(c *gin.Context) {
-	// 创建业务用Context
-	ctx := c.Request.Context()
-
 	var pageInfo botReq.BotMassMsgRecordSearch
 	err := c.ShouldBindQuery(&pageInfo)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-	list, total, err := botMsgMassService.GetHistory(ctx, pageInfo)
+	list, total, err := botMsgMassService.GetHistory(c, pageInfo)
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败:"+err.Error(), c)

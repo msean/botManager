@@ -179,3 +179,12 @@ export const resetPassword = (data) => {
     data: data
   })
 }
+
+
+export const userAll = (params) => {
+  return service({
+    url: '/user/all',
+    method: 'get',
+    params
+  })
+}

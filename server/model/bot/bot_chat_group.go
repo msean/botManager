@@ -24,8 +24,12 @@ type BotChatGroup struct {
 
 type BotChatGroupClassify struct {
 	global.GVA_MODEL
-	Title      string `json:"title" form:"title" gorm:"column:title"`                                         //机器人ID
-	ChatGroups string `json:"chatGroups" form:"chatGroups" gorm:"comment:群组列表;column:chat_groups;type:text;"` //群组ID                                //成员
+	Title      string `json:"title" form:"title" gorm:"column:title"`                                         //标题
+	ChatGroups string `json:"chatGroups" form:"chatGroups" gorm:"comment:群组列表;column:chat_groups;type:text;"` //机器人群组
+	Users      string `json:"permitUsers" form:"permitUsers" gorm:"comment:群组列表;column:users;type:text;"`     //机器人群组
+	Refresh    bool   `json:"refresh" form:"refresh" gorm:"-"`                                                // 允许操作用户
+	// ChatGroupMapper map[int]string `json:"chatGroupMapper" form:"chatGroupMapper" gorm:"-"`
+	// UserMapper      map[int]string `json:"userMapper" form:"userMapper" gorm:"-"`
 }
 
 type BotChatGroupRelatedChannelFollow struct {

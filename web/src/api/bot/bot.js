@@ -83,3 +83,11 @@ export const unBanUser = (params) => {
     data: params,
   })
 }
+
+export const getUserChoice = (params) => {
+  return service({
+    url: '/bot_mgr/choice',
+    method: 'get',
+    params
+  })
+}

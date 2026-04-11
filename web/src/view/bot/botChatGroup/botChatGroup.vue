@@ -7,129 +7,129 @@
           <el-date-picker
             v-model="searchInfo.createdAtRange"
             type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
           />
         </el-form-item>
 
-```
-    <el-form-item label="机器人">
-      <el-select v-model="searchInfo.botID" clearable placeholder="请选择机器人">
-        <el-option
-          v-for="item in botOptions"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
+        <el-form-item label="机器人">
+          <el-select v-model="searchInfo.botID" clearable>
+            <el-option
+              v-for="item in botOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="群名称">
+          <el-input v-model="searchInfo.chatGroupName" clearable />
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="onSubmit">查询</el-button>
+          <el-button @click="onReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+
+    <!-- 表格 -->
+    <div class="gva-table-box">
+      <div style="margin-bottom: 10px;">
+        <el-button
+          type="success"
+          :disabled="!multipleSelection.length"
+          @click="openBindClassify"
+        >
+          加入群聊分组
+        </el-button>
+
+        <el-button
+          type="danger"
+          :disabled="!multipleSelection.length"
+          @click="onDelete"
+        >
+          删除选中群聊
+        </el-button>
+      </div>
+
+      <el-table :data="tableData" row-key="ID" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
+        <el-table-column label="机器人" prop="botName" />
+        <el-table-column label="群组名称" prop="chatGroupName" />
+
+        <el-table-column label="存储群消息">
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.syncMessage === 1"
+              @change="val => onSyncChange(val, row)"
+            />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="禁用转发">
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.banForward === 1"
+              @change="val => onBanForwardChange(val, row)"
+            />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="禁用文本长度">
+          <template #default="{ row }">
+            <el-input-number
+              v-model="row.maxWords"
+              @change="val => onMaxWordsChange(val, row)"
+            />
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        layout="total, prev, pager, next"
+        :total="total"
+        :page-size="pageSize"
+        :current-page="page"
+        @current-change="handleCurrentChange"
+      />
+    </div>
+
+    <!-- ✅ 合并后的弹窗 -->
+    <el-dialog v-model="bindDialogVisible" title="加入群聊分组" width="500px">
+
+      <!-- 创建分组 -->
+      <div style="margin-bottom: 20px;">
+        <el-input
+          v-model="newClassifyTitle"
+          placeholder="输入新分组名称"
+          style="width: 70%; margin-right: 10px;"
         />
-      </el-select>
-    </el-form-item>
+        <el-button type="primary" @click="submitCreateClassify">
+          创建分组
+        </el-button>
+      </div>
 
-    <el-form-item label="群名称">
-    <el-input 
-      v-model="searchInfo.chatGroupName" 
-      placeholder="请输入群名称"
-      clearable
-    />
-    </el-form-item>
+      <el-divider>选择已有分组</el-divider>
 
-    <el-form-item>
-      <el-button type="primary" @click="onSubmit">查询</el-button>
-      <el-button @click="onReset">重置</el-button>
-    </el-form-item>
-  </el-form>
-</div>
+      <!-- 分组列表 -->
+      <el-radio-group v-model="selectedClassifyID">
+        <el-radio
+          v-for="item in classifyOptions"
+          :key="item.ID"
+          :label="item.ID"
+          style="display: block; margin-bottom: 10px;"
+        >
+          {{ item.title }}
+        </el-radio>
+      </el-radio-group>
 
-<!-- 表格 -->
-<div class="gva-table-box">
-  <div style="margin-bottom: 10px;">
-    <el-button type="primary" @click="openCreateClassify">
-      新建分组
-    </el-button>
-
-    <el-button
-      type="success"
-      :disabled="!multipleSelection.length"
-      @click="openBindClassify"
-    >
-      加入分组
-    </el-button>
-
-    <el-button
-      type="danger"
-      :disabled="!multipleSelection.length"
-      @click="onDelete"
-    >
-      删除选中群聊
-    </el-button>
-  </div>
-
-  <el-table :data="tableData" row-key="ID" @selection-change="handleSelectionChange">
-    <el-table-column type="selection" width="55" />
-    <el-table-column label="机器人" prop="botName" />
-    <el-table-column label="群组名称" prop="chatGroupName" />
-
-    <el-table-column label="存储群消息">
-      <template #default="{ row }">
-        <el-switch
-          :model-value="row.syncMessage === 1"
-          @change="val => onSyncChange(val, row)"
-        />
+      <template #footer>
+        <el-button @click="bindDialogVisible=false">取消</el-button>
+        <el-button type="primary" @click="submitBindClassify">
+          确定
+        </el-button>
       </template>
-    </el-table-column>
-
-    <el-table-column label="禁用转发">
-      <template #default="{ row }">
-        <el-switch
-          :model-value="row.banForward === 1"
-          @change="val => onBanForwardChange(val, row)"
-        />
-      </template>
-    </el-table-column>
-
-    <el-table-column label="禁用文本长度">
-      <template #default="{ row }">
-        <el-input-number v-model="row.maxWords" @change="val => onMaxWordsChange(val, row)" />
-      </template>
-    </el-table-column>
-  </el-table>
-
-  <el-pagination
-    layout="total, prev, pager, next"
-    :total="total"
-    :page-size="pageSize"
-    :current-page="page"
-    @current-change="handleCurrentChange"
-  />
-</div>
-
-<!-- 新建分组 -->
-<el-dialog v-model="createDialogVisible" title="新建分组">
-  <el-input v-model="newClassifyTitle" placeholder="请输入分组名称" />
-  <template #footer>
-    <el-button @click="createDialogVisible=false">取消</el-button>
-    <el-button type="primary" @click="submitCreateClassify">确定</el-button>
-  </template>
-</el-dialog>
-
-<!-- 选择分组 -->
-<el-dialog v-model="bindDialogVisible" title="选择分组">
-  <el-radio-group v-model="selectedClassifyID">
-    <el-radio
-      v-for="item in classifyOptions"
-      :key="item.ID"
-      :label="item.ID"
-    >
-      {{ item.title }}
-    </el-radio>
-  </el-radio-group>
-
-  <template #footer>
-    <el-button @click="bindDialogVisible=false">取消</el-button>
-    <el-button type="primary" @click="submitBindClassify">确定</el-button>
-  </template>
-</el-dialog>
-```
+    </el-dialog>
 
   </div>
 </template>
@@ -208,45 +208,54 @@ const onBanForwardChange = (val, row) => updateRow(row, { banForward: val ? 1 : 
 const onMaxWordsChange = (val, row) => updateRow(row, { maxWords: val })
 
 /* ===== 分组 ===== */
-const createDialogVisible = ref(false)
-const newClassifyTitle = ref('')
-
-const openCreateClassify = () => {
-  newClassifyTitle.value = ''
-  createDialogVisible.value = true
-}
-
-const submitCreateClassify = async () => {
-  const res = await saveBotChatGroupClassify({ title: newClassifyTitle.value })
-  if (res.code === 0) {
-    ElMessage.success('创建成功')
-    createDialogVisible.value = false
-    loadClassify()
-  }
-}
-
-/* 分组列表 */
 const classifyOptions = ref([])
-const loadClassify = async () => {
-  const res = await chooseChatGroupClassify()
-  if (res.code === 0) classifyOptions.value = res.data
-}
-loadClassify()
-
-/* 加入分组 */
+const newClassifyTitle = ref('')
 const bindDialogVisible = ref(false)
 const selectedClassifyID = ref(null)
 
-const openBindClassify = () => {
+/* ✅ 修复这里 */
+const loadClassify = async () => {
+  const res = await chooseChatGroupClassify()
+  console.log('最终数据0:', res.data)
+  console.log('最终数据1:', res.data.list)
+  if (res.code === 0) {
+    classifyOptions.value = res.data.list || []
+  }
+  console.log('最终数据:', classifyOptions.value)
+}
+
+/* 打开弹窗 */
+const openBindClassify = async () => {
   bindDialogVisible.value = true
+  await loadClassify()
+}
+
+/* 创建分组 */
+const submitCreateClassify = async () => {
+  if (!newClassifyTitle.value) {
+    ElMessage.warning('请输入分组名称')
+    return
+  }
+  const res = await saveBotChatGroupClassify({ title: newClassifyTitle.value })
+  if (res.code === 0) {
+    ElMessage.success('创建成功')
+    newClassifyTitle.value = ''
+    await loadClassify()
+  }
 }
 
 const submitBindClassify = async () => {
+  if (!selectedClassifyID.value) {
+    ElMessage.warning('请选择分组')
+    return
+  }
+
   const ids = multipleSelection.value.map(i => i.chatGroupID)
 
-  const res = await getBotChatGroupClassifyList({
-    classifyID: selectedClassifyID.value,
-    chatGroupIDs: ids
+  const res = await saveBotChatGroupClassify({
+    ID: selectedClassifyID.value,         
+    chatGroups: ids.join(','), 
+    refresh: false                         
   })
 
   if (res.code === 0) {
@@ -254,7 +263,6 @@ const submitBindClassify = async () => {
     bindDialogVisible.value = false
   }
 }
-
 /* 分页 */
 const handleCurrentChange = p => {
   page.value = p

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/bot"
@@ -242,19 +241,20 @@ func (api *BotChatGroupApi) GetClassfyList(c *gin.Context) {
 		return
 	}
 
-	spew.Dump(">>>>>>>>", search)
-	list, total, err := botChatGroupService.ClassfyList(search)
+	list, chatGroupMapper, userMapper, total, err := botChatGroupService.ClassfyList(search)
 	if err != nil {
 		response.FailWithMessage("获取失败", c)
 		return
 	}
 	response.OkWithDetailed(gin.H{
-		"list":  list,
-		"total": total,
+		"list":            list,
+		"chatGroupMapper": chatGroupMapper,
+		"userMapper":      userMapper,
+		"total":           total,
 	}, "成功", c)
 }
 
-// 保存
+// 保存 SaveClassify
 func (api *BotChatGroupApi) SaveClassify(c *gin.Context) {
 	var data bot.BotChatGroupClassify
 	if err := c.ShouldBindJSON(&data); err != nil {
@@ -262,7 +262,6 @@ func (api *BotChatGroupApi) SaveClassify(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(">>>>>>>>>SaveClassify", data)
 	if err := botChatGroupService.SaveClassify(data); err != nil {
 		response.FailWithMessage("保存失败", c)
 		return
@@ -294,5 +293,4 @@ func (api *BotChatGroupApi) ClassifyChoice(c *gin.Context) {
 	response.OkWithDetailed(gin.H{
 		"list": list,
 	}, "成功", c)
-	response.Ok(c)
 }

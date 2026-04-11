@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/model/common"
 	systemReq "github.com/msean/botmanager/server/model/system/request"
 
@@ -315,4 +316,9 @@ func (userService *UserService) FindUserByUuid(uuid string) (user *system.SysUse
 func (userService *UserService) ResetPassword(ID uint, password string) (err error) {
 	err = global.GVA_MYSQL.Model(&system.SysUser{}).Where("id = ?", ID).Update("password", utils.BcryptHash(password)).Error
 	return err
+}
+
+func (userService *UserService) All() (users []system.SysUser, err error) {
+	users, err = dao.SysDao.AllUser(global.GVA_MYSQL)
+	return
 }

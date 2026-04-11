@@ -18,6 +18,11 @@ type BotChatGroupClassifySearch struct {
 	PageSize int `json:"pageSize" form:"pageSize"`
 }
 
+type UpdateClassifyParams struct {
+	ClassifyID   int   `json:"classifyID" form:"classifyID"`
+	ChatGroupIDs []int `json:"chatGroupIDs" form:"chatGroupIDs"`
+}
+
 // api/dto/bot_chat_message.go
 type ChatMessageQuery struct {
 	BotID       int64 `json:"botID" form:"botID" binding:"required"`

@@ -3,7 +3,7 @@ package dao
 var (
 	BotDao          = newBotDao()
 	BotChatGroupDao = newbotChatGroupDao()
-	SysParamsDao    = newsysParamsDao()
+	SysDao          = newsysDao()
 	BotGroupMemDao  = newbotGroupMemDao()
 	BotChannelDao   = newbotChannelDao()
 	RechargeDao     = newRechargeDao()
