@@ -82,13 +82,10 @@ func GetBelongs(ctx *gin.Context) (pairs []BotGroupPair, err error) {
 	}
 
 	userID := claims.BaseClaims.ID
-	// userName := claims.Username
 	authorityId := claims.AuthorityId
 
-	// 群发管理员
 	isAdmin := authorityId == 220 || authorityId == 1
 
-	// ================= 管理员 =================
 	if isAdmin {
 		var list []BotGroupPair
 		err = global.GVA_MYSQL.Model(&bot.BotChatGroup{}).
@@ -96,8 +93,6 @@ func GetBelongs(ctx *gin.Context) (pairs []BotGroupPair, err error) {
 			Scan(&list).Error
 		return list, err
 	}
-
-	// ================= 普通用户 =================
 
 	var classifies []bot.BotChatGroupClassify
 
@@ -326,10 +321,20 @@ func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
 ) (err error) {
 
 	var list []bot.BotChatGroup
+	// var _ bot.Bot
+	// var list []bot.BotChatGroup
+	if err = global.GVA_MYSQL.
+		Table("bot_chat_group AS g").
+		Joins("LEFT JOIN bot b ON g.bot_id = b.bot_id").
+		Where("g.id IN ? AND b.is_for_msg_mass = ?", req.IDs, 1). // ✅ 核心限制
+		Select("g.*").
+		Find(&list).Error; err != nil {
+		return
+	}
 
-	err = global.GVA_MYSQL.
-		Where("id IN ?", req.IDs).
-		Find(&list).Error
+	// err = global.GVA_MYSQL.
+	// 	Where("id IN ?", req.IDs).
+	// 	Find(&list).Error
 	if err != nil {
 		return err
 	}
