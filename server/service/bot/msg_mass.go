@@ -88,8 +88,11 @@ func GetBelongs(ctx *gin.Context) (pairs []BotGroupPair, err error) {
 
 	if isAdmin {
 		var list []BotGroupPair
-		err = global.GVA_MYSQL.Model(&bot.BotChatGroup{}).
-			Select("bot_id, chat_group_id").
+		err = global.GVA_MYSQL.
+			Table("bot_chat_group AS g").
+			Joins("LEFT JOIN bot b ON g.bot_id = b.bot_id").
+			Where("b.is_for_msg_mass = ?", 1).
+			Select("g.bot_id, g.chat_group_id").
 			Scan(&list).Error
 		return list, err
 	}
