@@ -17,6 +17,7 @@
           :key="item.botID"
           style="margin-bottom:4px"
         >
+        
           <!-- 机器人 -->
           <el-tag type="success" style="margin-right:4px">
             {{ botNameMap[item.botID] || item.botID }}
@@ -30,6 +31,7 @@
           >
             {{ chatGroupMapper[gid] || gid }}
           </el-tag>
+          <el-tag v-if="hasMoreThan8(row.chatGroups)">...</el-tag>
         </div>
 
       </template>
@@ -191,22 +193,34 @@ const getTableData = async () => {
 onMounted(getTableData)
 
 
-// ===== ✅ 新增方法（核心）=====
+// ✅ 按 bot 分组 + 最多显示8个
 const getGroupedGroups = (str) => {
   if (!str) return []
 
   const map = {}
+  let count = 0
+  const MAX = 8
 
-  str.split(',').forEach(item => {
-    const arr = item.split('_')
-    if (arr.length === 2) {
-      const botID = Number(arr[0])
-      const groupID = Number(arr[1])
+  const arr = str.split(',')
 
-      if (!map[botID]) map[botID] = []
+  for (let i = 0; i < arr.length; i++) {
+    if (count >= MAX) break
+
+    const item = arr[i]
+    const parts = item.split('_')
+
+    if (parts.length === 2) {
+      const botID = Number(parts[0])
+      const groupID = Number(parts[1])
+
+      if (!map[botID]) {
+        map[botID] = []
+      }
+
       map[botID].push(groupID)
+      count++
     }
-  })
+  }
 
   return Object.keys(map).map(botID => ({
     botID: Number(botID),
@@ -214,6 +228,10 @@ const getGroupedGroups = (str) => {
   }))
 }
 
+const hasMoreThan8 = (str) => {
+  if (!str) return false
+  return str.split(',').length > 8
+}
 
 // ===== 原有代码不动 =====
 const getNames = (idsStr, mapper) => {
