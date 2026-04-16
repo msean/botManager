@@ -8,18 +8,30 @@
 
     <el-table-column label="分组名称" prop="title" />
 
-    <!-- 群 -->
+    <!-- ✅ 群（只改这里） -->
     <el-table-column label="群组">
       <template #default="{ row }">
-        <el-tag
-          v-for="g in getNames(row.chatGroups, chatGroupMapper)"
-          :key="g.id"
-          style="margin:2px"
-        >
-          {{ g.name }}
-        </el-tag>
 
-        <el-tag v-if="hasMore(row.chatGroups)">...</el-tag>
+        <div
+          v-for="item in getGroupedGroups(row.chatGroups)"
+          :key="item.botID"
+          style="margin-bottom:4px"
+        >
+          <!-- 机器人 -->
+          <el-tag type="success" style="margin-right:4px">
+            {{ botNameMap[item.botID] || item.botID }}
+          </el-tag>
+
+          <!-- 群 -->
+          <el-tag
+            v-for="gid in item.groups"
+            :key="gid"
+            style="margin:2px"
+          >
+            {{ chatGroupMapper[gid] || gid }}
+          </el-tag>
+        </div>
+
       </template>
     </el-table-column>
 
@@ -94,7 +106,7 @@
   </el-dialog>
 
 
-  <!-- 群选择（已改：机器人 + 群） -->
+  <!-- 群选择 -->
   <el-dialog v-model="groupSelectVisible" title="选择群" @closed="onGroupDialogClose">
 
     <el-select v-model="selectedBot" placeholder="选择机器人" style="width:100%">
@@ -124,7 +136,7 @@
   </el-dialog>
 
 
-  <!-- 用户选择（已改：加确认按钮） -->
+  <!-- 用户选择 -->
   <el-dialog v-model="userSelectVisible" title="选择用户">
     <el-checkbox-group v-model="userIDs">
       <el-checkbox
@@ -145,7 +157,6 @@
 </div>
 </template>
 
-
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -162,6 +173,10 @@ import { userAll } from '@/api/user'
 const tableData = ref([])
 const chatGroupMapper = ref({})
 const userMapper = ref({})
+const botNameMap = ref({}) // ✅ 新增
+
+/* 群对应bot */
+const groupBotMap = ref({})
 
 /* 加载 */
 const getTableData = async () => {
@@ -170,15 +185,45 @@ const getTableData = async () => {
     tableData.value = res.data.list
     chatGroupMapper.value = res.data.chatGroupMapper || {}
     userMapper.value = res.data.userMapper || {}
+    botNameMap.value = res.data.botMapper || {} // ✅ 新增
   }
 }
 onMounted(getTableData)
 
 
-// ===== 工具方法 =====
+// ===== ✅ 新增方法（核心）=====
+const getGroupedGroups = (str) => {
+  if (!str) return []
+
+  const map = {}
+
+  str.split(',').forEach(item => {
+    const arr = item.split('_')
+    if (arr.length === 2) {
+      const botID = Number(arr[0])
+      const groupID = Number(arr[1])
+
+      if (!map[botID]) map[botID] = []
+      map[botID].push(groupID)
+    }
+  })
+
+  return Object.keys(map).map(botID => ({
+    botID: Number(botID),
+    groups: map[botID]
+  }))
+}
+
+
+// ===== 原有代码不动 =====
 const getNames = (idsStr, mapper) => {
   if (!idsStr) return []
-  const ids = idsStr.split(',')
+
+  const ids = idsStr.split(',').map(item => {
+    const arr = item.split('_')
+    return arr.length === 2 ? arr[1] : item
+  })
+
   return ids.slice(0,10).map(id => ({
     id,
     name: mapper[id] || id
@@ -201,9 +246,22 @@ const openDialog = (row) => {
   dialogVisible.value = true
   form.value = row || {}
 
-  groupIDs.value = row?.chatGroups
-    ? row.chatGroups.split(',').map(Number)
-    : []
+  if (row?.chatGroups) {
+    const arr = row.chatGroups.split(',')
+
+    groupIDs.value = arr.map(item => {
+      const parts = item.split('_')
+      if (parts.length === 2) {
+        const botID = Number(parts[0])
+        const groupID = Number(parts[1])
+        groupBotMap.value[groupID] = botID
+        return groupID
+      }
+      return Number(item)
+    })
+  } else {
+    groupIDs.value = []
+  }
 
   userIDs.value = row?.permitUsers
     ? row.permitUsers.split(',').map(Number)
@@ -211,7 +269,7 @@ const openDialog = (row) => {
 }
 
 
-// ===== 删除（新增） =====
+// ===== 删除 =====
 const onDelete = async (row) => {
   await ElMessageBox.confirm('确认删除该分组？')
 
@@ -226,7 +284,7 @@ const onDelete = async (row) => {
 }
 
 
-// ===== 群选择（已改） =====
+// ===== 群选择 =====
 const groupSelectVisible = ref(false)
 const botList = ref([])
 const selectedBot = ref(null)
@@ -257,6 +315,7 @@ const confirmGroupSelect = () => {
   currentGroups.value.forEach(g => {
     if (groupIDs.value.includes(g.chatGroupID)) {
       chatGroupMapper.value[g.chatGroupID] = g.chatGroupName
+      groupBotMap.value[g.chatGroupID] = selectedBot.value
     }
   })
 
@@ -264,7 +323,7 @@ const confirmGroupSelect = () => {
 }
 
 
-// ===== 用户选择（已改） =====
+// ===== 用户选择 =====
 const userSelectVisible = ref(false)
 const allUsers = ref([])
 
@@ -286,9 +345,14 @@ const confirmUserSelect = () => {
 
 // ===== 保存 =====
 const onSubmit = async () => {
+  const chatGroups = groupIDs.value.map(gid => {
+    const botID = groupBotMap.value[gid] || 0
+    return `${botID}_${gid}`
+  })
+
   const res = await saveBotChatGroupClassify({
     ...form.value,
-    chatGroups: groupIDs.value.join(','),
+    chatGroups: chatGroups.join(','),
     permitUsers: userIDs.value.join(','),
     refresh: true
   })

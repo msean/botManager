@@ -121,41 +121,115 @@ func (botChatGroupService *BotChatGroupService) GetBotChatGroupPublic(ctx contex
 	// 请自行实现
 }
 
-// 列表
-func (s *BotChatGroupService) ClassfyList(info botReq.BotChatGroupClassifySearch) (list []bot.BotChatGroupClassify, chatGroupMapper map[int64]string, userMapper map[int64]string, total int64, err error) {
+func uniqueInt64(arr []int64) []int64 {
+	set := make(map[int64]struct{})
+	res := make([]int64, 0, len(arr))
+
+	for _, v := range arr {
+		if _, ok := set[v]; !ok {
+			set[v] = struct{}{}
+			res = append(res, v)
+		}
+	}
+	return res
+}
+
+func (s *BotChatGroupService) ClassfyList(info botReq.BotChatGroupClassifySearch) (
+	list []bot.BotChatGroupClassify,
+	botMapper map[int64]string,
+	chatGroupMapper map[int64]string,
+	userMapper map[int64]string,
+	total int64,
+	err error,
+) {
+
 	db := global.GVA_MYSQL.Model(&bot.BotChatGroupClassify{})
 
-	err = db.Count(&total).Error
-	if err != nil {
+	// 总数
+	if err = db.Count(&total).Error; err != nil {
 		return
 	}
 
 	offset := (info.Page - 1) * info.PageSize
-	if err = db.Limit(info.PageSize).Offset(offset).Order("id desc").Find(&list).Error; err != nil {
-		return
-	}
-	var chatGroupList []int64
-	var userList []int64
-	for _, item := range list {
-		chatGroupIDList := strings.Split(item.ChatGroups, ",")
-		for _, chatGroupID := range chatGroupIDList {
-			if i, e := strconv.Atoi(chatGroupID); e == nil {
-				chatGroupList = append(chatGroupList, int64(i))
-			}
-		}
-		userIDList := strings.Split(item.Users, ",")
-		for _, _user := range userIDList {
-			if i, e := strconv.Atoi(_user); e == nil {
-				userList = append(userList, int64(i))
-			}
-		}
-	}
-	if chatGroupMapper, err = dao.BotChatGroupDao.MappNameByChatGroupIDList(global.GVA_MYSQL, chatGroupList); err != nil {
+	if err = db.Limit(info.PageSize).
+		Offset(offset).
+		Order("id desc").
+		Find(&list).Error; err != nil {
 		return
 	}
 
-	if userMapper, err = dao.SysDao.NameMapperFromIDList(global.GVA_MYSQL, userList); err != nil {
-		return
+	var botList []int64
+	var chatGroupList []int64
+	var userList []int64
+
+	for _, item := range list {
+		chatGroupIDList := strings.Split(item.ChatGroups, ",")
+		for _, raw := range chatGroupIDList {
+			if raw == "" {
+				continue
+			}
+
+			parts := strings.Split(raw, "_")
+			var groupID int64
+			var botID int64
+			if len(parts) == 2 {
+				if gid, e := strconv.ParseInt(parts[1], 10, 64); e == nil {
+					groupID = gid
+				}
+				if bid, e := strconv.ParseInt(parts[0], 10, 64); e == nil {
+					botID = bid
+				}
+			} else {
+				if gid, e := strconv.ParseInt(raw, 10, 64); e == nil {
+					groupID = gid
+				}
+			}
+			chatGroupList = append(chatGroupList, groupID)
+			botList = append(botList, botID)
+
+		}
+
+		userIDList := strings.Split(item.Users, ",")
+
+		for _, raw := range userIDList {
+			if raw == "" {
+				continue
+			}
+			if uid, e := strconv.ParseInt(raw, 10, 64); e == nil {
+				userList = append(userList, uid)
+			}
+		}
+	}
+
+	chatGroupList = uniqueInt64(chatGroupList)
+	userList = uniqueInt64(userList)
+
+	if len(chatGroupList) > 0 {
+		if chatGroupMapper, err = dao.BotChatGroupDao.
+			MappNameByChatGroupIDList(global.GVA_MYSQL, chatGroupList); err != nil {
+			return
+		}
+	} else {
+		chatGroupMapper = map[int64]string{}
+	}
+
+	if len(userList) > 0 {
+		if userMapper, err = dao.SysDao.
+			NameMapperFromIDList(global.GVA_MYSQL, userList); err != nil {
+			return
+		}
+	} else {
+		userMapper = map[int64]string{}
+	}
+
+	if len(botList) > 0 {
+		if botMapper, err = dao.BotDao.
+			NameMappByIDList(global.GVA_MYSQL, botList); err != nil {
+			return
+		}
+	} else {
+		botMapper = map[int64]string{}
+
 	}
 
 	return

@@ -63,7 +63,12 @@ func (botMsgMassService *BotMsgMassService) GetBotMsgMass(ctx context.Context, I
 	return
 }
 
-func GetBelongs(ctx *gin.Context) (chatGroupIDs []int64, err error) {
+type BotGroupPair struct {
+	BotID       int64
+	ChatGroupID int64
+}
+
+func GetBelongs(ctx *gin.Context) (pairs []BotGroupPair, err error) {
 	claimsVal := ctx.Value("claims")
 	if claimsVal == nil {
 		err = errors.New("获取用户失败")
@@ -79,47 +84,65 @@ func GetBelongs(ctx *gin.Context) (chatGroupIDs []int64, err error) {
 	userID := claims.BaseClaims.ID
 	userName := claims.Username
 	authorityId := claims.AuthorityId
-	isAdmin := userName == "msgmass" || authorityId == 1
-	if isAdmin {
-		var botOpenMsgMass []int64
-		if err = global.GVA_MYSQL.Model(&bot.Bot{}).
-			Where("is_for_msg_mass=1").
-			Pluck("bot_id", &botOpenMsgMass).Error; err != nil {
-			return
-		}
 
+	isAdmin := userName == "msgmass" || authorityId == 1
+
+	// ================= 管理员 =================
+	if isAdmin {
+		var list []BotGroupPair
 		err = global.GVA_MYSQL.Model(&bot.BotChatGroup{}).
-			Where("bot_id in (?)", botOpenMsgMass).
-			Pluck("chat_group_id", &chatGroupIDs).Error
-		if err != nil {
-			return
-		}
-		return
+			Select("bot_id, chat_group_id").
+			Scan(&list).Error
+		return list, err
 	}
+
+	// ================= 普通用户 =================
+
 	var classifies []bot.BotChatGroupClassify
-	likeStr := fmt.Sprintf("%%%d%%", userID)
 
 	if err = global.GVA_MYSQL.Model(&bot.BotChatGroupClassify{}).
-		Where("users LIKE ?", likeStr).
+		Where(
+			"users = ? OR users LIKE ? OR users LIKE ? OR users LIKE ?",
+			fmt.Sprintf("%d", userID),
+			fmt.Sprintf("%d,", userID)+"%",
+			"%,"+fmt.Sprintf("%d,", userID)+"%",
+			"%,"+fmt.Sprintf("%d", userID),
+		).
 		Find(&classifies).Error; err != nil {
 		return
 	}
-	groupSet := make(map[int64]struct{})
+
+	pairMap := make(map[string]BotGroupPair)
+
 	for _, c := range classifies {
 		if c.ChatGroups == "" {
 			continue
 		}
-		ids := strings.Split(c.ChatGroups, ",")
-		for _, idStr := range ids {
-			id, _ := strconv.ParseInt(idStr, 10, 64)
-			if id != 0 {
-				groupSet[id] = struct{}{}
+
+		items := strings.Split(c.ChatGroups, ",")
+
+		for _, item := range items {
+			parts := strings.Split(item, "_")
+			if len(parts) != 2 {
+				continue
+			}
+
+			botID, err1 := strconv.ParseInt(parts[0], 10, 64)
+			groupID, err2 := strconv.ParseInt(parts[1], 10, 64)
+			if err1 != nil || err2 != nil {
+				continue
+			}
+
+			key := item
+			pairMap[key] = BotGroupPair{
+				BotID:       botID,
+				ChatGroupID: groupID,
 			}
 		}
 	}
 
-	for id := range groupSet {
-		chatGroupIDs = append(chatGroupIDs, id)
+	for _, v := range pairMap {
+		pairs = append(pairs, v)
 	}
 
 	return
@@ -132,17 +155,26 @@ func (svc *BotMsgMassService) GetBotMsgMassInfoList(ctx *gin.Context, info botRe
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 
-	var chatGroupIDs []int64
-	if chatGroupIDs, err = GetBelongs(ctx); err != nil {
+	pairs, err := GetBelongs(ctx)
+	if err != nil {
 		return
 	}
-	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{})
 
-	if len(chatGroupIDs) > 0 {
-		db = db.Where("chat_group_id IN ?", chatGroupIDs)
-	} else {
+	if len(pairs) == 0 {
 		return []*bot.BotChatGroup{}, 0, nil
 	}
+
+	db := global.GVA_MYSQL.Model(&bot.BotChatGroup{})
+
+	var conditions []string
+	var values []interface{}
+
+	for _, p := range pairs {
+		conditions = append(conditions, "(bot_id = ? AND chat_group_id = ?)")
+		values = append(values, p.BotID, p.ChatGroupID)
+	}
+
+	db = db.Where(strings.Join(conditions, " OR "), values...)
 
 	if info.BotID != nil {
 		db = db.Where("bot_id = ?", *info.BotID)
@@ -205,18 +237,37 @@ func (botMsgMassService *BotMsgMassService) GetBotMsgMassPublic(ctx context.Cont
 
 // GetBotMassMsgRecordInfoList 分页获取群发历史记录记录
 // Author [yourname](https://github.com/yourname)
+// GetBotMassMsgRecordInfoList 分页获取群发历史记录记录
 func (svc *BotMsgMassService) GetHistory(ctx *gin.Context, info botReq.BotMassMsgRecordSearch) (list []*bot.BotMassMsgRecord, total int64, err error) {
-	var permitGroupIDs []int64
-	if permitGroupIDs, err = GetBelongs(ctx); err != nil {
+
+	// ✅ 改这里：获取组合权限
+	pairs, err := GetBelongs(ctx)
+	if err != nil {
 		return
 	}
+
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 
-	db := global.GVA_MYSQL.Model(&bot.BotMassMsgRecord{}).Where("chat_group_id in (?)", permitGroupIDs)
+	db := global.GVA_MYSQL.Model(&bot.BotMassMsgRecord{})
+
+	if len(pairs) > 0 {
+		var conditions []string
+		var values []interface{}
+
+		for _, p := range pairs {
+			conditions = append(conditions, "(bot_id = ? AND chat_group_id = ?)")
+			values = append(values, p.BotID, p.ChatGroupID)
+		}
+
+		db = db.Where(strings.Join(conditions, " OR "), values...)
+	} else {
+		return []*bot.BotMassMsgRecord{}, 0, nil
+	}
+
 	var records []*bot.BotMassMsgRecord
 
-	// 条件过滤
+	// 条件过滤（保持不动）
 	if info.BotID != nil {
 		db = db.Where("bot_id = ?", *info.BotID)
 	}
@@ -239,7 +290,7 @@ func (svc *BotMsgMassService) GetHistory(ctx *gin.Context, info botReq.BotMassMs
 		return
 	}
 
-	// 获取机器人和群聊映射
+	// 获取机器人和群聊映射（保持不动）
 	var botIDs, chatGroupIDs []int64
 	for _, r := range records {
 		botIDs = append(botIDs, r.BotID)
@@ -255,7 +306,7 @@ func (svc *BotMsgMassService) GetHistory(ctx *gin.Context, info botReq.BotMassMs
 		return
 	}
 
-	// 填充名称
+	// 填充名称（保持不动）
 	for _, r := range records {
 		if b, ok := botMapper[r.BotID]; ok {
 			r.BotName = b.Name

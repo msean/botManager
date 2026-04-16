@@ -10,16 +10,16 @@ import (
 // 机器人群组列表 结构体  BotChatGroup
 type BotChatGroup struct {
 	global.GVA_MODEL
-	BotName               string `json:"botName" form:"botName" gorm:"-"`                                                           //机器人名称
-	BotID                 int64  `json:"botID" form:"botID" gorm:"column:bot_id"`                                                   //机器人ID
-	ChatGroupID           int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群组ID;column:chat_group_id;"`                  //群组ID
-	ChatGroupName         string `json:"chatGroupName" form:"chatGroupName" gorm:"comment:群组ID;column:chat_group_name;"`            //群组ID
-	BanForward            int64  `json:"banForward" form:"banForward" gorm:"column:ban_forward;default:1"`                          // 是否禁用转发消息 1 是 2 否
-	MaxWords              int64  `json:"maxWords" form:"maxWords" gorm:"column:max_words;default:-1"`                               // 最大长度限制
-	SyncMessage           int64  `json:"syncMessage" form:"botID" gorm:"column:sync_message;default:2"`                             // 是否需要同步消息, 1 是 2否 // 默认不开启吧
-	MustJoinChannels      string `json:"mustJoinChannels" form:"mustJoinChannels" gorm:"column:must_join_channels"`                 // 需要关注的频道
-	InvaidChannelFoldLink string `json:"invaidChannelFoldLink" form:"invaidChannelFoldLink" gorm:"column:invaid_channel_fold_link"` // 邀请链接
-	Members               string `json:"members" form:"members" gorm:"comment:成员;column:members;type:text;"`                        //成员
+	BotName               string `json:"botName" form:"botName" gorm:"-"`
+	BotID                 int64  `json:"botID" form:"botID" gorm:"column:bot_id;index:idx_bot_group,priority:1"`
+	ChatGroupID           int64  `json:"chatGroupID" form:"chatGroupID" gorm:"column:chat_group_id;index:idx_bot_group,priority:2"`
+	ChatGroupName         string `json:"chatGroupName" form:"chatGroupName" gorm:"column:chat_group_name;"`
+	BanForward            int64  `json:"banForward" form:"banForward" gorm:"column:ban_forward;default:1"`
+	MaxWords              int64  `json:"maxWords" form:"maxWords" gorm:"column:max_words;default:-1"`
+	SyncMessage           int64  `json:"syncMessage" form:"botID" gorm:"column:sync_message;default:2"`
+	MustJoinChannels      string `json:"mustJoinChannels" form:"mustJoinChannels" gorm:"column:must_join_channels"`
+	InvaidChannelFoldLink string `json:"invaidChannelFoldLink" form:"invaidChannelFoldLink" gorm:"column:invaid_channel_fold_link"`
+	Members               string `json:"members" form:"members" gorm:"column:members;type:text;"`
 }
 
 type BotChatGroupClassify struct {

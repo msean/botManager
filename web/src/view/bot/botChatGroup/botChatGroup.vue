@@ -134,7 +134,6 @@
 
   </div>
 </template>
-
 <script setup>
 import {
   getBotChatGroupList,
@@ -180,7 +179,7 @@ loadBots()
 /* 表格 */
 const tableData = ref([])
 const page = ref(1)
-const pageSize = ref(20) // ✅ 默认20
+const pageSize = ref(20)
 const total = ref(0)
 const searchInfo = ref({})
 
@@ -238,17 +237,23 @@ const submitCreateClassify = async () => {
   }
 }
 
+/* ✅ 核心修改：这里 */
 const submitBindClassify = async () => {
   if (!selectedClassifyID.value) {
     ElMessage.warning('请选择分组')
     return
   }
 
-  const ids = multipleSelection.value.map(i => i.chatGroupID)
+  // ✅ 拼接 botID_groupID
+  const ids = multipleSelection.value.map(i => {
+    const botID = i.botID || 0
+    const groupID = i.chatGroupID
+    return `${botID}_${groupID}`
+  })
 
   const res = await saveBotChatGroupClassify({
     ID: selectedClassifyID.value,
-    chatGroups: ids.join(','),
+    chatGroups: ids.join(','), // ✅ 改这里
     refresh: false
   })
 
@@ -264,10 +269,9 @@ const handleCurrentChange = p => {
   getTableData()
 }
 
-/* ✅ 新增：每页条数变化 */
 const handleSizeChange = size => {
   pageSize.value = size
-  page.value = 1 // 重置到第一页
+  page.value = 1
   getTableData()
 }
 

@@ -13,11 +13,11 @@ type (
 	// }
 	BotMassMsgRecord struct {
 		global.GVA_MODEL
-		BotID       int64  `json:"botID" form:"botID" gorm:"comment:机器人ID;column:bot_id;"`                   //机器人
-		ChatGroupID int64  `json:"chatGroupID" form:"chatGroupID" gorm:"comment:群聊ID;column:chat_group_id;"` //群聊
-		Msg         string `json:"msg" form:"msg" gorm:"comment:发送消息;column:msg;type:text;"`                 //发送消息
-		Members     string `json:"members" form:"members" gorm:"comment:发送成员;column:members;type:text;"`     //发送成员
-		Remark      string `json:"remark" form:"remark" gorm:"comment:备注;column:remark;type:text;"`          //发送成员
+		BotID       int64  `json:"botID" form:"botID" gorm:"column:bot_id;index:idx_bot_group,priority:1"`
+		ChatGroupID int64  `json:"chatGroupID" form:"chatGroupID" gorm:"column:chat_group_id;index:idx_bot_group,priority:2"`
+		Msg         string `json:"msg" form:"msg" gorm:"column:msg;type:text;"`
+		Members     string `json:"members" form:"members" gorm:"column:members;type:text;"`
+		Remark      string `json:"remark" form:"remark" gorm:"column:remark;type:text;"`
 		BotFeildExtend
 	}
 	BotMassMsgPermission struct {

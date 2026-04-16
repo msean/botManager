@@ -51,3 +51,15 @@ func (dao *botDao) AllWithChatGroup(db *gorm.DB) (bots []bot.Bot, err error) {
 	err = db.Model(&bot.Bot{}).Preload("Chats").Preload("Channels").Find(&bots).Error
 	return
 }
+
+func (dao *botDao) NameMappByIDList(db *gorm.DB, botIDList []int64) (mapper map[int64]string, err error) {
+	var bots []bot.Bot
+	mapper = make(map[int64]string)
+	if err = db.Find(&bots, "bot_id in (?)", botIDList).Error; err != nil {
+		return
+	}
+	for _, botModel := range bots {
+		mapper[botModel.BotID] = botModel.Name
+	}
+	return
+}

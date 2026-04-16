@@ -241,7 +241,7 @@ func (api *BotChatGroupApi) GetClassfyList(c *gin.Context) {
 		return
 	}
 
-	list, chatGroupMapper, userMapper, total, err := botChatGroupService.ClassfyList(search)
+	list, botMapper, chatGroupMapper, userMapper, total, err := botChatGroupService.ClassfyList(search)
 	if err != nil {
 		response.FailWithMessage("获取失败", c)
 		return
@@ -251,6 +251,7 @@ func (api *BotChatGroupApi) GetClassfyList(c *gin.Context) {
 		"chatGroupMapper": chatGroupMapper,
 		"userMapper":      userMapper,
 		"total":           total,
+		"botMapper":       botMapper,
 	}, "成功", c)
 }
 
