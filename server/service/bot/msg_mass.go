@@ -92,8 +92,10 @@ func GetBelongs(ctx *gin.Context) (pairs []BotGroupPair, err error) {
 			Table("bot_chat_group AS g").
 			Joins("LEFT JOIN bot b ON g.bot_id = b.bot_id").
 			Where("b.is_for_msg_mass = ?", 1).
+			Group("g.bot_id, g.chat_group_id").
 			Select("g.bot_id, g.chat_group_id").
 			Scan(&list).Error
+
 		return list, err
 	}
 
@@ -345,6 +347,19 @@ func (botMsgMassService *BotMsgMassService) SendBotMsgMass(
 	if len(list) == 0 {
 		return errors.New("未找到群发记录")
 	}
+
+	seen := make(map[int64]struct{})
+	var uniqueList []bot.BotChatGroup
+
+	for _, item := range list {
+		if _, ok := seen[item.ChatGroupID]; ok {
+			continue
+		}
+		seen[item.ChatGroupID] = struct{}{}
+		uniqueList = append(uniqueList, item)
+	}
+
+	list = uniqueList
 
 	go func() {
 		records := make([]bot.BotMassMsgRecord, 0, len(list))
