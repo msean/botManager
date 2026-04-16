@@ -82,10 +82,11 @@ func GetBelongs(ctx *gin.Context) (pairs []BotGroupPair, err error) {
 	}
 
 	userID := claims.BaseClaims.ID
-	userName := claims.Username
+	// userName := claims.Username
 	authorityId := claims.AuthorityId
 
-	isAdmin := userName == "msgmass" || authorityId == 1
+	// 群发管理员
+	isAdmin := authorityId == 220 || authorityId == 1
 
 	// ================= 管理员 =================
 	if isAdmin {
