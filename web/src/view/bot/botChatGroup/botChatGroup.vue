@@ -54,6 +54,7 @@
 
       <el-table :data="tableData" row-key="ID" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
+        <el-table-column label="ID" prop="ID" />
         <el-table-column label="机器人" prop="botName" />
         <el-table-column label="群组名称" prop="chatGroupName" />
 
@@ -85,19 +86,20 @@
         </el-table-column>
       </el-table>
 
+      <!-- ✅ 分页（已增强） -->
       <el-pagination
-        layout="total, prev, pager, next"
+        layout="total, sizes, prev, pager, next, jumper"
         :total="total"
         :page-size="pageSize"
         :current-page="page"
+        :page-sizes="[20, 50, 100, 200]"
         @current-change="handleCurrentChange"
+        @size-change="handleSizeChange"
       />
     </div>
 
-    <!-- ✅ 合并后的弹窗 -->
+    <!-- 弹窗 -->
     <el-dialog v-model="bindDialogVisible" title="加入群聊分组" width="500px">
-
-      <!-- 创建分组 -->
       <div style="margin-bottom: 20px;">
         <el-input
           v-model="newClassifyTitle"
@@ -111,7 +113,6 @@
 
       <el-divider>选择已有分组</el-divider>
 
-      <!-- 分组列表 -->
       <el-radio-group v-model="selectedClassifyID">
         <el-radio
           v-for="item in classifyOptions"
@@ -140,8 +141,7 @@ import {
   updateBotChatGroup,
   deleteBotChatGroupByIds,
   saveBotChatGroupClassify,
-  chooseChatGroupClassify,
-  getBotChatGroupClassifyList
+  chooseChatGroupClassify
 } from '@/api/bot/botChatGroup'
 
 import { getBotChoice } from '@/api/bot/bot'
@@ -180,7 +180,7 @@ loadBots()
 /* 表格 */
 const tableData = ref([])
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(20) // ✅ 默认20
 const total = ref(0)
 const searchInfo = ref({})
 
@@ -207,30 +207,24 @@ const onSyncChange = (val, row) => updateRow(row, { syncMessage: val ? 1 : 2 })
 const onBanForwardChange = (val, row) => updateRow(row, { banForward: val ? 1 : 2 })
 const onMaxWordsChange = (val, row) => updateRow(row, { maxWords: val })
 
-/* ===== 分组 ===== */
+/* 分组 */
 const classifyOptions = ref([])
 const newClassifyTitle = ref('')
 const bindDialogVisible = ref(false)
 const selectedClassifyID = ref(null)
 
-/* ✅ 修复这里 */
 const loadClassify = async () => {
   const res = await chooseChatGroupClassify()
-  console.log('最终数据0:', res.data)
-  console.log('最终数据1:', res.data.list)
   if (res.code === 0) {
     classifyOptions.value = res.data.list || []
   }
-  console.log('最终数据:', classifyOptions.value)
 }
 
-/* 打开弹窗 */
 const openBindClassify = async () => {
   bindDialogVisible.value = true
   await loadClassify()
 }
 
-/* 创建分组 */
 const submitCreateClassify = async () => {
   if (!newClassifyTitle.value) {
     ElMessage.warning('请输入分组名称')
@@ -253,9 +247,9 @@ const submitBindClassify = async () => {
   const ids = multipleSelection.value.map(i => i.chatGroupID)
 
   const res = await saveBotChatGroupClassify({
-    ID: selectedClassifyID.value,         
-    chatGroups: ids.join(','), 
-    refresh: false                         
+    ID: selectedClassifyID.value,
+    chatGroups: ids.join(','),
+    refresh: false
   })
 
   if (res.code === 0) {
@@ -263,16 +257,28 @@ const submitBindClassify = async () => {
     bindDialogVisible.value = false
   }
 }
+
 /* 分页 */
 const handleCurrentChange = p => {
   page.value = p
   getTableData()
 }
 
+/* ✅ 新增：每页条数变化 */
+const handleSizeChange = size => {
+  pageSize.value = size
+  page.value = 1 // 重置到第一页
+  getTableData()
+}
+
 /* 搜索 */
-const onSubmit = () => getTableData()
+const onSubmit = () => {
+  page.value = 1
+  getTableData()
+}
 const onReset = () => {
   searchInfo.value = {}
+  page.value = 1
   getTableData()
 }
 </script>
