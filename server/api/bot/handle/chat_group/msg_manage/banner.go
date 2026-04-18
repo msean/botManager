@@ -36,6 +36,7 @@ func handleMsg(botModel bot.Bot, tgMsg botapi.Update, chatGroup cache.BotChatGro
 
 	// 禁用推荐联系人
 	if tgMsg.Message.Contact != nil {
+		BanContact(botModel, tgMsg)
 		return
 	}
 

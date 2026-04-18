@@ -22,4 +22,5 @@ const (
 	BanTypeForword         = 3
 	BanTypeWordLen         = 4
 	BanTypeUnFollowChannel = 5
+	BanTypeContact         = 5
 )
