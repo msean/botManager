@@ -35,6 +35,7 @@ func handleMsg(botModel bot.Bot, tgMsg botapi.Update, chatGroup cache.BotChatGro
 	}
 
 	// 禁用推荐联系人
+	global.GVA_LOG.Debug("BotHandler handleMsg", zap.Any("tgMsg.Message.Contact", tgMsg.Message.Contact))
 	if tgMsg.Message.Contact != nil {
 		BanContact(botModel, tgMsg)
 		return
