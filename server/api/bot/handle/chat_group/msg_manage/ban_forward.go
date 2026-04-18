@@ -14,8 +14,5 @@ func BanForward(botModel bot.Bot, tgMsg botapi.Update) {
 }
 
 func BanContact(botModel bot.Bot, tgMsg botapi.Update) {
-	if tgMsg.Message.ForwardFrom != nil || tgMsg.Message.ForwardFromChat != nil || tgMsg.Message.ExternalReply != nil {
-		BanUser(botModel, tgMsg, constant.BanTypeContact, 0)
-		return
-	}
+	BanUser(botModel, tgMsg, constant.BanTypeContact, 0)
 }
