@@ -34,6 +34,11 @@ func handleMsg(botModel bot.Bot, tgMsg botapi.Update, chatGroup cache.BotChatGro
 		return
 	}
 
+	// 禁用推荐联系人
+	if tgMsg.Message.Contact != nil {
+		return
+	}
+
 	var find bool
 
 	// 内容检测
