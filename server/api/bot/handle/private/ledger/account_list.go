@@ -48,7 +48,7 @@ func (p *GroupListParser) Handle() error {
 
 	var builder strings.Builder
 
-	for _, item := range list {
+	for i, item := range list {
 
 		groupID := item.ID
 		title := ""
@@ -63,18 +63,20 @@ func (p *GroupListParser) Handle() error {
 
 		accounts := strings.Split(accountGroup, ",")
 
-		builder.WriteString(fmt.Sprintf("📦 分组ID：%d\n", groupID))
-		builder.WriteString(fmt.Sprintf("📌 标题：%s\n", title))
-		builder.WriteString("📒 账户列表：\n")
+		builder.WriteString(fmt.Sprintf("ID：%d\n", groupID))
+		builder.WriteString(fmt.Sprintf("标题：%s\n", title))
+		builder.WriteString("地址列表：\n")
 
 		for _, acc := range accounts {
 			acc = strings.TrimSpace(acc)
 			if acc != "" {
-				builder.WriteString(fmt.Sprintf("  - %s\n", acc))
+				builder.WriteString(fmt.Sprintf("  - %s", acc))
 			}
 		}
 
-		builder.WriteString("\n---------------------\n\n")
+		if i != 0 {
+			builder.WriteString("\n---------------------\n")
+		}
 	}
 
 	replyText(p.botModel.Token, chatID, builder.String())
