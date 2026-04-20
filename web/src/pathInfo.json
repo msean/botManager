@@ -70,6 +70,8 @@
   "/src/view/ledger/ledger/full.vue": "Full",
   "/src/view/ledger/ledger/ledger.vue": "Ledger",
   "/src/view/ledger/ledger/ledgerForm.vue": "LedgerForm",
+  "/src/view/ledger/ledgerAccountGroup/ledgerAccountGroup.vue": "LedgerAccountGroup",
+  "/src/view/ledger/ledgerAccountGroup/ledgerAccountGroupForm.vue": "LedgerAccountGroupForm",
   "/src/view/ledger/ledgerPermission/ledgerPermission.vue": "LedgerPermission",
   "/src/view/ledger/ledgerPermission/ledgerPermissionForm.vue": "LedgerPermissionForm",
   "/src/view/listen/index.vue": "Listen",

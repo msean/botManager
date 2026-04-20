@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/msean/botmanager/server/dao"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/global/constant"
@@ -20,6 +18,7 @@ import (
 	"github.com/msean/botmanager/server/utils/bot_handler"
 	"github.com/msean/botmanager/server/utils/transaction/trongrid"
 	"go.uber.org/zap"
+	"time"
 )
 
 var ServiceGroupApp = new(ServiceGroup)
@@ -29,15 +28,22 @@ type ServiceGroup struct {
 	BotServiceGroup      botSrv.ServiceGroup
 	RechargeServiceGroup rechargeSrv.ServiceGroup
 	UsageServiceGroup    ledger.ServiceGroup
-	ListenServiceGroup   listen.ServiceGroup
+	ListenServiceGroup   listen.ServiceGroup // 每一分钟去检查过期订单
+	// 开启广告自动发布的就去
+	// trxResp.Data = append(trxResp.Data, trongrid.TronResponseData{TransactionID: "mock_tx_1001", BlockTimestamp: 1764746290000, From: "TEST_FROM_ADDRESS", To: "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E", Type: "Transfer", Value: "10004000", TokenInfo: struct {
+	// 	Symbol   string `json:"symbol"`
+	// 	Address  string `json:"address"`
+	// 	Decimals int    `json:"decimals"`
+	// 	Name     string `json:"name"`
+	// }{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
+	LedgerServiceGroup ledger.ServiceGroup
 }
 
 func Init() {
 	botSrv.InitBotTaskManager()
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
-		for range // 每一分钟去检查过期订单
-		ticker.C {
+		for range ticker.C {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -79,11 +85,9 @@ func ReconcileAccounts() {
 		return
 	}
 	for _, botModel := range bots {
-		// 开启广告自动发布的就去
 		if botModel.IsAdPublish == 1 {
 			reconcileAccount(botModel)
 		}
-
 	}
 }
 func reconcileAccount(botModel bot.Bot) (err error) {
@@ -121,12 +125,6 @@ func reconcileAccount(botModel bot.Bot) (err error) {
 		global.GVA_LOG.Error("HandleAdConfirm NewBot", zap.Int64("botID", botID), zap.Error(err))
 		return
 	}
-	// trxResp.Data = append(trxResp.Data, trongrid.TronResponseData{TransactionID: "mock_tx_1001", BlockTimestamp: 1764746290000, From: "TEST_FROM_ADDRESS", To: "TKBDsYcVgvBMFi2qmhf88JDaMPYkqH8x2E", Type: "Transfer", Value: "10004000", TokenInfo: struct {
-	// 	Symbol   string `json:"symbol"`
-	// 	Address  string `json:"address"`
-	// 	Decimals int    `json:"decimals"`
-	// 	Name     string `json:"name"`
-	// }{Symbol: "USDT", Address: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", Decimals: 6, Name: "Tether USD"}})
 	var orders []recharge.UserRechargeRecord
 	err = global.GVA_MYSQL.Where("bot_id = ? AND status = 1", botID).Find(&orders).Error
 	if err != nil {

@@ -7,9 +7,11 @@ import (
 type RouterGroup struct {
 	LedgerRouter
 	LedgerPermissionRouter
+	LedgerAccountGroupRouter
 }
 
 var (
-	ledgerApi           = api.ApiGroupApp.LedgerApiGroup.LedgerApi
-	ledgerPermissionApi = api.ApiGroupApp.LedgerApiGroup.LedgerPermissionApi
+	ledgerApi             = api.ApiGroupApp.LedgerApiGroup.LedgerApi
+	ledgerPermissionApi   = api.ApiGroupApp.LedgerApiGroup.LedgerPermissionApi
+	ledgerAccountGroupApi = api.ApiGroupApp.LedgerApiGroup.LedgerAccountGroupApi
 )

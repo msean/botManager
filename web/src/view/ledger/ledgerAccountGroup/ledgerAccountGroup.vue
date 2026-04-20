@@ -3,27 +3,6 @@
   <div>
     <div class="gva-search-box">
       <el-form ref="elSearchFormRef" :inline="true" :model="searchInfo" class="demo-form-inline" @keyup.enter="onSubmit">
-      <el-form-item label="创建日期" prop="createdAtRange">
-      <template #label>
-        <span>
-          创建日期
-          <el-tooltip content="搜索范围是开始日期（包含）至结束日期（不包含）">
-            <el-icon><QuestionFilled /></el-icon>
-          </el-tooltip>
-        </span>
-      </template>
-
-      <el-date-picker
-            v-model="searchInfo.createdAtRange"
-            class="!w-380px"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-          />
-       </el-form-item>
-      
-
         <template v-if="showAllQuery">
           <!-- 将需要控制显示状态的查询条件添加到此范围内 -->
         </template>
@@ -39,7 +18,7 @@
     <div class="gva-table-box">
         <div class="gva-btn-list">
             <el-button  type="primary" icon="plus" @click="openDialog()">新增</el-button>
-            <el-button  icon="delete" style="margin-left: 10px;" :disabled="!multipleSelection.length" @click="onDelete">删除</el-button>
+            <!-- <el-button  icon="delete" style="margin-left: 10px;" :disabled="!multipleSelection.length" @click="onDelete">删除</el-button> -->
         </div>
         <el-table
         ref="multipleTable"
@@ -50,29 +29,22 @@
         @selection-change="handleSelectionChange"
         >
         <el-table-column type="selection" width="55" />
-            <el-table-column align="left" label="操作用户ID" prop="oprUserID" width="120" />
-            <el-table-column align="left" label="操作人的用户名称" prop="oprUsername" width="120" />
-            <el-table-column align="left" label="操作人昵称" prop="oprUserNickname" width="120" />
-            <el-table-column align="left" label="操作类型" width="120">
-              <template #default="scope">
-                {{ scope.row.actionType === 1 ? '入款' : scope.row.actionType === 2 ? '下发' : '未知' }}
-              </template>
+        <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
+            <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
+        </el-table-column>
+            <el-table-column align="left" label="标题" prop="title" width="120" />
+            <el-table-column label="账号分组" prop="accountGroup" width="500">
+              <!-- <template #default="scope">
+                  
+              </template> -->
             </el-table-column>
-            <el-table-column align="left" label="操作金额" prop="amount" width="120" />
-            <el-table-column align="left" label="机器人" prop="botName" width="120" />
-            <el-table-column align="left" label="群组" prop="chatGroupName" width="120" />
-            <!-- <el-table-column align="left" label="消息ID" prop="messageID" width="120" /> -->
-            <el-table-column align="left" label="原始输入" prop="rawInput" width="120" />
-            <el-table-column sortable align="left" label="日期" prop="createdAt" width="180">
-                <template #default="scope">{{ formatDate(scope.row.createdAt) }}</template>
-            </el-table-column>
-        <!-- <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
+        <el-table-column align="left" label="操作" fixed="right" :min-width="appStore.operateMinWith">
             <template #default="scope">
             <el-button  type="primary" link class="table-button" @click="getDetails(scope.row)"><el-icon style="margin-right: 5px"><InfoFilled /></el-icon>查看</el-button>
-            <el-button  type="primary" link icon="edit" class="table-button" @click="updateLedgerFunc(scope.row)">编辑</el-button>
+            <el-button  type="primary" link icon="edit" class="table-button" @click="updateLedgerAccountGroupFunc(scope.row)">编辑</el-button>
             <el-button   type="primary" link icon="delete" @click="deleteRow(scope.row)">删除</el-button>
             </template>
-        </el-table-column> -->
+        </el-table-column>
         </el-table>
         <div class="gva-pagination">
             <el-pagination
@@ -97,59 +69,34 @@
               </div>
             </template>
 
+
           <el-form :model="formData" label-position="top" ref="elFormRef" :rules="rule" label-width="80px">
-            <el-form-item label="操作用户ID:" prop="oprUserID">
-    <el-input v-model.number="formData.oprUserID" :clearable="true" placeholder="请输入操作用户ID" />
-</el-form-item>
-            <el-form-item label="操作人的用户名称:" prop="oprUsername">
-    <el-input v-model="formData.oprUsername" :clearable="true" placeholder="请输入操作人的用户名称" />
-</el-form-item>
-            <el-form-item label="操作人昵称:" prop="oprUserNickname">
-    <el-input v-model="formData.oprUserNickname" :clearable="true" placeholder="请输入操作人昵称" />
-</el-form-item>
-            <el-form-item label="操作类型:" prop="actionType">
-    <el-input v-model.number="formData.actionType" :clearable="true" placeholder="请输入操作类型" />
-</el-form-item>
-            <el-form-item label="操作金额:" prop="amount">
-    <el-input-number v-model="formData.amount" style="width:100%" :precision="2" :clearable="true" />
-</el-form-item>
-            <el-form-item label="所在群组:" prop="chatGroupID">
-    <el-input v-model.number="formData.chatGroupID" :clearable="true" placeholder="请输入所在群组" />
-</el-form-item>
-            <el-form-item label="消息ID:" prop="messageID">
-    <el-input v-model.number="formData.messageID" :clearable="true" placeholder="请输入消息ID" />
-</el-form-item>
-            <el-form-item label="原始输入:" prop="rawInput">
-    <el-input v-model="formData.rawInput" :clearable="true" placeholder="请输入原始输入" />
-</el-form-item>
+            <el-form-item label="标题:" prop="title">
+                <el-input v-model="formData.title" :clearable="true" placeholder="请输入" />
+            </el-form-item>
+            <el-form-item label="账号分组:" prop="accountGroup">
+              <el-input
+                v-model="formData.accountGroup"
+                type="textarea"
+                :autosize="{ minRows: 3, maxRows: 6 }"
+                maxlength="500"
+                show-word-limit
+              />
+              <div style="color:#999; font-size:12px; margin-top:4px;">
+                多个账号请用英文逗号 , 分隔
+              </div>
+            </el-form-item>
+            
           </el-form>
     </el-drawer>
 
     <el-drawer destroy-on-close :size="appStore.drawerSize" v-model="detailShow" :show-close="true" :before-close="closeDetailShow" title="查看">
             <el-descriptions :column="1" border>
-                    <el-descriptions-item label="操作用户ID">
-    {{ detailForm.oprUserID }}
+                    <el-descriptions-item label="账号分组">
+    <RichView v-model="detailForm.accountGroup" />
 </el-descriptions-item>
-                    <el-descriptions-item label="操作人的用户名称">
-    {{ detailForm.oprUsername }}
-</el-descriptions-item>
-                    <el-descriptions-item label="操作人昵称">
-    {{ detailForm.oprUserNickname }}
-</el-descriptions-item>
-                    <el-descriptions-item label="操作类型">
-    {{ detailForm.actionType }}
-</el-descriptions-item>
-                    <el-descriptions-item label="操作金额">
-    {{ detailForm.amount }}
-</el-descriptions-item>
-                    <el-descriptions-item label="所在群组">
-    {{ detailForm.chatGroupID }}
-</el-descriptions-item>
-                    <el-descriptions-item label="消息ID">
-    {{ detailForm.messageID }}
-</el-descriptions-item>
-                    <el-descriptions-item label="原始输入">
-    {{ detailForm.rawInput }}
+                    <el-descriptions-item label="tilte">
+    {{ detailForm.title }}
 </el-descriptions-item>
             </el-descriptions>
         </el-drawer>
@@ -159,13 +106,16 @@
 
 <script setup>
 import {
-  createLedger,
-  deleteLedger,
-  deleteLedgerByIds,
-  updateLedger,
-  findLedger,
-  getLedgerList
-} from '@/api/usage/ledger'
+  createLedgerAccountGroup,
+  deleteLedgerAccountGroup,
+  deleteLedgerAccountGroupByIds,
+  updateLedgerAccountGroup,
+  findLedgerAccountGroup,
+  getLedgerAccountGroupList
+} from '@/api/ledger/ledgerAccountGroup'
+// 富文本组件
+import RichEdit from '@/components/richtext/rich-edit.vue'
+import RichView from '@/components/richtext/rich-view.vue'
 
 // 全量引入格式化工具 请按需保留
 import { getDictFunc, formatDate, formatBoolean, filterDict ,filterDataSource, returnArrImg, onDownloadFile } from '@/utils/format'
@@ -177,7 +127,7 @@ import { useAppStore } from "@/pinia"
 
 
 defineOptions({
-    name: 'Ledger'
+    name: 'LedgerAccountGroup'
 })
 
 // 提交按钮loading
@@ -189,14 +139,8 @@ const showAllQuery = ref(false)
 
 // 自动化生成的字典（可能为空）以及字段
 const formData = ref({
-            oprUserID: undefined,
-            oprUsername: '',
-            oprUserNickname: '',
-            actionType: undefined,
-            amount: 0,
-            chatGroupID: undefined,
-            messageID: undefined,
-            rawInput: '',
+            accountGroup: '',
+            title: '',
         })
 
 
@@ -243,7 +187,7 @@ const handleCurrentChange = (val) => {
 
 // 查询
 const getTableData = async() => {
-  const table = await getLedgerList({ page: page.value, pageSize: pageSize.value, ...searchInfo.value })
+  const table = await getLedgerAccountGroupList({ page: page.value, pageSize: pageSize.value, ...searchInfo.value })
   if (table.code === 0) {
     tableData.value = table.data.list
     total.value = table.data.total
@@ -278,7 +222,7 @@ const deleteRow = (row) => {
         cancelButtonText: '取消',
         type: 'warning'
     }).then(() => {
-            deleteLedgerFunc(row)
+            deleteLedgerAccountGroupFunc(row)
         })
     }
 
@@ -301,7 +245,7 @@ const onDelete = async() => {
         multipleSelection.value.map(item => {
           IDs.push(item.ID)
         })
-      const res = await deleteLedgerByIds({ IDs })
+      const res = await deleteLedgerAccountGroupByIds({ IDs })
       if (res.code === 0) {
         ElMessage({
           type: 'success',
@@ -319,8 +263,8 @@ const onDelete = async() => {
 const type = ref('')
 
 // 更新行
-const updateLedgerFunc = async(row) => {
-    const res = await findLedger({ ID: row.ID })
+const updateLedgerAccountGroupFunc = async(row) => {
+    const res = await findLedgerAccountGroup({ ID: row.ID })
     type.value = 'update'
     if (res.code === 0) {
         formData.value = res.data
@@ -330,8 +274,8 @@ const updateLedgerFunc = async(row) => {
 
 
 // 删除行
-const deleteLedgerFunc = async (row) => {
-    const res = await deleteLedger({ ID: row.ID })
+const deleteLedgerAccountGroupFunc = async (row) => {
+    const res = await deleteLedgerAccountGroup({ ID: row.ID })
     if (res.code === 0) {
         ElMessage({
                 type: 'success',
@@ -357,14 +301,8 @@ const openDialog = () => {
 const closeDialog = () => {
     dialogFormVisible.value = false
     formData.value = {
-        oprUserID: undefined,
-        oprUsername: '',
-        oprUserNickname: '',
-        actionType: undefined,
-        amount: 0,
-        chatGroupID: undefined,
-        messageID: undefined,
-        rawInput: '',
+        accountGroup: '',
+        title: '',
         }
 }
 // 弹窗确定
@@ -375,13 +313,13 @@ const enterDialog = async () => {
               let res
               switch (type.value) {
                 case 'create':
-                  res = await createLedger(formData.value)
+                  res = await createLedgerAccountGroup(formData.value)
                   break
                 case 'update':
-                  res = await updateLedger(formData.value)
+                  res = await updateLedgerAccountGroup(formData.value)
                   break
                 default:
-                  res = await createLedger(formData.value)
+                  res = await createLedgerAccountGroup(formData.value)
                   break
               }
               btnLoading.value = false
@@ -411,7 +349,7 @@ const openDetailShow = () => {
 // 打开详情
 const getDetails = async (row) => {
   // 打开弹窗
-  const res = await findLedger({ ID: row.ID })
+  const res = await findLedgerAccountGroup({ ID: row.ID })
   if (res.code === 0) {
     detailForm.value = res.data
     openDetailShow()

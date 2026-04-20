@@ -38,6 +38,7 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		ledgerRouter := router.RouterGroupApp.Ledger
 		ledgerRouter.InitLedgerRouter(privateGroup, publicGroup)
 		ledgerRouter.InitLedgerPermissionRouter(privateGroup, publicGroup)
+		ledgerRouter.InitLedgerAccountGroupRouter(privateGroup, publicGroup)
 	}
 	{
 		listenRouter := router.RouterGroupApp.Listen

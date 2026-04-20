@@ -105,6 +105,7 @@ func bizModel() error {
 		recharge.UserWallet{},
 		recharge.AdPublishRecord{},
 		ledger.Ledger{},
+		ledger.LedgerAccountGroup{},
 		ledger.LedgerPermission{},
 		ledger2.Ledger{},
 		ledger2.LedgerPermission{},
