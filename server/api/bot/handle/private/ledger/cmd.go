@@ -41,6 +41,8 @@ func Handle(botModel bot.Bot, tgMsg botapi.Update) (err error) {
 	}
 	chain := NewParserChain(
 		&TronAddressParser{},
+		&GroupListParser{},
+		&GroupStatParser{},
 	)
 	return chain.Handle(botModel, tgMsg)
 }
