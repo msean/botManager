@@ -75,7 +75,7 @@ func (p *GroupListParser) Handle() error {
 		}
 
 		if i != len(list)-1 && len(list) > 1 {
-			builder.WriteString("\n---------------------\n")
+			builder.WriteString("---------------------\n")
 		}
 	}
 
