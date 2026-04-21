@@ -74,7 +74,9 @@ func (p *GroupListParser) Handle() error {
 			}
 		}
 
-		builder.WriteString("\n---------------------\n")
+		if i != 0 {
+			builder.WriteString("\n---------------------\n")
+		}
 	}
 
 	replyText(p.botModel.Token, chatID, builder.String())
