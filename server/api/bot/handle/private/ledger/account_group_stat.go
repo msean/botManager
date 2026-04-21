@@ -19,7 +19,6 @@ type GroupStatParser struct {
 	groupID  uint
 }
 
-// 匹配
 func (p *GroupStatParser) Match(botModel bot.Bot, update botapi.Update) bool {
 	if update.Message == nil || update.Message.Text == "" {
 		return false
@@ -44,6 +43,7 @@ func (p *GroupStatParser) Match(botModel bot.Bot, update botapi.Update) bool {
 
 	return false
 }
+
 func (p *GroupStatParser) Handle() error {
 	chatID := p.update.Message.Chat.ID
 
@@ -63,7 +63,6 @@ func (p *GroupStatParser) Handle() error {
 
 	replyText(p.botModel.Token, chatID, "🚀 开始统计，请稍候...")
 
-	// ===== 汇总变量 =====
 	var totalUSDT float64
 	var totalTRX float64
 	var totalTodayIn float64

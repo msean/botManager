@@ -70,7 +70,7 @@ func (p *GroupListParser) Handle() error {
 		for _, acc := range accounts {
 			acc = strings.TrimSpace(acc)
 			if acc != "" {
-				builder.WriteString(fmt.Sprintf("  - %s", acc))
+				builder.WriteString(fmt.Sprintf("  %s", acc))
 			}
 		}
 
