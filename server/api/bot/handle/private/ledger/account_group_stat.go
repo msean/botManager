@@ -54,12 +54,12 @@ func (p *GroupStatParser) Handle() error {
 		return nil
 	}
 
-	if group.AccountGroup == nil {
+	if group.AccountGroup == "" {
 		replyText(p.botModel.Token, chatID, "❌ 分组没有账号")
 		return nil
 	}
 
-	accounts := strings.Split(*group.AccountGroup, ",")
+	accounts := strings.Split(group.AccountGroup, ",")
 
 	replyText(p.botModel.Token, chatID, "🚀 开始统计，请稍候...")
 

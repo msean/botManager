@@ -54,11 +54,11 @@ func (p *GroupListParser) Handle() error {
 		title := ""
 		accountGroup := ""
 
-		if item.Title != nil {
-			title = *item.Title
+		if item.Title != "" {
+			title = item.Title
 		}
-		if item.AccountGroup != nil {
-			accountGroup = *item.AccountGroup
+		if item.AccountGroup != "" {
+			accountGroup = item.AccountGroup
 		}
 
 		accounts := strings.Split(accountGroup, ",")

@@ -79,9 +79,7 @@
               <el-input
                 v-model="formData.accountGroup"
                 type="textarea"
-                :autosize="{ minRows: 3, maxRows: 6 }"
-                maxlength="500"
-                show-word-limit
+                :autosize="{ minRows: 10, maxRows: 100}"
               />
               <div style="color:#999; font-size:12px; margin-top:4px;">
                 多个账号请用英文逗号 , 分隔
