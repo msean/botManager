@@ -71,6 +71,8 @@ func (p *GroupStatParser) Handle() error {
 	var totalYesterdayOut float64
 	var totalZeroUSDT float64
 
+	accountCount := len(accounts)
+
 	for i, acc := range accounts {
 		acc = strings.TrimSpace(acc)
 		if acc == "" {
@@ -80,7 +82,7 @@ func (p *GroupStatParser) Handle() error {
 		replyText(
 			p.botModel.Token,
 			chatID,
-			fmt.Sprintf("⏳ 正在统计第 %d 个账户：%s", i+1, acc),
+			fmt.Sprintf("⏳ 正在统计第 %d 个账户：%s, 共%d个账户", i+1, acc, accountCount),
 		)
 
 		// ===== 1. 获取账户信息 =====

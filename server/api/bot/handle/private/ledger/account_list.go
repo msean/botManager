@@ -52,27 +52,27 @@ func (p *GroupListParser) Handle() error {
 
 		groupID := item.ID
 		title := ""
-		accountGroup := ""
+		// accountGroup := ""
 
 		if item.Title != "" {
 			title = item.Title
 		}
-		if item.AccountGroup != "" {
-			accountGroup = item.AccountGroup
-		}
+		// if item.AccountGroup != "" {
+		// 	accountGroup = item.AccountGroup
+		// }
 
-		accounts := strings.Split(accountGroup, ",")
+		// accounts := strings.Split(accountGroup, ",")
 
 		builder.WriteString(fmt.Sprintf("ID：%d\n", groupID))
 		builder.WriteString(fmt.Sprintf("标题：%s\n", title))
-		builder.WriteString("地址列表：\n")
+		// builder.WriteString("地址列表：\n")
 
-		for _, acc := range accounts {
-			acc = strings.TrimSpace(acc)
-			if acc != "" {
-				builder.WriteString(fmt.Sprintf("  %s\n", acc))
-			}
-		}
+		// for _, acc := range accounts {
+		// 	acc = strings.TrimSpace(acc)
+		// 	if acc != "" {
+		// 		builder.WriteString(fmt.Sprintf("  %s\n", acc))
+		// 	}
+		// }
 
 		if i != len(list)-1 && len(list) > 1 {
 			builder.WriteString("---------------------\n")

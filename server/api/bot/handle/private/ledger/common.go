@@ -1,7 +1,9 @@
 package ledger
 
 import (
+	"github.com/msean/botmanager/server/global"
 	botapi "github.com/msean/botmanager/server/utils/bot_handler/bot_api"
+	"go.uber.org/zap"
 )
 
 func replyText(token string, chatGroupID int64, text string) (err error) {
@@ -11,6 +13,8 @@ func replyText(token string, chatGroupID int64, text string) (err error) {
 		return
 	}
 	msg := botapi.NewMessage(chatGroupID, text)
-	_, err = botSender.Send(msg)
+	if _, err = botSender.Send(msg); err != nil {
+		global.GVA_LOG.Error("replyText", zap.Error(err))
+	}
 	return err
 }
