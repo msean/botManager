@@ -6,63 +6,108 @@ import (
 	"log"
 
 	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/telegram/updates"
 	"github.com/gotd/td/tg"
 	"github.com/msean/botmanager/server/model/tg_auto_helper"
 	"gorm.io/gorm"
 )
-
-// ================= 核心服务 =================
 
 type TgCollector struct {
 	Client *telegram.Client
 	DB     *gorm.DB
 }
 
-// ================= 启动监听 =================
+// ================= 自定义 Handler（关键） =================
+
+type MyUpdateHandler struct {
+	t *TgCollector
+}
+
+func (h *MyUpdateHandler) Handle(ctx context.Context, u tg.UpdatesClass) error {
+
+	switch upd := u.(type) {
+
+	case *tg.Updates:
+		return h.t.handleUpdates(ctx, upd.Updates, upd.Users)
+
+	case *tg.UpdatesCombined:
+		return h.t.handleUpdates(ctx, upd.Updates, upd.Users)
+	}
+
+	return nil
+}
+
+// ================= Run =================
 
 func (t *TgCollector) Run(ctx context.Context) error {
 
+	handler := &MyUpdateHandler{t: t}
+
 	updateManager := updates.New(updates.Config{
-		Handler: updates.HandlerFunc(func(ctx context.Context, u tg.UpdatesClass) error {
-
-			switch update := u.(type) {
-
-			case *tg.UpdateNewMessage:
-
-				msg, ok := update.Message.(*tg.Message)
-				if !ok {
-					return nil
-				}
-
-				// 只处理群 / 超级群
-				groupID := getGroupID(msg)
-				if groupID == 0 {
-					return nil
-				}
-
-				// 获取发送人
-				userID, username, nickname := getUserInfo(msg)
-				if userID == 0 {
-					return nil
-				}
-
-				fmt.Println("采集用户:", userID, username, nickname)
-
-				// 入库
-				t.saveUser(groupID, userID, username, nickname)
-
-			}
-
-			return nil
-		}),
+		Handler: handler, // ✅ 必须是接口实现
 	})
 
 	return t.Client.Run(ctx, func(ctx context.Context) error {
-		return updateManager.Run(ctx, t.Client.API(), t.Client.Self())
+
+		self, err := t.Client.Self(ctx)
+		if err != nil {
+			return err
+		}
+
+		return updateManager.Run(
+			ctx,
+			t.Client.API(),
+			self.ID,
+			updates.AuthOptions{},
+		)
 	})
 }
 
-// ================= 获取群ID =================
+// ================= 核心处理 =================
+
+func (t *TgCollector) handleUpdates(
+	ctx context.Context,
+	updateList []tg.UpdateClass,
+	users []tg.UserClass,
+) error {
+
+	userMap := make(map[int64]*tg.User)
+
+	for _, u := range users {
+		if user, ok := u.(*tg.User); ok {
+			userMap[user.ID] = user
+		}
+	}
+
+	for _, u := range updateList {
+
+		switch update := u.(type) {
+
+		case *tg.UpdateNewMessage:
+
+			msg, ok := update.Message.(*tg.Message)
+			if !ok {
+				continue
+			}
+
+			groupID := getGroupID(msg)
+			if groupID == 0 {
+				continue
+			}
+
+			userID, username, nickname := getUserInfo(msg, userMap)
+			if userID == 0 {
+				continue
+			}
+
+			fmt.Println("采集用户:", userID, username, nickname)
+
+			t.saveUser(groupID, userID, username, nickname)
+		}
+	}
+
+	return nil
+}
 
 func getGroupID(msg *tg.Message) int64 {
 
@@ -73,15 +118,12 @@ func getGroupID(msg *tg.Message) int64 {
 
 	case *tg.PeerChannel:
 		return peer.ChannelID
-
-	default:
-		return 0
 	}
+
+	return 0
 }
 
-// ================= 获取用户信息 =================
-
-func getUserInfo(msg *tg.Message) (int64, string, string) {
+func getUserInfo(msg *tg.Message, userMap map[int64]*tg.User) (int64, string, string) {
 
 	userPeer, ok := msg.FromID.(*tg.PeerUser)
 	if !ok {
@@ -90,22 +132,13 @@ func getUserInfo(msg *tg.Message) (int64, string, string) {
 
 	userID := userPeer.UserID
 
-	// 从 Users 里找详细信息
-	for _, u := range msg.Entities.Users() {
-		user, ok := u.(*tg.User)
-		if !ok {
-			continue
-		}
-
-		if user.ID == userID {
-			return userID, user.Username, user.FirstName + user.LastName
-		}
+	user, ok := userMap[userID]
+	if !ok {
+		return userID, "", ""
 	}
 
-	return userID, "", ""
+	return userID, user.Username, user.FirstName + user.LastName
 }
-
-// ================= 保存用户 =================
 
 func (t *TgCollector) saveUser(groupID, userID int64, username, nickname string) {
 

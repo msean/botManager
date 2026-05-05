@@ -1,8 +1,11 @@
 package tg_auto_helper
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
+	"github.com/gotd/td/tg"
 	"github.com/msean/botmanager/server/global"
 	"github.com/msean/botmanager/server/model/tg_auto_helper"
 	"github.com/msean/botmanager/server/model/tg_auto_helper/request"
@@ -180,4 +183,31 @@ func (s *CollectGroupTaskService) ListCollectGroupInfo(info request.CollectGroup
 		Find(&list).Error
 
 	return
+}
+
+// 加群 JoinByUsername
+func JoinByUsername(ctx context.Context, api *tg.Client, username string) error {
+
+	resolved, err := api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
+		Username: username,
+	})
+	if err != nil {
+		return err
+	}
+
+	// 拿到 channel
+	ch, ok := resolved.Chats[0].(*tg.Channel)
+	if !ok {
+		return fmt.Errorf("not a channel")
+	}
+
+	// 构造 InputChannel
+	inputChannel := &tg.InputChannel{
+		ChannelID:  ch.ID,
+		AccessHash: ch.AccessHash,
+	}
+
+	// 加入
+	_, err = api.ChannelsJoinChannel(ctx, inputChannel)
+	return err
 }
